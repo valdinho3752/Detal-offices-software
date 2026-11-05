@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Activity, Lock, User, AlertCircle, Sun, Moon } from 'lucide-react';
+import { useClinica } from '../context/ClinicaContext';
+import LogoClinica from '../components/LogoClinica';
+import { Lock, User, AlertCircle, Sun, Moon } from 'lucide-react';
 
 export default function LoginView() {
   const [username, setUsername] = useState('');
@@ -11,6 +13,7 @@ export default function LoginView() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const { nombreClinica } = useClinica();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -56,10 +59,10 @@ export default function LoginView() {
 
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <div className="inline-flex p-3 bg-primary-600 rounded-2xl shadow-xl shadow-primary-600/30 text-white mb-4">
-            <Activity className="w-8 h-8" />
+          <div className="inline-flex mb-4">
+            <LogoClinica clase="w-16 h-16" claseIcono="text-3xl" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Clínica Dental Gustavo</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight break-words">{nombreClinica}</h1>
           <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">Sistema Integral Odontológico & Gestión Clínica</p>
         </div>
 

@@ -199,7 +199,7 @@ export default function ReportesBIView() {
     <div className="space-y-6">
       <div className="pb-2 border-b border-slate-200 dark:border-slate-800">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Reportes Analíticos & Business Intelligence</h1>
-        <p className="text-slate-500 dark:text-slate-400 text-sm">Demanda de tratamientos, productividad médica y resultado financiero (HU-14)</p>
+        <p className="text-slate-500 dark:text-slate-400 text-sm">Demanda de tratamientos, productividad médica y resultado financiero</p>
       </div>
 
       <SelectorPeriodo filtro={filtro} onCambiar={setFiltro} />

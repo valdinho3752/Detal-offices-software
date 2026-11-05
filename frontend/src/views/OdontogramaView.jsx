@@ -1355,7 +1355,7 @@ export default function OdontogramaView() {
             Odontograma Dental Clínico FDI
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm">
-            Mapeo gráfico por caras anatómicas, raíces dentales, diagnóstico y presupuestos en vivo (HU-04, HU-07)
+            Mapeo gráfico por caras anatómicas, raíces dentales, diagnóstico y presupuestos en vivo
           </p>
         </div>
 

@@ -144,7 +144,7 @@ export default function CajaOperativaView() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Caja Operativa Diaria & Arqueo</h1>
           <p className="text-slate-600 dark:text-slate-400 text-sm">
-            Control de fondo en gaveta, egresos menores y auditoría de descuadres de turno (HU-10)
+            Control de fondo en gaveta, egresos menores y auditoría de descuadres de turno
           </p>
         </div>
 
@@ -266,7 +266,7 @@ export default function CajaOperativaView() {
             </div>
           </div>
           <div className="text-2xl font-bold text-amber-400">
-            -{moneda(caja?.total_egresos || 0)}
+            {Number(caja?.total_egresos) > 0 ? '-' : ''}{moneda(caja?.total_egresos || 0)}
           </div>
           <div className="text-[11px] text-slate-400">
             Gastos menores y retiros

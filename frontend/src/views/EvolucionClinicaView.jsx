@@ -213,7 +213,7 @@ export default function EvolucionClinicaView() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Evolución Clínica & Recetario Médico</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm">
-            Registro cronológico de atención SOEP, sincronización con odontograma y prescripciones (HU-07)
+            Registro cronológico de atención SOEP, sincronización con odontograma y prescripciones
           </p>
         </div>
 
@@ -603,7 +603,7 @@ export default function EvolucionClinicaView() {
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Registrar Evolución de Atención Odontológica</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              Completa los hallazgos de la sesión, vincula a la cita realizada, avanza el plan sincronizado y prescribe receta (HU-07).
+              Completa los hallazgos de la sesión, vincula a la cita realizada, avanza el plan sincronizado y prescribe receta.
             </p>
 
             <form onSubmit={handleCreateVisita} className="space-y-4">
@@ -611,7 +611,7 @@ export default function EvolucionClinicaView() {
               {/* SECCIÓN FECHA Y VINCULACIÓN A CITA (Point 4) */}
               <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
                 <span className="text-[11px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Clock className="w-4 h-4" /> Fecha de Atención y Vinculación con Cita (HU-05 / HU-07)
+                  <Clock className="w-4 h-4" /> Fecha de Atención y Vinculación con Cita
                 </span>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -780,7 +780,7 @@ export default function EvolucionClinicaView() {
               {/* SECCIÓN 3: Conexión con el Plan de Tratamiento & Odontograma (Point 3) */}
               <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
                 <span className="text-[11px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider block">
-                  Flujo del Plan de Tratamiento & Odontograma (HU-04 / HU-07)
+                  Flujo del Plan de Tratamiento & Odontograma
                 </span>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

@@ -25,6 +25,9 @@ SESION = "SESION"
 PROTECCION = {
     ("GET", "/auth/me"): SESION,
     ("POST", "/auth/fichar"): "ASISTENCIA_FICHAR",
+    ("GET", "/auth/fichaje/estado"): SESION,
+    ("POST", "/configuracion/logo"): ADMIN,
+    ("DELETE", "/configuracion/logo"): ADMIN,
     ("GET", "/usuarios/roles"): ("USUARIOS_MANAGE", "ROLES_MANAGE"),
     ("POST", "/usuarios/roles"): "ROLES_MANAGE",
     ("GET", "/usuarios/permisos"): ("USUARIOS_MANAGE", "ROLES_MANAGE"),
@@ -185,7 +188,7 @@ def test_todas_las_rutas_estan_clasificadas():
         (metodo.upper(), ruta[len(API):])
         for ruta, operaciones in app.openapi()["paths"].items() if ruta.startswith(API)
         for metodo in operaciones
-    } - {("POST", "/auth/login")}
+    } - {("POST", "/auth/login"), ("GET", "/configuracion/publica"), ("GET", "/configuracion/logo")}  # Necesarias en la pantalla de acceso
     assert rutas == set(PROTECCION), f"Diferencias: {rutas ^ set(PROTECCION)}"
     print(f"✔ Las {len(rutas)} rutas de la API tienen una protección definida.")
 

@@ -169,7 +169,7 @@ export default function NominaComisionesView() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Nómina & Comisiones</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Sueldos, adelantos y comisiones de todo el personal (HU-12)</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Sueldos, adelantos y comisiones de todo el personal</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

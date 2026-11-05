@@ -33,3 +33,11 @@ class RegistroAsistencia(Base):
     ip_registro = Column(String(45), nullable=True)
 
     usuario = relationship("Usuario", back_populates="asistencias")
+
+    @property
+    def empleado_nombre(self):
+        return f"{self.usuario.nombre} {self.usuario.apellido}" if self.usuario else None
+
+    @property
+    def empleado_rol(self):
+        return self.usuario.rol.nombre if self.usuario and self.usuario.rol else None

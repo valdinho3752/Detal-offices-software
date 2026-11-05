@@ -16,9 +16,11 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useMoneda } from '../context/MonedaContext';
+import { useClinica } from '../context/ClinicaContext';
 
 export default function CajaBloqueoBarrier({ cajaEstado, onCajaUpdated }) {
   const { moneda, simbolo } = useMoneda();
+  const { nombreClinica } = useClinica();
   const { user, tienePermiso } = useAuth();
 
   // Estados locales para formularios de apertura / cierre
@@ -297,7 +299,7 @@ export default function CajaBloqueoBarrier({ cajaEstado, onCajaUpdated }) {
 
         {/* Footer Informativo */}
         <div className="text-center pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-400">
-          Clínica Dental Gustavo · Módulo de Control Financiero Diario (HU-10)
+          {nombreClinica} · Control financiero diario
         </div>
       </div>
     </div>

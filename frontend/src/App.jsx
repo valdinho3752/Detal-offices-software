@@ -1,11 +1,11 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ClinicaProvider, useClinica } from './context/ClinicaContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { MonedaProvider } from './context/MonedaContext';
 import Layout from './components/Layout';
 
-// Vistas HU-01 a HU-14
 import LoginView from './views/LoginView';
 import DashboardView from './views/DashboardView';
 import UsuariosRolesView from './views/UsuariosRolesView';
@@ -28,13 +28,14 @@ import { puedeAcceder } from './config/accesos';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
+  const { nombreClinica } = useClinica();
 
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white text-sm">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-          <span className="text-slate-400">Cargando Clínica Dental Gustavo...</span>
+          <span className="text-slate-400">Cargando {nombreClinica}...</span>
         </div>
       </div>
     );
@@ -75,6 +76,7 @@ const RUTAS = [
 
 export default function App() {
   return (
+    <ClinicaProvider>
     <ThemeProvider>
       <AuthProvider>
         <MonedaProvider>
@@ -110,5 +112,6 @@ export default function App() {
         </MonedaProvider>
       </AuthProvider>
     </ThemeProvider>
+    </ClinicaProvider>
   );
 }

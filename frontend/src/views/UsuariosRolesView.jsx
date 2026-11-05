@@ -208,7 +208,7 @@ export default function UsuariosRolesView() {
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Usuarios & Control de Acceso RBAC</h1>
           <p className="text-slate-400 text-sm">
-            Gestión integral de personal, credenciales, perfiles médicos y permisos granulares (HU-01, HU-02)
+            Gestión integral de personal, credenciales, perfiles médicos y permisos granulares
           </p>
         </div>
         <div className="flex items-center gap-2">

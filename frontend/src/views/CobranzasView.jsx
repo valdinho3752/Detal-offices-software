@@ -176,7 +176,7 @@ export default function CobranzasView() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Cobranzas & Control de Pagos</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm">
-            Pasarela de abonos multi-medio, actualización en vivo de deuda y comprobantes (HU-11)
+            Pasarela de abonos multi-medio, actualización en vivo de deuda y comprobantes
           </p>
         </div>
 
@@ -423,7 +423,7 @@ export default function CobranzasView() {
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Registrar Cobro / Abono</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              Ingresa el pago del paciente y actualiza su saldo deudor (HU-11).
+              Ingresa el pago del paciente y actualiza su saldo deudor.
             </p>
 
             <form onSubmit={handleRegistrarPago} className="space-y-4">

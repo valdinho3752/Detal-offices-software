@@ -145,7 +145,7 @@ export default function ProtesisLaboratorioView() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Prótesis & Laboratorios Dentales</h1>
           <p className="text-slate-600 dark:text-slate-400 text-sm">
-            Control de órdenes de coronas, prótesis, guía de color Vita y fechas de entrega prometidas (HU-09)
+            Control de órdenes de coronas, prótesis, guía de color Vita y fechas de entrega prometidas
           </p>
         </div>
         <button
@@ -306,7 +306,7 @@ export default function ProtesisLaboratorioView() {
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Nueva Orden para Laboratorio Dental</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              Ingresa los detalles técnicos, guía de color y fechas para el laboratorio (HU-09).
+              Ingresa los detalles técnicos, guía de color y fechas para el laboratorio.
             </p>
 
             <form onSubmit={handleCreateProtesis} className="space-y-4">

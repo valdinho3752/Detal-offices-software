@@ -6,7 +6,8 @@ from app.models import Usuario, RegistroAsistencia, Rol
 from app.core.security import verify_password, create_access_token
 from app.core.dependencies import get_current_user, permisos_efectivos, require_permission
 from app.schemas.auth import Token, UsuarioSimpleResponse
-from app.schemas.asistencia import AsistenciaCreate, AsistenciaResponse
+from app.schemas.asistencia import AsistenciaCreate, AsistenciaResponse, EstadoTurnoResponse
+from app.services.asistencia import consultar_estado
 
 router = APIRouter(prefix="/auth", tags=["Autenticación y Asistencia"])
 
@@ -58,6 +59,20 @@ def get_me(current_user: Usuario = Depends(get_current_user), db: Session = Depe
         permisos=sorted(permisos_efectivos(current_user, db))
     )
 
+@router.get("/fichaje/estado", response_model=EstadoTurnoResponse)
+def consultar_estado_de_turno(
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Qué marcajes puede hacer ahora la persona conectada."""
+    turno = consultar_estado(current_user.id, db)
+    return EstadoTurnoResponse(
+        estado=turno.estado,
+        permitidos=list(turno.permitidos),
+        desde=turno.desde,
+        jornada_sin_salida=turno.jornada_sin_salida,
+    )
+
 @router.post("/fichar", response_model=AsistenciaResponse)
 def registrar_asistencia(
     datos: AsistenciaCreate,
@@ -67,7 +82,14 @@ def registrar_asistencia(
 ):
     """
     Fichaje laboral: Registra hora de entrada, salida o descanso de doctores y asistentes.
+    Cada marcaje solo es válido según el anterior de la misma persona.
     """
+    # El bloqueo evita que dos marcajes simultáneos pasen la misma validación
+    db.query(Usuario).filter(Usuario.id == current_user.id).with_for_update(of=Usuario).first()
+    turno = consultar_estado(current_user.id, db)
+    if datos.tipo_evento not in turno.permitidos:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=turno.motivo_bloqueo)
+
     client_ip = request.client.host if request.client else None
     
     registro = RegistroAsistencia(

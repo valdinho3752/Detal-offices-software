@@ -447,6 +447,11 @@ CREATE TABLE planes_tratamiento (
 CREATE TABLE configuracion_clinica (
     id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1), -- Siempre una sola fila
     moneda_simbolo VARCHAR(8) NOT NULL DEFAULT '$',
+    nombre_clinica VARCHAR(120) NOT NULL DEFAULT 'Clínica Dental Gustavo',
+    logo BYTEA,
+    logo_tipo VARCHAR(20),
+    tema_por_defecto VARCHAR(10) NOT NULL DEFAULT 'oscuro',
+    CONSTRAINT configuracion_tema_valido CHECK (tema_por_defecto IN ('claro', 'oscuro')),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 INSERT INTO configuracion_clinica (id) VALUES (1);

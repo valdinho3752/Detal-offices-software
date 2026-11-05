@@ -149,7 +149,7 @@ export default function PacientesView() {
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Directorio Clínico de Pacientes</h1>
           <p className="text-slate-400 text-sm">
-            Gestión de fichas médicas, anamnesis completa, antecedentes sistémicos y deudas (HU-03)
+            Gestión de fichas médicas, anamnesis completa, antecedentes sistémicos y deudas
           </p>
         </div>
         <button
@@ -277,7 +277,6 @@ export default function PacientesView() {
                 >
                   <Calendar className="w-5 h-5 text-primary-400 mx-auto mb-1 group-hover:scale-110 transition" />
                   <span className="text-xs font-semibold text-primary-300 block">Agendar Cita</span>
-                  <span className="text-[10px] text-slate-400">HU-05</span>
                 </Link>
 
                 <Link
@@ -286,7 +285,6 @@ export default function PacientesView() {
                 >
                   <Activity className="w-5 h-5 text-emerald-400 mx-auto mb-1 group-hover:scale-110 transition" />
                   <span className="text-xs font-semibold text-emerald-300 block">Odontograma</span>
-                  <span className="text-[10px] text-slate-400">HU-04</span>
                 </Link>
 
                 <Link
@@ -295,7 +293,6 @@ export default function PacientesView() {
                 >
                   <FileText className="w-5 h-5 text-teal-400 mx-auto mb-1 group-hover:scale-110 transition" />
                   <span className="text-xs font-semibold text-teal-300 block">Evolución</span>
-                  <span className="text-[10px] text-slate-400">HU-07</span>
                 </Link>
 
                 <Link
@@ -304,7 +301,6 @@ export default function PacientesView() {
                 >
                   <Camera className="w-5 h-5 text-cyan-400 mx-auto mb-1 group-hover:scale-110 transition" />
                   <span className="text-xs font-semibold text-cyan-300 block">Radiografías</span>
-                  <span className="text-[10px] text-slate-400">HU-08</span>
                 </Link>
 
                 <Link
@@ -313,7 +309,6 @@ export default function PacientesView() {
                 >
                   <Banknote className="w-5 h-5 text-indigo-400 mx-auto mb-1 group-hover:scale-110 transition" />
                   <span className="text-xs font-semibold text-indigo-300 block">Cobranza</span>
-                  <span className="text-[10px] text-slate-400">HU-11</span>
                 </Link>
               </div>
 
@@ -432,7 +427,7 @@ export default function PacientesView() {
               {editingId ? 'Editar Ficha de Paciente' : 'Registrar Nuevo Paciente'}
             </h3>
             <p className="text-xs text-slate-400 mb-4">
-              Ingresa los datos personales y la anamnesis médica obligatoria (HU-03).
+              Ingresa los datos personales y la anamnesis médica obligatoria.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">

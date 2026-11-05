@@ -53,7 +53,7 @@ export default function AuditoriaForenseView() {
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Auditoría Forense & Trazabilidad</h1>
           <p className="text-slate-400 text-sm">
-            Bitácora inmutable de seguridad con inspección de cambios JSONB antes y después (HU-13)
+            Bitácora inmutable de seguridad con inspección de cambios JSONB antes y después
           </p>
         </div>
       </div>

@@ -80,18 +80,18 @@ export default function DashboardView() {
   };
 
   const modulos = [
-    { title: 'Gestión de Pacientes', desc: 'Directorio clínico y antecedentes anamnésicos (HU-03)', href: '/pacientes', icon: Users, color: 'bg-blue-500' },
-    { title: 'Odontograma Dental', desc: 'Mapeo gráfico FDI y planes de tratamiento (HU-04)', href: '/odontograma', icon: Activity, color: 'bg-emerald-500' },
-    { title: 'Agenda de Citas & Sillón', desc: 'Gestión por doctor, box y tiempos de atención (HU-05)', href: '/citas', icon: Calendar, color: 'bg-indigo-500' },
-    { title: 'Control Horario (Fichaje)', desc: 'Registro de jornada laboral de doctores y personal (HU-06)', href: '/asistencia', icon: Clock, color: 'bg-amber-500' },
-    { title: 'Evolución Clínica', desc: 'Notas de visita, recetas y próximos pasos (HU-07)', href: '/evolucion', icon: FileText, color: 'bg-teal-500' },
-    { title: 'Visor Radiográfico', desc: 'RX digitales y diagnóstico por pieza dental (HU-08)', href: '/radiografias', icon: Camera, color: 'bg-cyan-500' },
-    { title: 'Prótesis & Laboratorio', desc: 'Control de órdenes, color Vita y entregas (HU-09)', href: '/protesis', icon: Layers, color: 'bg-purple-500' },
-    { title: 'Caja Operativa Diaria', desc: 'Apertura, egresos, arqueo físico y cierres (HU-10)', href: '/caja', icon: Banknote, color: 'bg-emerald-600' },
-    { title: 'Cobranzas & Pagos', desc: 'Cobro de presupuestos, abonos y deudas (HU-11)', href: '/cobranzas', icon: Banknote, color: 'bg-green-500' },
-    { title: 'Nómina & Comisiones', desc: 'Liquidación médica según porcentaje y adelantos (HU-12)', href: '/nomina', icon: Award, color: 'bg-violet-500' },
-    { title: 'Auditoría Forense', desc: 'Trazabilidad de cambios con diff de datos (HU-13)', href: '/auditoria', icon: ShieldAlert, color: 'bg-rose-500' },
-    { title: 'Inteligencia de Negocio', desc: 'Métricas de productividad, demanda y margen (HU-14)', href: '/reportes', icon: TrendingUp, color: 'bg-sky-500' },
+    { title: 'Gestión de Pacientes', desc: 'Directorio clínico y antecedentes anamnésicos', href: '/pacientes', icon: Users, color: 'bg-blue-500' },
+    { title: 'Odontograma Dental', desc: 'Mapeo gráfico FDI y planes de tratamiento', href: '/odontograma', icon: Activity, color: 'bg-emerald-500' },
+    { title: 'Agenda de Citas & Sillón', desc: 'Gestión por doctor, box y tiempos de atención', href: '/citas', icon: Calendar, color: 'bg-indigo-500' },
+    { title: 'Control Horario (Fichaje)', desc: 'Registro de jornada laboral de doctores y personal', href: '/asistencia', icon: Clock, color: 'bg-amber-500' },
+    { title: 'Evolución Clínica', desc: 'Notas de visita, recetas y próximos pasos', href: '/evolucion', icon: FileText, color: 'bg-teal-500' },
+    { title: 'Visor Radiográfico', desc: 'RX digitales y diagnóstico por pieza dental', href: '/radiografias', icon: Camera, color: 'bg-cyan-500' },
+    { title: 'Prótesis & Laboratorio', desc: 'Control de órdenes, color Vita y entregas', href: '/protesis', icon: Layers, color: 'bg-purple-500' },
+    { title: 'Caja Operativa Diaria', desc: 'Apertura, egresos, arqueo físico y cierres', href: '/caja', icon: Banknote, color: 'bg-emerald-600' },
+    { title: 'Cobranzas & Pagos', desc: 'Cobro de presupuestos, abonos y deudas', href: '/cobranzas', icon: Banknote, color: 'bg-green-500' },
+    { title: 'Nómina & Comisiones', desc: 'Liquidación médica según porcentaje y adelantos', href: '/nomina', icon: Award, color: 'bg-violet-500' },
+    { title: 'Auditoría Forense', desc: 'Trazabilidad de cambios con diff de datos', href: '/auditoria', icon: ShieldAlert, color: 'bg-rose-500' },
+    { title: 'Inteligencia de Negocio', desc: 'Métricas de productividad, demanda y margen', href: '/reportes', icon: TrendingUp, color: 'bg-sky-500' },
   ];
 
   return (
@@ -133,7 +133,7 @@ export default function DashboardView() {
             <Banknote className="w-6 h-6" />
           </div>
           <div>
-            <div className="text-xs font-medium text-slate-400">Caja en Gaveta (HU-10)</div>
+            <div className="text-xs font-medium text-slate-400">Caja en Gaveta</div>
             <div className="text-xl font-bold text-white mt-0.5">
               {moneda(caja?.saldo_en_gaveta || 0)}
             </div>
@@ -153,7 +153,7 @@ export default function DashboardView() {
             <Calendar className="w-6 h-6" />
           </div>
           <div>
-            <div className="text-xs font-medium text-slate-400">Citas para Hoy (HU-05)</div>
+            <div className="text-xs font-medium text-slate-400">Citas para Hoy</div>
             <div className="text-xl font-bold text-white mt-0.5">{citasHoy.length}</div>
             <div className="text-[11px] text-slate-400 mt-0.5">
               {citasHoy.filter((c) => c.estado === 'EN_SILLON').length} actualmente en sillón
@@ -167,7 +167,7 @@ export default function DashboardView() {
             <TrendingUp className="w-6 h-6" />
           </div>
           <div>
-            <div className="text-xs font-medium text-slate-400">Ingresos del Mes (HU-14)</div>
+            <div className="text-xs font-medium text-slate-400">Ingresos del Mes</div>
             <div className="text-xl font-bold text-white mt-0.5">
               {moneda(resumenFinanzas?.total_ingresos || 0)}
             </div>
@@ -183,7 +183,7 @@ export default function DashboardView() {
             <Clock className="w-6 h-6" />
           </div>
           <div>
-            <div className="text-xs font-medium text-slate-400">Egresos del Mes (HU-10)</div>
+            <div className="text-xs font-medium text-slate-400">Egresos del Mes</div>
             <div className="text-xl font-bold text-white mt-0.5">
               {moneda(resumenFinanzas?.total_egresos || 0)}
             </div>
@@ -202,7 +202,7 @@ export default function DashboardView() {
                 <Clock className="w-5 h-5 text-indigo-400" />
                 Control de Citas & Sillón Dental (Hoy)
               </h2>
-              <p className="text-xs text-slate-400">Transiciones de flujo clínico en tiempo real (HU-05)</p>
+              <p className="text-xs text-slate-400">Transiciones de flujo clínico en tiempo real</p>
             </div>
             <Link to="/citas" className="text-xs text-primary-400 hover:text-primary-300 font-medium flex items-center gap-1">
               Ver Agenda Completa <ChevronRight className="w-3.5 h-3.5" />
@@ -319,7 +319,7 @@ export default function DashboardView() {
               className="block p-3.5 bg-slate-900/60 border border-slate-700/40 rounded-xl hover:border-primary-500/40 transition group"
             >
               <div className="flex items-center justify-between text-xs font-semibold text-slate-300 group-hover:text-primary-400">
-                <span>Órdenes de Laboratorio (HU-09)</span>
+                <span>Órdenes de Laboratorio</span>
                 <ChevronRight className="w-4 h-4" />
               </div>
               <p className="text-[11px] text-slate-400 mt-1">
@@ -333,7 +333,7 @@ export default function DashboardView() {
               className="block p-3.5 bg-slate-900/60 border border-slate-700/40 rounded-xl hover:border-primary-500/40 transition group"
             >
               <div className="flex items-center justify-between text-xs font-semibold text-slate-300 group-hover:text-primary-400">
-                <span>Bitácora de Auditoría (HU-13)</span>
+                <span>Bitácora de Auditoría</span>
                 <ChevronRight className="w-4 h-4" />
               </div>
               <p className="text-[11px] text-slate-400 mt-1">
@@ -346,7 +346,7 @@ export default function DashboardView() {
 
       {/* Grid de Todos los 14 Módulos Clínicos */}
       <div>
-        <h2 className="text-lg font-bold text-white mb-4">Módulos del Sistema (HU-01 a HU-14)</h2>
+        <h2 className="text-lg font-bold text-white mb-4">Módulos del Sistema</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {modulos.filter((m) => accesible(m.href)).map((m, idx) => {
             const Icon = m.icon;

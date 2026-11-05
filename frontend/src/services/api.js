@@ -41,7 +41,7 @@ async function request(endpoint, options = {}) {
 }
 
 export const api = {
-  // ==================== AUTH & FICHAJE (HU-06) ====================
+  // ==================== AUTH & FICHAJE ====================
   login: async (username, password) => {
     const formData = new URLSearchParams();
     formData.append('username', username);
@@ -63,9 +63,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ tipo_evento, observaciones }),
     }),
+  getEstadoFichaje: () => request('/auth/fichaje/estado'),
   getAsistencias: (params = '') => request(`/personal/asistencia${params}`),
 
-  // ==================== USUARIOS & ROLES (HU-01, HU-02) ====================
+  // ==================== USUARIOS & ROLES ====================
   getRoles: () => request('/usuarios/roles'),
   getPermisos: () => request('/usuarios/permisos'),
   createRol: (data) => request('/usuarios/roles', { method: 'POST', body: JSON.stringify(data) }),
@@ -77,7 +78,7 @@ export const api = {
   getDoctores: () => request('/usuarios/doctores/lista'),
   getAsistentes: () => request('/usuarios/asistentes/lista'),
 
-  // ==================== PACIENTES & HISTORIA (HU-03) ====================
+  // ==================== PACIENTES & HISTORIA ====================
   getPacientes: (q = '', skip = 0, limit = 100) => {
     const query = q ? `?q=${encodeURIComponent(q)}` : `?skip=${skip}&limit=${limit}`;
     return request(`/pacientes/${query}`);
@@ -87,7 +88,7 @@ export const api = {
   updatePaciente: (id, data) => request(`/pacientes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   getPacienteSaldo: (id) => request(`/pacientes/${id}/saldo`),
 
-  // ==================== ODONTOGRAMA & PIEZAS (HU-04) ====================
+  // ==================== ODONTOGRAMA & PIEZAS ====================
   getOdontogramas: (pacienteId, tipoRegistro = '') =>
     request(`/odontogramas/?paciente_id=${pacienteId}${tipoRegistro ? '&tipo_registro=' + tipoRegistro : ''}`),
   getOdontograma: (id) => request(`/odontogramas/${id}`),
@@ -98,7 +99,7 @@ export const api = {
   createHallazgo: (data) => request('/odontogramas/hallazgos', { method: 'POST', body: JSON.stringify(data) }),
   deleteHallazgo: (id) => request(`/odontogramas/hallazgos/${id}`, { method: 'DELETE' }),
 
-  // ==================== PLANES DE TRATAMIENTO (HU-04, HU-07) ====================
+  // ==================== PLANES DE TRATAMIENTO ====================
   getCatalogoTratamientos: () => request('/tratamientos/catalogo'),
   getCatalogoCompleto: () => request('/tratamientos/catalogo?activo_solo=false'),
   createTratamiento: (data) => request('/tratamientos/catalogo', { method: 'POST', body: JSON.stringify(data) }),
@@ -111,14 +112,14 @@ export const api = {
   updateItemPlan: (id, data) => request(`/tratamientos/items/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteItemPlan: (id) => request(`/tratamientos/items/${id}`, { method: 'DELETE' }),
 
-  // ==================== CITAS & GESTIÓN DE SILLÓN (HU-05) ====================
+  // ==================== CITAS & GESTIÓN DE SILLÓN ====================
   getCitas: (params = '') => request(`/citas/${params}`),
   createCita: (data) => request('/citas/', { method: 'POST', body: JSON.stringify(data) }),
   updateCita: (id, data) => request(`/citas/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteCita: (id) => request(`/citas/${id}`, { method: 'DELETE' }),
   controlSillon: (id, data) => request(`/citas/${id}/sillon`, { method: 'PATCH', body: JSON.stringify(data) }),
 
-  // ==================== EVOLUCIÓN CLÍNICA & RECETAS (HU-07) ====================
+  // ==================== EVOLUCIÓN CLÍNICA & RECETAS ====================
   getVisitas: (pacienteId) => request(`/visitas/?paciente_id=${pacienteId}`),
   getVisita: (id) => request(`/visitas/${id}`),
   createVisita: (data) => request('/visitas/', { method: 'POST', body: JSON.stringify(data) }),
@@ -126,7 +127,7 @@ export const api = {
   agregarObservacionVisita: (id, texto) =>
     request(`/visitas/${id}/observaciones`, { method: 'POST', body: JSON.stringify({ texto }) }),
 
-  // ==================== RADIOGRAFÍAS & IMÁGENES (HU-08) ====================
+  // ==================== RADIOGRAFÍAS & IMÁGENES ====================
   getRadiografias: (pacienteId, piezaFdi = null) => {
     let url = `/radiografias/?paciente_id=${pacienteId}`;
     if (piezaFdi) url += `&pieza_fdi=${piezaFdi}`;
@@ -137,12 +138,12 @@ export const api = {
   updateRadiografia: (id, data) => request(`/radiografias/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteRadiografia: (id) => request(`/radiografias/${id}`, { method: 'DELETE' }),
 
-  // ==================== PRÓTESIS & LABORATORIO (HU-09) ====================
+  // ==================== PRÓTESIS & LABORATORIO ====================
   getProtesis: (params = '') => request(`/protesis/${params}`),
   createProtesis: (data) => request('/protesis/', { method: 'POST', body: JSON.stringify(data) }),
   updateProtesis: (id, data) => request(`/protesis/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
 
-  // ==================== CAJA & FINANZAS (HU-10, HU-11) ====================
+  // ==================== CAJA & FINANZAS ====================
   getEstadoCaja: () => request('/caja/estado'),
   abrirCaja: (data) => request('/caja/abrir', { method: 'POST', body: JSON.stringify(data) }),
   cerrarCaja: (data) => request('/caja/cerrar', { method: 'POST', body: JSON.stringify(data) }),
@@ -165,10 +166,17 @@ export const api = {
     request(`/cobros-cita/${id}/cerrar-sin-pago`, { method: 'POST', body: JSON.stringify({ motivo }) }),
 
   // ==================== CONFIGURACIÓN ====================
+  getConfiguracionPublica: () => request('/configuracion/publica'),
   getConfiguracion: () => request('/configuracion/'),
+  subirLogo: (archivo) => {
+    const datos = new FormData();
+    datos.append('archivo', archivo);
+    return request('/configuracion/logo', { method: 'POST', body: datos });
+  },
+  quitarLogo: () => request('/configuracion/logo', { method: 'DELETE' }),
   updateConfiguracion: (data) => request('/configuracion/', { method: 'PUT', body: JSON.stringify(data) }),
 
-  // ==================== NÓMINA & COMISIONES (HU-12) ====================
+  // ==================== NÓMINA & COMISIONES ====================
   getContratos: () => request('/personal/contratos'),
   crearContrato: (data) => request('/personal/contratos', { method: 'POST', body: JSON.stringify(data) }),
   actualizarContrato: (id, data) => request(`/personal/contratos/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -177,10 +185,10 @@ export const api = {
   getPagosEmpleados: (usuarioId = '') => request(`/empleados/pagos${usuarioId ? `?usuario_empleado_id=${usuarioId}` : ''}`),
   registrarPagoEmpleado: (data) => request('/empleados/pagos', { method: 'POST', body: JSON.stringify(data) }),
 
-  // ==================== AUDITORÍA FORENSE (HU-13) ====================
+  // ==================== AUDITORÍA FORENSE ====================
   getAuditoria: (params = '') => request(`/auditoria/${params}`),
 
-  // ==================== REPORTES ANALÍTICOS BI (HU-14) ====================
+  // ==================== REPORTES ANALÍTICOS BI ====================
   getReporteDemanda: (limit = 10, periodo = {}) => request(`/reportes/tratamientos-demanda?${new URLSearchParams({ limit, ...periodo })}`),
   getReporteProductividad: (periodo = {}) => request(`/reportes/productividad-doctores?${new URLSearchParams(periodo)}`),
   getReporteFinanciero: (periodo = {}) => request(`/reportes/resumen-financiero?${new URLSearchParams(periodo)}`),

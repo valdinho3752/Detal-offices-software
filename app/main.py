@@ -41,7 +41,7 @@ async def ciclo_de_vida(_app: FastAPI):
 
 
 app = FastAPI(
-    title="API Clínica Dental Gustavo",
+    title="API Clínica Dental",
     description="Sistema completo de gestión dental: Pacientes, Citas, Odontograma, Finanzas, Nómina y Seguridad",
     version="1.0.0",
     docs_url=None if settings.es_produccion else "/docs",
@@ -83,7 +83,7 @@ app.include_router(reportes_router, prefix=api_prefix)
 @app.get("/", tags=["Estado del Sistema"])
 def root():
     return {
-        "sistema": "Clínica Dental Gustavo - API",
+        "sistema": "Clínica Dental - API",
         "estado": "Operativo y conectado a PostgreSQL",
         "version": "1.0.0",
         "documentacion_swagger": "/docs",

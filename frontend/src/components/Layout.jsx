@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useClinica } from '../context/ClinicaContext';
+import LogoClinica from './LogoClinica';
 import { api } from '../services/api';
 import {
   Activity,
@@ -37,6 +39,12 @@ import { useMoneda } from '../context/MonedaContext';
 
 // Estas pantallas aprovechan todo el ancho disponible
 const PANTALLAS_ANCHAS = ['/odontograma', '/citas'];
+const fichajeOpciones = [
+  { valor: 'ENTRADA', nombre: 'Entrada' },
+  { valor: 'INICIO_DESCANSO', nombre: 'Inicio de descanso' },
+  { valor: 'FIN_DESCANSO', nombre: 'Fin de descanso' },
+  { valor: 'SALIDA', nombre: 'Salida' },
+];
 
 export default function Layout({ children }) {
   const { moneda } = useMoneda();
@@ -44,6 +52,7 @@ export default function Layout({ children }) {
   const { user, logout, tienePermiso } = auth;
   const puedeFichar = tienePermiso('ASISTENCIA_FICHAR');
   const { isDark, toggleTheme } = useTheme();
+  const { nombreClinica } = useClinica();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cajaEstado, setCajaEstado] = useState(null);
@@ -51,6 +60,8 @@ export default function Layout({ children }) {
   const [fichajeTipo, setFichajeTipo] = useState('ENTRADA');
   const [fichajeObs, setFichajeObs] = useState('');
   const [fichajeSuccess, setFichajeSuccess] = useState('');
+  const [fichajeError, setFichajeError] = useState('');
+  const [fichajePermitidos, setFichajePermitidos] = useState(null);
 
   const refreshCaja = async () => {
     try {
@@ -67,45 +78,68 @@ export default function Layout({ children }) {
     return () => clearInterval(interval);
   }, [location.pathname]);
 
+  const cargarEstadoFichaje = async () => {
+    setFichajePermitidos(null);
+    try {
+      const estado = await api.getEstadoFichaje();
+      setFichajePermitidos(estado.permitidos);
+      setFichajeTipo(estado.permitidos[0]);
+    } catch (err) {
+      setFichajePermitidos([]);
+      setFichajeError(err.message || 'No se pudo consultar tu turno');
+    }
+  };
+
+  const abrirFichaje = () => {
+    setFichajeError('');
+    setFichajeSuccess('');
+    setFichajeModal(true);
+    cargarEstadoFichaje();
+  };
+
   const handleFichar = async (e) => {
     e.preventDefault();
+    setFichajeError('');
     try {
       await api.fichar(fichajeTipo, fichajeObs);
-      setFichajeSuccess(`¡Marcaje de ${fichajeTipo} registrado exitosamente!`);
+      window.dispatchEvent(new Event('fichaje-registrado'));
+      setFichajeSuccess(`¡Marcaje de ${fichajeOpciones.find((o) => o.valor === fichajeTipo)?.nombre} registrado!`);
       setTimeout(() => {
         setFichajeSuccess('');
         setFichajeModal(false);
         setFichajeObs('');
       }, 1500);
     } catch (err) {
-      alert(`Error al fichar: ${err.message}`);
+      // Pudo marcarse desde otra pantalla: se actualizan las opciones
+      setFichajeError(err.message || 'Error al registrar el marcaje');
+      cargarEstadoFichaje();
     }
   };
 
   const todasLasOpciones = [
     { path: '/', label: 'Panel Principal', icon: Activity, badge: null },
-    { path: '/pacientes', label: 'Pacientes & Ficha', icon: Users, badge: 'HU-03' },
-    { path: '/odontograma', label: 'Odontograma FDI & Planes', icon: Sparkles, badge: 'HU-04' },
-    { path: '/citas', label: 'Agenda & Sillón', icon: Calendar, badge: 'HU-05' },
-    { path: '/asistencia', label: 'Control Asistencia', icon: Clock, badge: 'HU-06' },
-    { path: '/evolucion', label: 'Evolución & Recetas', icon: ClipboardList, badge: 'HU-07' },
-    { path: '/radiografias', label: 'Visor Radiográfico', icon: Image, badge: 'HU-08' },
-    { path: '/protesis', label: 'Prótesis & Laboratorio', icon: Stethoscope, badge: 'HU-09' },
-    { path: '/caja', label: 'Caja Operativa Diaria', icon: Wallet, badge: 'HU-10' },
-    { path: '/cobranzas', label: 'Cobranzas & Pagos', icon: Banknote, badge: 'HU-11' },
-    { path: '/nomina', label: 'Nómina & Comisiones', icon: FileText, badge: 'HU-12' },
-    { path: '/auditoria', label: 'Auditoría Forense', icon: ShieldCheck, badge: 'HU-13' },
-    { path: '/reportes', label: 'Inteligencia de Negocio', icon: BarChart3, badge: 'HU-14' },
+    { path: '/pacientes', label: 'Pacientes & Ficha', icon: Users, badge: null },
+    { path: '/odontograma', label: 'Odontograma FDI & Planes', icon: Sparkles, badge: null },
+    { path: '/citas', label: 'Agenda & Sillón', icon: Calendar, badge: null },
+    { path: '/asistencia', label: 'Control Asistencia', icon: Clock, badge: null },
+    { path: '/evolucion', label: 'Evolución & Recetas', icon: ClipboardList, badge: null },
+    { path: '/radiografias', label: 'Visor Radiográfico', icon: Image, badge: null },
+    { path: '/protesis', label: 'Prótesis & Laboratorio', icon: Stethoscope, badge: null },
+    { path: '/caja', label: 'Caja Operativa Diaria', icon: Wallet, badge: null },
+    { path: '/cobranzas', label: 'Cobranzas & Pagos', icon: Banknote, badge: null },
+    { path: '/nomina', label: 'Nómina & Comisiones', icon: FileText, badge: null },
+    { path: '/auditoria', label: 'Auditoría Forense', icon: ShieldCheck, badge: null },
+    { path: '/reportes', label: 'Inteligencia de Negocio', icon: BarChart3, badge: null },
     { path: '/tratamientos', label: 'Catálogo de Tratamientos', icon: BookOpen, badge: 'Admin' },
     { path: '/sillones', label: 'Sillones', icon: Armchair, badge: 'Admin' },
     { path: '/configuracion', label: 'Configuración', icon: Settings, badge: 'Admin' },
-    { path: '/usuarios', label: 'Usuarios & Roles RBAC', icon: UserCog, badge: 'HU-01/02' },
+    { path: '/usuarios', label: 'Usuarios & Roles RBAC', icon: UserCog, badge: null },
   ];
   const menuItems = todasLasOpciones.filter((item) => puedeAcceder(item.path, auth));
 
   return (
     <div className="flex h-screen bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden font-sans">
-      {/* Daily Cash Register Gatekeeper Barrier (HU-10) */}
+      {/* Daily Cash Register Gatekeeper Barrier */}
       <CajaBloqueoBarrier cajaEstado={cajaEstado} onCajaUpdated={refreshCaja} />
 
       {/* Mobile Backdrop */}
@@ -124,12 +158,10 @@ export default function Layout({ children }) {
       >
         {/* Brand header */}
         <div className="p-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
-          <Link to="/" className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-primary-600/30 text-xl font-bold">
-              🦷
-            </div>
-            <div>
-              <h1 className="font-bold text-sm tracking-tight text-slate-900 dark:text-white">Clínica Gustavo</h1>
+          <Link to="/" className="flex items-center space-x-3 min-w-0">
+            <LogoClinica />
+            <div className="min-w-0">
+              <h1 title={nombreClinica} className="font-bold text-sm tracking-tight text-slate-900 dark:text-white truncate">{nombreClinica}</h1>
               <p className="text-[11px] text-primary-600 dark:text-primary-400 font-medium">Software Odontológico</p>
             </div>
           </Link>
@@ -156,8 +188,8 @@ export default function Layout({ children }) {
           </div>
           <button
             hidden={!puedeFichar}
-            onClick={() => setFichajeModal(true)}
-            title="Registrar Fichaje Laboral (HU-06)"
+            onClick={abrirFichaje}
+            title="Registrar marcaje de turno"
             className="p-1.5 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-300 border border-teal-500/30 hover:bg-teal-500/20 transition-colors"
           >
             <Clock className="w-4 h-4" />
@@ -225,9 +257,8 @@ export default function Layout({ children }) {
             </button>
             <div className="hidden sm:block">
               <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
-                {menuItems.find((m) => m.path === location.pathname)?.label || 'Clínica Dental Gustavo'}
+                {menuItems.find((m) => m.path === location.pathname)?.label || nombreClinica}
               </h2>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">PostgreSQL Backend · Verificado HU-01 a HU-14</p>
             </div>
           </div>
 
@@ -252,7 +283,7 @@ export default function Layout({ children }) {
               )}
             </button>
 
-            {/* Caja status pill (HU-10) */}
+            {/* Caja status pill */}
             <Link
               to="/caja"
               className={`flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
@@ -286,7 +317,7 @@ export default function Layout({ children }) {
             {/* Quick clock button */}
             <button
               hidden={!puedeFichar}
-              onClick={() => setFichajeModal(true)}
+              onClick={abrirFichaje}
               className={`${puedeFichar ? 'flex' : 'hidden'} items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold transition`}
             >
               <Clock className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
@@ -301,14 +332,14 @@ export default function Layout({ children }) {
         </main>
       </div>
 
-      {/* Fichaje Modal (HU-06) */}
+      {/* Fichaje Modal */}
       {fichajeModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-700">
             <div className="flex items-center justify-between pb-4 border-b border-slate-800">
               <div className="flex items-center space-x-2">
                 <Clock className="w-5 h-5 text-primary-400" />
-                <h3 className="text-base font-bold text-white">Fichaje Horario Rápido (HU-06)</h3>
+                <h3 className="text-base font-bold text-white">Marcaje Rápido de Turno</h3>
               </div>
               <button
                 onClick={() => setFichajeModal(false)}
@@ -325,17 +356,25 @@ export default function Layout({ children }) {
               </div>
             ) : (
               <form onSubmit={handleFichar} className="mt-4 space-y-4">
+                {fichajeError && (
+                  <div role="alert" className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    {fichajeError}
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">Tipo de Evento</label>
                   <select
+                    aria-label="Tipo de evento"
                     value={fichajeTipo}
                     onChange={(e) => setFichajeTipo(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs font-semibold"
                   >
-                    <option value="ENTRADA">Inicio de Jornada (ENTRADA)</option>
-                    <option value="INICIO_DESCANSO">Salida a Colación / Descanso</option>
-                    <option value="FIN_DESCANSO">Retorno de Colación / Descanso</option>
-                    <option value="SALIDA">Fin de Jornada (SALIDA)</option>
+                    {fichajeOpciones.map((opcion) => (
+                      <option key={opcion.valor} value={opcion.valor} disabled={!fichajePermitidos?.includes(opcion.valor)}>
+                        {opcion.nombre}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -360,7 +399,8 @@ export default function Layout({ children }) {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-primary-600/30 transition"
+                    disabled={!fichajePermitidos?.includes(fichajeTipo)}
+                    className="px-4 py-2 bg-primary-600 hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-xs font-semibold shadow-lg shadow-primary-600/30 transition"
                   >
                     Registrar Marcaje
                   </button>

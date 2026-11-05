@@ -883,7 +883,7 @@ export default function CitasAgendaView() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Calendario de Citas & Matriz de Sillones</h1>
           <p className="text-slate-600 dark:text-slate-400 text-sm">
-            Control de disponibilidad horaria unificada y flujo de atención por boxes dentales (HU-05)
+            Control de disponibilidad horaria unificada y flujo de atención por boxes dentales
           </p>
         </div>
 

@@ -15,8 +15,31 @@ import {
   Shield,
 } from 'lucide-react';
 
+const BOTONES_MARCAJE = [
+  { tipo: 'ENTRADA', texto: 'Entrada', Icono: LogIn, clase: 'bg-emerald-600 enabled:hover:bg-emerald-500 shadow-emerald-600/20' },
+  { tipo: 'INICIO_DESCANSO', texto: 'Descanso', Icono: Coffee, clase: 'bg-amber-600 enabled:hover:bg-amber-500 shadow-amber-600/20' },
+  { tipo: 'FIN_DESCANSO', texto: 'Fin Descanso', Icono: Coffee, clase: 'bg-sky-600 enabled:hover:bg-sky-500 shadow-sky-600/20' },
+  { tipo: 'SALIDA', texto: 'Salida', Icono: LogOut, clase: 'bg-rose-600 enabled:hover:bg-rose-500 shadow-rose-600/20' },
+];
+const ESTADOS_TURNO = {
+  SIN_TURNO: { texto: 'Fuera de turno', clase: 'bg-slate-500/10 border-slate-500/30 text-slate-600 dark:text-slate-300' },
+  EN_TURNO: { texto: 'En turno', clase: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400' },
+  EN_DESCANSO: { texto: 'En descanso', clase: 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400' },
+  TURNO_CERRADO: { texto: 'Turno cerrado', clase: 'bg-slate-500/10 border-slate-500/30 text-slate-600 dark:text-slate-300' },
+};
+const NOMBRES_EVENTO = { ENTRADA: 'Entrada', INICIO_DESCANSO: 'Inicio de descanso', FIN_DESCANSO: 'Fin de descanso', SALIDA: 'Salida' };
+
+function motivoDeBloqueo(tipo, estado) {
+  if (tipo === 'ENTRADA') return estado === 'EN_DESCANSO' ? 'Estás en descanso' : 'Ya tienes un turno abierto';
+  if (estado === 'SIN_TURNO' || estado === 'TURNO_CERRADO') return 'Primero marca tu entrada';
+  if (estado === 'EN_DESCANSO') return 'Primero marca el fin del descanso';
+  return 'Todavía no iniciaste un descanso';
+}
+
 export default function AsistenciaFichajeView() {
   const { user, tienePermiso } = useAuth();
+  const puedeFichar = tienePermiso('ASISTENCIA_FICHAR');
+  const [turno, setTurno] = useState(null);
   const [asistencias, setAsistencias] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,8 +75,27 @@ export default function AsistenciaFichajeView() {
     }
   };
 
+  const cargarTurno = async () => {
+    try {
+      setTurno(await api.getEstadoFichaje());
+    } catch (err) {
+      setError(err.message || 'No se pudo consultar tu turno');
+    }
+  };
+
   useEffect(() => {
     loadData();
+  }, [selectedUsuarioId, fechaFiltro]);
+
+  useEffect(() => {
+    cargarTurno();
+    // También se puede marcar desde el acceso rápido de la barra superior
+    const actualizar = () => {
+      cargarTurno();
+      loadData();
+    };
+    window.addEventListener('fichaje-registrado', actualizar);
+    return () => window.removeEventListener('fichaje-registrado', actualizar);
   }, [selectedUsuarioId, fechaFiltro]);
 
   const handleFichar = async (tipo_evento) => {
@@ -61,13 +103,15 @@ export default function AsistenciaFichajeView() {
     setError('');
     try {
       await api.fichar(tipo_evento, observacion);
-      setSuccess(`Marcaje de ${tipo_evento} registrado correctamente`);
+      setSuccess(`Marcaje de ${NOMBRES_EVENTO[tipo_evento]} registrado correctamente`);
       setObservacion('');
       setTimeout(() => setSuccess(''), 3000);
       loadData();
     } catch (err) {
       setError(err.message || 'Error al registrar marcaje');
     } finally {
+      // También tras un rechazo: pudo marcarse desde otra pantalla
+      cargarTurno();
       setSubmitting(false);
     }
   };
@@ -79,7 +123,7 @@ export default function AsistenciaFichajeView() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Control de Asistencia & Fichaje Horario</h1>
           <p className="text-slate-600 dark:text-slate-400 text-sm">
-            Registro de jornada de doctores y personal clínico con trazabilidad de IP (HU-06)
+            Registro de jornada de doctores y personal clínico con trazabilidad de IP
           </p>
         </div>
       </div>
@@ -103,14 +147,26 @@ export default function AsistenciaFichajeView() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <span className="text-xs font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Clock className="w-4 h-4" /> Marcador Biométrico / Digital
+              <Clock className="w-4 h-4" /> Marcador Digital
             </span>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-1">
               {user?.nombre_completo || user?.username}
             </h2>
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              Presiona el botón correspondiente para registrar el inicio, descanso o fin de tu turno laboral.
+              Solo se habilitan los marcajes que corresponden a tu turno.
             </p>
+            {turno && (
+              <span data-testid="estado-turno" className={`inline-block mt-2 px-2.5 py-1 rounded-full text-[11px] font-bold border ${ESTADOS_TURNO[turno.estado].clase}`}>
+                {ESTADOS_TURNO[turno.estado].texto}
+                {turno.desde && ` · ${turno.estado === 'TURNO_CERRADO' ? 'a las' : 'desde las'} ${new Date(turno.desde).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+              </span>
+            )}
+            {turno?.jornada_sin_salida && (
+              <p role="status" className="mt-2 text-xs text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                Tu jornada del {new Date(`${turno.jornada_sin_salida}T00:00:00`).toLocaleDateString()} quedó sin salida. Avisa al administrador.
+              </p>
+            )}
           </div>
 
           <div className="w-full md:w-auto">
@@ -122,34 +178,21 @@ export default function AsistenciaFichajeView() {
               className="w-full md:w-64 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs mb-3 focus:outline-none focus:border-primary-500"
             />
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <button
-                disabled={submitting}
-                onClick={() => handleFichar('ENTRADA')}
-                className="px-3 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20"
-              >
-                <LogIn className="w-4 h-4" /> Entrada
-              </button>
-              <button
-                disabled={submitting}
-                onClick={() => handleFichar('INICIO_DESCANSO')}
-                className="px-3 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-lg shadow-amber-600/20"
-              >
-                <Coffee className="w-4 h-4" /> Descanso
-              </button>
-              <button
-                disabled={submitting}
-                onClick={() => handleFichar('FIN_DESCANSO')}
-                className="px-3 py-2.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-lg shadow-sky-600/20"
-              >
-                <Coffee className="w-4 h-4" /> Fin Descanso
-              </button>
-              <button
-                disabled={submitting}
-                onClick={() => handleFichar('SALIDA')}
-                className="px-3 py-2.5 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-lg shadow-rose-600/20"
-              >
-                <LogOut className="w-4 h-4" /> Salida
-              </button>
+              {BOTONES_MARCAJE.map(({ tipo, texto, Icono, clase }) => {
+                const permitido = puedeFichar && Boolean(turno?.permitidos.includes(tipo));
+                return (
+                  <button
+                    key={tipo}
+                    type="button"
+                    disabled={submitting || !permitido}
+                    title={!permitido && turno ? motivoDeBloqueo(tipo, turno.estado) : undefined}
+                    onClick={() => handleFichar(tipo)}
+                    className={`${clase} px-3 py-2.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-lg`}
+                  >
+                    <Icono className="w-4 h-4" /> {texto}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -217,8 +260,8 @@ export default function AsistenciaFichajeView() {
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-700/40 text-slate-700 dark:text-slate-300">
                 {asistencias.map((a) => {
-                  const empNombre = a.usuario?.nombre_completo || a.usuario?.username || 'Personal';
-                  const horaStr = a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : '--:--';
+                  const empNombre = a.empleado_nombre || 'Personal';
+                  const horaStr = a.fecha_hora ? new Date(a.fecha_hora).toLocaleTimeString() : '--:--';
 
                   const badgeClass =
                     a.tipo_evento === 'ENTRADA'
@@ -231,13 +274,13 @@ export default function AsistenciaFichajeView() {
                     <tr key={a.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition">
                       <td className="py-3 px-4 font-mono font-bold text-primary-600 dark:text-primary-400">{horaStr}</td>
                       <td className="py-3 px-4 font-medium text-slate-900 dark:text-white">{empNombre}</td>
-                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{a.usuario?.rol?.nombre || 'General'}</td>
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{a.empleado_rol || '-'}</td>
                       <td className="py-3 px-4 text-center">
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${badgeClass}`}>
-                          {a.tipo_evento}
+                          {NOMBRES_EVENTO[a.tipo_evento] || a.tipo_evento}
                         </span>
                       </td>
-                      <td className="py-3 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400">{a.ip_address || '127.0.0.1'}</td>
+                      <td className="py-3 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400">{a.ip_registro || '-'}</td>
                       <td className="py-3 px-4 text-slate-500 dark:text-slate-400 italic">{a.observaciones || '-'}</td>
                     </tr>
                   );
