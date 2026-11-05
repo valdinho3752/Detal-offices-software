@@ -1,0 +1,26 @@
+# Sirve la web y la API por HTTPS en una sola dirección.
+# Antes de usarlo, define CLINICA_DIRECCION y CLINICA_RAIZ_WEB. Consulta docs/PRODUCCION.md.
+{$CLINICA_DIRECCION} {
+	# Con un dominio público, Caddy obtiene el certificado solo. En una red interna, deja esta línea:
+	# tls internal
+
+	encode gzip
+
+	handle /api/* {
+		reverse_proxy {$CLINICA_API:127.0.0.1:8000}
+	}
+
+	handle {
+		root * {$CLINICA_RAIZ_WEB}
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+}

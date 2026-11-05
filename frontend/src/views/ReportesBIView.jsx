@@ -2,16 +2,15 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Activity, AlertTriangle, BarChart3, DollarSign, TrendingUp, Users } from 'lucide-react';
 import { api } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
+import { aFechaLocal, aPeriodoApi, inicioDelDia } from '../utils/fechas';
 
 const moneda = (valor) => `$${Number(valor || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}`;
 const TARJETA = 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-5 space-y-4 shadow-sm';
 const CELDA = 'py-2 px-3';
 const ACTUALIZANDO = 'transition-opacity opacity-50';
 
-const soloDia = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const sumarDias = (d, dias) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + dias);
 const lunesDe = (d) => sumarDias(d, -((d.getDay() + 6) % 7));
-const aTextoFecha = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const fechaVisible = (d) => d.toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' });
 
 // Los periodos en curso terminan hoy, para no contar como pendientes las citas futuras
@@ -27,15 +26,8 @@ const PERIODOS = [
 ];
 
 function rangoDePeriodo(id) {
-  const [desde, hasta] = PERIODOS.find((p) => p.id === id).rango(soloDia(new Date()));
+  const [desde, hasta] = PERIODOS.find((p) => p.id === id).rango(inicioDelDia(new Date()));
   return { id, desde, hasta };
-}
-
-// El navegador convierte cada límite de su día local a UTC, así el corte coincide con la hora de la clínica
-function aPeriodoApi({ desde, hasta }) {
-  if (!desde) return {};
-  const finDelDia = new Date(hasta.getFullYear(), hasta.getMonth(), hasta.getDate(), 23, 59, 59, 999);
-  return { fecha_desde: desde.toISOString(), fecha_hasta: finDelDia.toISOString() };
 }
 
 function textoDelRango({ desde, hasta }) {
@@ -50,10 +42,10 @@ function SelectorPeriodo({ filtro, onCambiar }) {
   const invertido = Boolean(textos.desde && textos.hasta && textos.desde > textos.hasta);
 
   const abrirPersonalizado = () => {
-    const hoy = aTextoFecha(soloDia(new Date()));
+    const hoy = aFechaLocal();
     setTextos({
-      desde: filtro.desde ? aTextoFecha(filtro.desde) : hoy,
-      hasta: filtro.hasta ? aTextoFecha(filtro.hasta) : hoy,
+      desde: filtro.desde ? aFechaLocal(filtro.desde) : hoy,
+      hasta: filtro.hasta ? aFechaLocal(filtro.hasta) : hoy,
     });
     setPersonalizando(true);
   };
@@ -146,7 +138,7 @@ export default function ReportesBIView() {
   const { isDark } = useTheme();
   const tema = isDark ? 'oscuro' : 'claro';
   const [filtro, setFiltro] = useState(() => rangoDePeriodo('mes'));
-  const periodo = useMemo(() => aPeriodoApi(filtro), [filtro]);
+  const periodo = useMemo(() => (filtro.desde ? aPeriodoApi(filtro.desde, filtro.hasta) : {}), [filtro]);
   const [demanda, setDemanda] = useState([]);
   const [productividad, setProductividad] = useState([]);
   const [finanzas, setFinanzas] = useState(null);

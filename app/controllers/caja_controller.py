@@ -17,6 +17,8 @@ from app.schemas.caja import (
     PagoAnular, PagoCreate, PagoResponse, EgresoCajaCreate, EgresoCajaResponse
 )
 
+from app.services.gaveta import exigir_efectivo
+
 router = APIRouter(prefix="/caja", tags=["Caja Diaria y Finanzas"])
 
 @router.get("/estado")
@@ -266,12 +268,13 @@ def registrar_egreso_caja(
     """
     Registra salida física de efectivo: adelanto de sueldo, comisiones, compra de insumos urgentes o pago a laboratorio.
     """
-    caja = db.query(CajaSesion).filter(CajaSesion.estado == EstadoCajaEnum.ABIERTA).first()
+    caja = db.query(CajaSesion).filter(CajaSesion.estado == EstadoCajaEnum.ABIERTA).with_for_update().first()
     if not caja:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="No se puede registrar un egreso de efectivo si no hay una caja abierta"
         )
+    exigir_efectivo(caja, datos.monto, "retirar")
 
     nuevo_egreso = EgresoCaja(
         **datos.model_dump(),

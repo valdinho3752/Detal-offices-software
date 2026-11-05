@@ -10,6 +10,8 @@ engine = create_engine(
     pool_size=10,
     max_overflow=20,
     echo=settings.DEBUG,
+    # La fecha de hoy y las horas de las citas deben seguir el reloj de la clínica, no el del servidor
+    connect_args={"options": f"-c timezone={settings.CLINICA_TIMEZONE}"} if settings.CLINICA_TIMEZONE else {},
 )
 
 # Fábrica de sesiones

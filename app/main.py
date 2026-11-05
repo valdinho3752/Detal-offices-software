@@ -1,6 +1,10 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
+from app.core.produccion import exigir_configuracion_segura, exigir_contrasena_admin_propia
+from app.database import SessionLocal
 
 # Importación de Controladores (Rutas MVC)
 from app.controllers.auth_controller import router as auth_router
@@ -20,22 +24,40 @@ from app.controllers.empleados_controller import router as empleados_router
 from app.controllers.auditoria_controller import router as auditoria_router
 from app.controllers.reportes_controller import router as reportes_router
 
+if settings.es_produccion:
+    exigir_configuracion_segura(settings)
+
+
+@asynccontextmanager
+async def ciclo_de_vida(_app: FastAPI):
+    if settings.es_produccion:
+        db = SessionLocal()
+        try:
+            exigir_contrasena_admin_propia(db)
+        finally:
+            db.close()
+    yield
+
+
 app = FastAPI(
     title="API Clínica Dental Gustavo",
     description="Sistema completo de gestión dental: Pacientes, Citas, Odontograma, Finanzas, Nómina y Seguridad",
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc"
+    docs_url=None if settings.es_produccion else "/docs",
+    redoc_url=None if settings.es_produccion else "/redoc",
+    openapi_url=None if settings.es_produccion else "/openapi.json",
+    lifespan=ciclo_de_vida,
 )
 
 # Configuración de CORS para el Frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+if settings.origenes_cors:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.origenes_cors,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # Registro centralizado de controladores con prefijo /api/v1
 api_prefix = "/api/v1"

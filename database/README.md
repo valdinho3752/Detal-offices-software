@@ -37,3 +37,6 @@ docker exec -i clinica-postgres psql -U postgres -d clinica_dental < database/sc
 ```bash
 psql -U postgres -d clinica_dental -f database/schema.sql
 ```
+
+### Producción
+Usa `scripts/crear_base_limpia.py` para crear la base y `database/migrar.py` para actualizarla. Consulta `docs/PRODUCCION.md`.

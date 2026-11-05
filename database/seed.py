@@ -4,7 +4,18 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import SessionLocal
 from app.models import Rol, RolCodigoEnum, Usuario, Permiso, RolPermiso, Doctor, Sillon
+from app.config import settings
 from app.core.security import hash_password
+
+
+def _contrasena_admin_inicial() -> str:
+    contrasena = os.getenv("ADMIN_PASSWORD")
+    if contrasena:
+        return contrasena
+    if settings.es_produccion:
+        raise RuntimeError("Define ADMIN_PASSWORD para crear el usuario administrador en producción")
+    return "admin123"  # Solo en desarrollo; producción no arranca con esta contraseña
+
 
 def seed_database():
     db = SessionLocal()
@@ -157,7 +168,7 @@ def seed_database():
             admin_user = Usuario(
                 rol_id=roles_dict[RolCodigoEnum.ADMIN].id,
                 username="admin",
-                password_hash=hash_password("admin123"),
+                password_hash=hash_password(_contrasena_admin_inicial()),
                 nombre="Administrador",
                 apellido="Principal",
                 email="admin@clinicadental.com",
@@ -166,7 +177,7 @@ def seed_database():
             )
             db.add(admin_user)
             db.commit()
-            print("-> Usuario Administrador creado: admin / admin123")
+            print("-> Usuario administrador creado: admin")
         else:
             print("-> Usuario Administrador ya existe.")
 
@@ -195,9 +206,9 @@ def seed_database():
             db.commit()
 
         print("¡Seed de Roles y Permisos completado con total éxito!")
-    except Exception as e:
+    except Exception:
         db.rollback()
-        print(f"Error en el seed: {e}")
+        raise
     finally:
         db.close()
 

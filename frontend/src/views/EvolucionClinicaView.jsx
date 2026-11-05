@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ErrorModal from '../components/ErrorModal';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
+import { aFechaHoraLocal } from '../utils/fechas';
 import { useAuth } from '../context/AuthContext';
 import {
   FileText,
@@ -46,7 +47,7 @@ export default function EvolucionClinicaView() {
   // Form nueva visita de evolución
   const [showModal, setShowModal] = useState(false);
   const [formVisita, setFormVisita] = useState({
-    fecha_hora: new Date().toISOString().slice(0, 16),
+    fecha_hora: aFechaHoraLocal(),
     cita_id: '',
     motivo_consulta: '',
     observaciones_clinicas: '',
@@ -144,7 +145,7 @@ export default function EvolucionClinicaView() {
       setSuccess('Evolución clínica, tratamientos sincronizados y receta registrados con éxito');
       setShowModal(false);
       setFormVisita({
-        fecha_hora: new Date().toISOString().slice(0, 16),
+        fecha_hora: aFechaHoraLocal(),
         cita_id: '',
         motivo_consulta: '',
         observaciones_clinicas: '',
@@ -260,7 +261,7 @@ export default function EvolucionClinicaView() {
             style={tienePermiso('HISTORIA_CLINICA_CREATE') ? undefined : { display: 'none' }}
             onClick={() => {
               setFormVisita({
-                fecha_hora: new Date().toISOString().slice(0, 16),
+                fecha_hora: aFechaHoraLocal(),
                 cita_id: '',
                 motivo_consulta: '',
                 observaciones_clinicas: '',
@@ -376,7 +377,7 @@ export default function EvolucionClinicaView() {
                       <button
                         onClick={() => {
                           setFormVisita({
-                            fecha_hora: new Date().toISOString().slice(0, 16),
+                            fecha_hora: aFechaHoraLocal(),
                             cita_id: '',
                             motivo_consulta: `Atención: ${item.tratamiento?.nombre} (Pieza ${item.pieza_fdi || 'General'})`,
                             observaciones_clinicas: '',

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { aFechaLocal, periodoDelDia } from '../utils/fechas';
 import { useAuth } from '../context/AuthContext';
 import {
   Clock,
@@ -24,7 +25,7 @@ export default function AsistenciaFichajeView() {
 
   // Filtros de supervisión
   const [selectedUsuarioId, setSelectedUsuarioId] = useState('');
-  const [fechaFiltro, setFechaFiltro] = useState(new Date().toISOString().split('T')[0]);
+  const [fechaFiltro, setFechaFiltro] = useState(aFechaLocal());
   const [observacion, setObservacion] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -32,11 +33,9 @@ export default function AsistenciaFichajeView() {
     setLoading(true);
     setError('');
     try {
-      let query = '';
-      const params = [];
-      if (selectedUsuarioId) params.push(`usuario_id=${selectedUsuarioId}`);
-      if (fechaFiltro) params.push(`fecha=${fechaFiltro}`);
-      if (params.length > 0) query = `?${params.join('&')}`;
+      const params = new URLSearchParams(fechaFiltro ? periodoDelDia(fechaFiltro) : {});
+      if (selectedUsuarioId) params.set('usuario_id', selectedUsuarioId);
+      const query = params.toString() ? `?${params}` : '';
 
       // Sin permiso para ver a todo el personal, cada empleado consulta solo sus fichajes
       const [asistRes, userRes] = await Promise.all([

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ErrorModal from '../components/ErrorModal';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
+import { aFechaLocal } from '../utils/fechas';
 import {
   Camera,
   User,
@@ -52,7 +53,7 @@ export default function VisorRadiografiasView() {
     pieza_fdi: '',
     url_archivo: '',
     informe_diagnostico: '',
-    fecha_toma: new Date().toISOString().split('T')[0],
+    fecha_toma: aFechaLocal(),
   });
 
   useEffect(() => {
@@ -116,7 +117,7 @@ export default function VisorRadiografiasView() {
         pieza_fdi: '',
         url_archivo: '',
         informe_diagnostico: '',
-        fecha_toma: new Date().toISOString().split('T')[0],
+        fecha_toma: aFechaLocal(),
       });
       setTimeout(() => setSuccess(''), 3000);
       loadRadiografias();

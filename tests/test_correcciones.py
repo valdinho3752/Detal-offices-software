@@ -274,6 +274,20 @@ def test_caja():
 
 def test_nomina():
     doctor = _doctor()
+    # La comisión no puede superar el saldo: el doctor necesita porcentaje y un cobro a su nombre
+    _asegurar_caja(abierta=True)
+    contratos = client.get(f"{API}/personal/contratos", headers=H).json()
+    contrato = next((c for c in contratos if c["usuario_id"] == doctor["usuario_id"]), None)
+    if contrato:
+        client.put(f"{API}/personal/contratos/{contrato['id']}", json={"porcentaje_comision": 50}, headers=H)
+    else:
+        client.post(f"{API}/personal/contratos", json={"usuario_id": doctor["usuario_id"], "porcentaje_comision": 50}, headers=H)
+    cobro = client.post(f"{API}/caja/pagos", json={
+        "paciente_id": _crear_paciente(), "monto": 100, "metodo_pago": "TRANSFERENCIA", "es_cobro_directo": True,
+        "observaciones": "Consulta", "doctor_comision_id": doctor["id"],
+    }, headers=H)
+    assert cobro.status_code == 201, cobro.text
+
     pago = {
         "usuario_empleado_id": doctor["usuario_id"],
         "tipo_pago": "COMISION_TRATAMIENTOS",

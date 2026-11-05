@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
+import { aFechaLocal, periodoMesActual } from '../utils/fechas';
 import { useAuth } from '../context/AuthContext';
 import { puedeAcceder, puedeModificarCita } from '../config/accesos';
 import {
@@ -36,7 +37,7 @@ export default function DashboardView() {
   const [pacientesCount, setPacientesCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const hoyStr = new Date().toISOString().split('T')[0];
+  const hoyStr = aFechaLocal();
 
   const loadData = async () => {
     setLoading(true);
@@ -44,7 +45,7 @@ export default function DashboardView() {
       const [cajaRes, citasRes, finanzasRes, pacientesRes] = await Promise.allSettled([
         api.getEstadoCaja(),
         verCitas ? api.getCitas(`?fecha_inicio=${hoyStr}&fecha_fin=${hoyStr}`) : [],
-        verFinanzas ? api.getReporteFinanciero() : null,
+        verFinanzas ? api.getReporteFinanciero(periodoMesActual()) : null,
         tienePermiso('PACIENTES_READ') ? api.getPacientes('', 0, 1) : [],
       ]);
 
@@ -169,7 +170,7 @@ export default function DashboardView() {
               ${Number(resumenFinanzas?.total_ingresos || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
             </div>
             <div className="text-[11px] text-emerald-400 mt-0.5">
-              Margen: ${Number(resumenFinanzas?.balance_neto_operativo || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+              Margen del mes: ${Number(resumenFinanzas?.balance_neto_operativo || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
             </div>
           </div>
         </div>}
@@ -180,7 +181,7 @@ export default function DashboardView() {
             <Clock className="w-6 h-6" />
           </div>
           <div>
-            <div className="text-xs font-medium text-slate-400">Egresos / Gastos (HU-10)</div>
+            <div className="text-xs font-medium text-slate-400">Egresos del Mes (HU-10)</div>
             <div className="text-xl font-bold text-white mt-0.5">
               ${Number(resumenFinanzas?.total_egresos || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
             </div>

@@ -10,23 +10,15 @@ from app.models import (
     AuditoriaAccionEnum, AuditoriaLog, CajaSesion, CategoriaEgresoCajaEnum, EgresoCaja,
     EstadoCajaEnum, EstadoCobroCitaEnum, MetodoPagoEnum, Pago,
 )
-
-
-def _efectivo_en_gaveta(caja: CajaSesion) -> Decimal:
-    return caja.monto_inicial_fondo + caja.total_ingresos_efectivo - caja.total_egresos_efectivo
+from app.services.gaveta import efectivo_en_gaveta, exigir_efectivo
 
 
 def _actualizar_esperado(caja: CajaSesion) -> None:
-    caja.saldo_efectivo_esperado = _efectivo_en_gaveta(caja)
+    caja.saldo_efectivo_esperado = efectivo_en_gaveta(caja)
 
 
 def _validar_efectivo(caja: CajaSesion, monto: Decimal) -> None:
-    disponible = _efectivo_en_gaveta(caja)
-    if monto > disponible:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"No hay efectivo suficiente en la gaveta para devolver ${monto:.2f}: quedan ${disponible:.2f}"
-        )
+    exigir_efectivo(caja, monto, "devolver")
 
 
 def _revertir_caja(pago: Pago, usuario_id: UUID, db: Session) -> None:

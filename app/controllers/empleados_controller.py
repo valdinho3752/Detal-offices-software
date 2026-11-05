@@ -1,20 +1,89 @@
 from typing import List, Optional
 from uuid import UUID
-from datetime import datetime
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 from app.database import get_db
 from app.models import (
-    PagoEmpleado, EgresoCaja, CajaSesion, ContratoRemuneracion,
-    Pago, Doctor, Usuario, RolCodigoEnum, CategoriaEgresoCajaEnum, EstadoCajaEnum,
+    PagoEmpleado, EgresoCaja, CajaSesion,
+    Doctor, Usuario, CategoriaEgresoCajaEnum, EstadoCajaEnum,
     TipoPagoEmpleadoEnum, AuditoriaLog, AuditoriaAccionEnum
 )
 from app.core.dependencies import get_current_user, require_permission, tiene_permiso
 from app.schemas.pago_empleado import PagoEmpleadoCreate, PagoEmpleadoResponse
+from app.services.gaveta import exigir_efectivo
+from app.services.nomina import TIPOS_SUELDO, Liquidacion, calcular_liquidacion
 
 router = APIRouter(prefix="/empleados", tags=["Nómina, Sueldos y Comisiones de Empleados"])
+
+def _resumen_personal(usuario: Usuario, liquidacion: Liquidacion) -> dict:
+    doctor = usuario.doctor_perfil
+    contrato = liquidacion.contrato
+    return {
+        "usuario_id": str(usuario.id),
+        "nombre_completo": f"{usuario.nombre} {usuario.apellido}",
+        "rol": usuario.rol.nombre if usuario.rol else "",
+        "doctor_id": str(doctor.id) if doctor else None,
+        "especialidad": doctor.especialidad if doctor else None,
+        "numero_colegiatura": doctor.numero_colegiatura if doctor else None,
+        "contrato": {
+            "id": str(contrato.id),
+            "tipo_remuneracion": contrato.tipo_remuneracion.value,
+            "salario_base": float(contrato.salario_base),
+            "porcentaje_comision": float(contrato.porcentaje_comision),
+            "valor_hora": float(contrato.valor_hora),
+        } if contrato else None,
+    }
+
+def _resumen_liquidacion(liquidacion: Liquidacion) -> dict:
+    return {
+        "salario_base": float(liquidacion.salario_base),
+        "porcentaje_pactado": float(liquidacion.porcentaje_comision),
+        "total_cobrado_por_sus_tratamientos": float(liquidacion.total_cobrado),
+        "comision_bruta_generada": float(liquidacion.comision_bruta),
+        "comisiones_ya_liquidadas": float(liquidacion.comisiones_liquidadas),
+        "adelantos_entregados": float(liquidacion.adelantos_entregados),
+        "adelantos_descontados_en_sueldo": float(liquidacion.adelantos_descontados_en_sueldo),
+        "total_anticipos": float(liquidacion.adelantos_pendientes),
+        "saldo_comision_por_pagar": float(liquidacion.saldo_comision),
+    }
+
+def _validar_montos_con_saldo(datos: PagoEmpleadoCreate, liquidacion: Liquidacion) -> None:
+    if datos.tipo_pago == TipoPagoEmpleadoEnum.COMISION_TRATAMIENTOS and datos.monto_neto_pagado > liquidacion.saldo_comision:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"La comisión no puede superar el saldo por pagar de ${max(liquidacion.saldo_comision, Decimal('0')):.2f}"
+        )
+    if datos.deducciones_descuentos > liquidacion.adelantos_pendientes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No se puede descontar más que los adelantos pendientes de ${liquidacion.adelantos_pendientes:.2f}"
+        )
+
+@router.get("/personal")
+def listar_personal(
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Personal activo y su contrato. Sin permiso de consulta general, solo los datos propios."""
+    if tiene_permiso(current_user, "EMPLEADOS_READ", db):
+        usuarios = db.query(Usuario).filter(Usuario.activo.is_(True)).order_by(Usuario.nombre, Usuario.apellido).all()
+    else:
+        usuarios = [current_user]
+    return [_resumen_personal(u, calcular_liquidacion(u, db)) for u in usuarios]
+
+@router.get("/liquidacion/{usuario_id}")
+def obtener_liquidacion(
+    usuario_id: UUID,
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if usuario_id != current_user.id and not tiene_permiso(current_user, "EMPLEADOS_READ", db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo puedes consultar tu propia liquidación")
+    usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Empleado no encontrado")
+    return _resumen_liquidacion(calcular_liquidacion(usuario, db))
 
 @router.get("/pagos", response_model=List[PagoEmpleadoResponse])
 def listar_pagos_empleados(
@@ -40,19 +109,31 @@ def registrar_pago_empleado(
     Registra pago de sueldo, adelanto o comisión.
     Si se paga en efectivo desde caja, genera el egreso físico automático en la sesión de caja abierta.
     """
+    # El bloqueo evita que dos pagos simultáneos superen juntos el saldo disponible
+    empleado = db.query(Usuario).filter(Usuario.id == datos.usuario_empleado_id).with_for_update(of=Usuario).first()
+    if not empleado:
+        raise HTTPException(status_code=404, detail="Empleado no encontrado")
+
+    entrega_efectivo = datos.metodo_pago == "EFECTIVO_CAJA" and datos.monto_neto_pagado > 0
     caja = None
-    if datos.metodo_pago == "EFECTIVO_CAJA":
-        caja = db.query(CajaSesion).filter(CajaSesion.estado == EstadoCajaEnum.ABIERTA).first()
+    if entrega_efectivo:
+        caja = db.query(CajaSesion).filter(CajaSesion.estado == EstadoCajaEnum.ABIERTA).with_for_update().first()
         if not caja:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="No se puede pagar en efectivo de caja si no hay una caja abierta"
             )
+        exigir_efectivo(caja, datos.monto_neto_pagado, "pagar")
 
-    pago = PagoEmpleado(
-        **datos.model_dump(),
-        usuario_autoriza_id=current_user.id
-    )
+    _validar_montos_con_saldo(datos, calcular_liquidacion(empleado, db))
+
+    valores = datos.model_dump()
+    if datos.tipo_pago == TipoPagoEmpleadoEnum.COMISION_TRATAMIENTOS:
+        valores["monto_comisiones"] = datos.monto_neto_pagado
+    if datos.tipo_pago in TIPOS_SUELDO and datos.monto_base == 0:
+        valores["monto_base"] = datos.monto_neto_pagado + datos.deducciones_descuentos
+
+    pago = PagoEmpleado(**valores, usuario_autoriza_id=current_user.id)
     db.add(pago)
     db.flush()
 
@@ -106,38 +187,8 @@ def calcular_comisiones_doctor(
             detail="Solo puedes consultar tus propias comisiones"
         )
 
-    # Contrato del doctor
-    contrato = db.query(ContratoRemuneracion).filter(ContratoRemuneracion.usuario_id == doctor.usuario_id).first()
-    porcentaje = float(contrato.porcentaje_comision) if contrato else 0.0
-
-    # Total recaudado por tratamientos asignados a este doctor
-    total_cobrado = db.query(func.coalesce(func.sum(Pago.monto), 0)).filter(
-        Pago.doctor_comision_id == doctor.id,
-        Pago.anulado.is_(False),
-    ).scalar()
-
-    comision_generada = float(total_cobrado) * (porcentaje / 100.0)
-
-    # Total ya pagado al doctor en comisiones
-    comisiones_ya_pagadas = db.query(func.coalesce(func.sum(PagoEmpleado.monto_comisiones), 0)).filter(
-        PagoEmpleado.usuario_empleado_id == doctor.usuario_id
-    ).scalar()
-
-    # Los anticipos ya entregados al doctor se descuentan de lo que falta por pagarle
-    anticipos = db.query(func.coalesce(func.sum(PagoEmpleado.monto_neto_pagado), 0)).filter(
-        PagoEmpleado.usuario_empleado_id == doctor.usuario_id,
-        PagoEmpleado.tipo_pago == TipoPagoEmpleadoEnum.ADELANTO,
-    ).scalar()
-
-    saldo_comision_pendiente = comision_generada - float(comisiones_ya_pagadas) - float(anticipos)
-
     return {
         "doctor_id": str(doctor.id),
         "doctor": f"{doctor.usuario.nombre} {doctor.usuario.apellido}",
-        "porcentaje_pactado": porcentaje,
-        "total_cobrado_por_sus_tratamientos": float(total_cobrado),
-        "comision_bruta_generada": comision_generada,
-        "comisiones_ya_liquidadas": float(comisiones_ya_pagadas),
-        "total_anticipos": float(anticipos),
-        "saldo_comision_por_pagar": saldo_comision_pendiente
+        **_resumen_liquidacion(calcular_liquidacion(doctor.usuario, db)),
     }

@@ -166,7 +166,10 @@ export const api = {
 
   // ==================== NÓMINA & COMISIONES (HU-12) ====================
   getContratos: () => request('/personal/contratos'),
-  getComisionesDoctor: (doctorId) => request(`/empleados/comisiones-doctor/${doctorId}`),
+  crearContrato: (data) => request('/personal/contratos', { method: 'POST', body: JSON.stringify(data) }),
+  actualizarContrato: (id, data) => request(`/personal/contratos/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  getPersonalNomina: () => request('/empleados/personal'),
+  getLiquidacion: (usuarioId) => request(`/empleados/liquidacion/${usuarioId}`),
   getPagosEmpleados: (usuarioId = '') => request(`/empleados/pagos${usuarioId ? `?usuario_empleado_id=${usuarioId}` : ''}`),
   registrarPagoEmpleado: (data) => request('/empleados/pagos', { method: 'POST', body: JSON.stringify(data) }),
 

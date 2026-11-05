@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Activity, Lock, User, AlertCircle, Sparkles, Sun, Moon } from 'lucide-react';
+import { Activity, Lock, User, AlertCircle, Sun, Moon } from 'lucide-react';
 
 export default function LoginView() {
   const [username, setUsername] = useState('');
@@ -25,11 +25,6 @@ export default function LoginView() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const setDemoCredentials = (u, p) => {
-    setUsername(u);
-    setPassword(p);
   };
 
   return (
@@ -88,7 +83,7 @@ export default function LoginView() {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="ej. admin"
+                  placeholder="Tu usuario"
                   className="w-full pl-11 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 text-sm"
                 />
               </div>
@@ -124,30 +119,6 @@ export default function LoginView() {
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700/60">
-            <div className="flex items-center gap-2 mb-3 text-xs font-medium text-slate-600 dark:text-slate-400">
-              <Sparkles className="w-4 h-4 text-primary-500 dark:text-primary-400" />
-              <span>Acceso Rápido (Cuentas de Demostración):</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => setDemoCredentials('admin', 'admin123')}
-                className="p-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/60 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition text-left"
-              >
-                <div className="font-semibold text-primary-600 dark:text-primary-400">Super Admin</div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400">admin / admin123</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setDemoCredentials('dr_hu12_comisiones', 'DoctorPassword123')}
-                className="p-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/60 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition text-left"
-              >
-                <div className="font-semibold text-teal-600 dark:text-teal-400">Dr. Especialista</div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400">dr_hu12_comisiones</div>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

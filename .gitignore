@@ -19,3 +19,10 @@ frontend/dist/
 Thumbs.db
 .DS_Store
 *.log
+
+# Plantilla de configuración, sin secretos
+!.env.example
+
+# Copias de seguridad: contienen datos de pacientes
+backups/
+*.dump

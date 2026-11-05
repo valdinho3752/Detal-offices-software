@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ErrorModal from '../components/ErrorModal';
 import { api } from '../services/api';
+import { aFechaLocal } from '../utils/fechas';
 import { useAuth } from '../context/AuthContext';
 import {
   Layers,
@@ -50,7 +51,7 @@ export default function ProtesisLaboratorioView() {
     pieza_fdi: '',
     costo_laboratorio: 50,
     costo_paciente: 150,
-    fecha_envio: new Date().toISOString().split('T')[0],
+    fecha_envio: aFechaLocal(),
     fecha_prometida_entrega: '',
     instrucciones: '',
   });
@@ -94,7 +95,7 @@ export default function ProtesisLaboratorioView() {
     try {
       const payload = { estado: nuevoEstado };
       if (nuevoEstado === 'RECIBIDO') {
-        payload.fecha_recepcion_real = new Date().toISOString().split('T')[0];
+        payload.fecha_recepcion_real = aFechaLocal();
       }
       await api.updateProtesis(id, payload);
       setSuccess(`Estado actualizado a ${nuevoEstado}`);
@@ -121,8 +122,8 @@ export default function ProtesisLaboratorioView() {
         instrucciones_tecnicas: form.instrucciones || '',
         costo_laboratorio: Number(form.costo_laboratorio),
         costo_paciente: Number(form.costo_paciente),
-        fecha_envio: form.fecha_envio || new Date().toISOString().split('T')[0],
-        fecha_entrega_esperada: form.fecha_prometida_entrega || new Date(Date.now() + 7*86400000).toISOString().split('T')[0],
+        fecha_envio: form.fecha_envio || aFechaLocal(),
+        fecha_entrega_esperada: form.fecha_prometida_entrega || aFechaLocal(new Date(Date.now() + 7*86400000)),
         observaciones: form.observaciones || '',
       });
 

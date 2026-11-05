@@ -107,6 +107,8 @@ PROTECCION = {
     ("GET", "/empleados/pagos"): SESION,  # Sin EMPLEADOS_READ devuelve solo lo propio
     ("POST", "/empleados/pagos"): "EMPLEADOS_PAGOS",
     ("GET", "/empleados/comisiones-doctor/{doctor_id}"): SESION,  # Solo las propias sin EMPLEADOS_READ
+    ("GET", "/empleados/personal"): SESION,  # Solo los datos propios sin EMPLEADOS_READ
+    ("GET", "/empleados/liquidacion/{usuario_id}"): SESION,  # Solo la propia sin EMPLEADOS_READ
     ("GET", "/auditoria/"): "AUDITORIA_READ",
     ("GET", "/reportes/tratamientos-demanda"): "REPORTES_READ",
     ("GET", "/reportes/productividad-doctores"): "REPORTES_READ",
