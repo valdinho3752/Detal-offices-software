@@ -1460,7 +1460,7 @@ export default function CitasAgendaView() {
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  {editingCitaId ? 'Editar Cita Odontológica' : 'Agendar Cita en Calendario'}
+                  {soloLectura ? 'Detalle de la Cita' : editingCitaId ? 'Editar Cita Odontológica' : 'Agendar Cita en Calendario'}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {editingCitaId
@@ -1524,10 +1524,12 @@ export default function CitasAgendaView() {
                   <div className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/60 rounded-xl text-slate-900 dark:text-white text-xs">
                     <span className="font-semibold text-teal-600 dark:text-teal-400 flex items-center gap-2">
                       <Stethoscope className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                      Dr(a). {doctores.find((d) => d.id === user?.doctor_id)?.nombre_completo || user?.username} (Tú)
+                      {soloLectura
+                        ? `Dr(a). ${getCitaDoctorNombre(citaEnEdicion)}`
+                        : `Dr(a). ${doctores.find((d) => d.id === user?.doctor_id)?.nombre_completo || user?.username} (Tú)`}
                     </span>
                     <span className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                      <Shield className="w-3.5 h-3.5 text-slate-400" /> Bloqueado a tu perfil
+                      <Shield className="w-3.5 h-3.5 text-slate-400" /> {soloLectura ? 'Solo consulta' : 'Bloqueado a tu perfil'}
                     </span>
                   </div>
                 )}

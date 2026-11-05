@@ -142,7 +142,7 @@ export default function NominaComisionesView() {
                 tipo_pago: 'COMISION_TRATAMIENTOS',
                 monto: comisionesData?.saldo_comision_por_pagar > 0 ? Number(comisionesData.saldo_comision_por_pagar).toFixed(2) : '',
                 descontar_de_caja: true,
-                observaciones: `Liquidación comisiones Dr(a). ${selectedDoctor?.nombre_completo || selectedDoctor?.username}`,
+                observaciones: '',
               });
               setShowModal(true);
             }}
