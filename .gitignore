@@ -1,0 +1,21 @@
+# Secretos y configuración local
+.env
+.env.*
+
+# Python
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Editores y sistema
+.vscode/
+.idea/
+.claude/
+Thumbs.db
+.DS_Store
+*.log
