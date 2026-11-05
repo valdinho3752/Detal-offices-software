@@ -320,7 +320,134 @@ def test_reporte_productividad():
     print("✔ Reportes: el tiempo en sillón respeta el rango de fechas.")
 
 
+def test_box_y_horas_de_sillon():
+    doctores = client.get(f"{API}/usuarios/doctores/lista", headers=H).json()
+    assert len(doctores) >= 2, "La prueba necesita dos doctores"
+    paciente_id, dia = _crear_paciente(), _dia_libre()
+
+    primera = _cita(paciente_id, doctores[0]["id"], dia, "09:00", "10:00", notas_adicionales="Box 2")
+    assert primera.status_code == 201, primera.text
+    # Otro doctor no puede usar el mismo box a la misma hora, pero sí otro box
+    assert _cita(paciente_id, doctores[1]["id"], dia, "09:30", "10:30", notas_adicionales="Box 2").status_code == 409
+    otro_box = _cita(paciente_id, doctores[1]["id"], dia, "09:30", "10:30", notas_adicionales="Box 3")
+    assert otro_box.status_code == 201, otro_box.text
+    mover = client.put(f"{API}/citas/{otro_box.json()['id']}", json={"notas_adicionales": "Box 2"}, headers=H)
+    assert mover.status_code == 409
+
+    # Los botones de la agenda solo envían el estado: la API registra cada hora
+    cita_id = primera.json()["id"]
+    for estado, campo in [
+        ("EN_ESPERA", "hora_llegada_recepcion"),
+        ("EN_SILLON", "hora_inicio_sillon"),
+        ("FINALIZADA", "hora_fin_sillon"),
+    ]:
+        res = client.patch(f"{API}/citas/{cita_id}/sillon", json={"estado": estado}, headers=H)
+        assert res.status_code == 200, res.text
+        assert res.json()[campo] is not None
+    assert res.json()["duracion_sillon_minutos"] is not None
+    print("✔ Agenda: el box no se comparte y las horas de sillón se registran solas.")
+
+
+def _usuario_con_rol(rol):
+    username = f"reg_{rol.lower()}_{uuid4().hex[:8]}"
+    roles = client.get(f"{API}/usuarios/roles", headers=H).json()
+    rol_id = next(r["id"] for r in roles if r["codigo"] == rol)
+    res = client.post(f"{API}/usuarios/", json={
+        "username": username, "password": "Clave1234!", "nombre": "Regresion", "apellido": rol.title(),
+        "email": f"{username}@clinica-pruebas.com", "rol_id": rol_id,
+    }, headers=H)
+    assert res.status_code == 201, res.text
+    token = client.post(f"{API}/auth/login", data={"username": username, "password": "Clave1234!"}).json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+def test_evolucion_automatica():
+    doctor_id = _doctor()["id"]
+    paciente_id = _crear_paciente()
+    _odontograma_con_caries(paciente_id, 16)
+    tratamiento = _crear_tratamiento("Endodoncia premolar", "ENDODONCIA")
+    plan = client.post(f"{API}/tratamientos/planes", json={
+        "paciente_id": paciente_id, "doctor_id": doctor_id, "titulo": "Plan", "items": [],
+    }, headers=H).json()
+    item = client.post(f"{API}/tratamientos/items", json={
+        "plan_id": plan["id"], "tratamiento_id": tratamiento, "pieza_fdi": 16,
+        "superficie": "OCLUSAL_INCISAL", "costo_acordado": 100,
+    }, headers=H).json()
+    dia = _dia_libre()
+    cita = _cita(paciente_id, doctor_id, dia, "09:00", "10:00", item_plan_id=item["id"]).json()
+
+    def visitas():
+        return client.get(f"{API}/visitas/?paciente_id={paciente_id}", headers=H).json()
+
+    assert visitas() == [], "Antes de finalizar la cita no hay evolución"
+
+    res = client.patch(f"{API}/citas/{cita['id']}/sillon", json={"estado": "FINALIZADA"}, headers=H)
+    assert res.status_code == 200, res.text
+    lista = visitas()
+    assert len(lista) == 1
+    visita = lista[0]
+    assert visita["cita_id"] == cita["id"] and visita["item_plan_id"] == item["id"]
+    assert visita["generada_automaticamente"] is True
+    assert visita["fecha_hora"][:10] == str(dia), "La evolución lleva la fecha de la cita"
+    assert visita["doctor_nombre"]
+    assert "Endodoncia premolar - Pieza 16" in visita["procedimiento_realizado"]
+    assert "Caries en pieza 16" in visita["diagnostico"], visita["diagnostico"]
+
+    # Guardar otra vez la cita finalizada no duplica la evolución
+    assert client.put(f"{API}/citas/{cita['id']}", json={"estado": "FINALIZADA", "motivo_consulta": "Otro"}, headers=H).status_code == 200
+    assert len(visitas()) == 1
+
+    # El contenido no se edita, y no se crea otra evolución para la misma cita
+    bloqueo = client.put(f"{API}/visitas/{visita['id']}", json={"diagnostico": "Cambiado"}, headers=H)
+    assert bloqueo.status_code == 409
+    assert visitas()[0]["diagnostico"] == visita["diagnostico"]
+    duplicada = client.post(f"{API}/visitas/", json={
+        "paciente_id": paciente_id, "doctor_id": doctor_id, "cita_id": cita["id"],
+        "diagnostico": "x", "procedimiento_realizado": "y",
+    }, headers=H)
+    assert duplicada.status_code == 409
+
+    # Doctor y asistente agregan observaciones; recepción no
+    url = f"{API}/visitas/{visita['id']}/observaciones"
+    assert client.post(url, json={"texto": "Control en 7 días"}, headers=_usuario_con_rol("DOCTOR")).status_code == 201
+    assert client.post(url, json={"texto": "Paciente toleró bien"}, headers=_usuario_con_rol("ASISTENTE")).status_code == 201
+    assert client.post(url, json={"texto": "No autorizada"}, headers=_usuario_con_rol("RECEPCION")).status_code == 403
+    assert client.post(url, json={"texto": "   "}, headers=H).status_code == 422
+    observaciones = visitas()[0]["observaciones"]
+    assert [o["texto"] for o in observaciones] == ["Control en 7 días", "Paciente toleró bien"]
+    assert [o["rol_autor"] for o in observaciones] == ["DOCTOR", "ASISTENTE"]
+    assert all(o["autor_nombre"] for o in observaciones)
+
+    # Las observaciones no tienen ninguna ruta para editarlas o borrarlas
+    obs_id = observaciones[0]["id"]
+    assert client.put(f"{url}/{obs_id}", json={"texto": "Cambiada"}, headers=H).status_code in (404, 405)
+    assert client.delete(f"{url}/{obs_id}", headers=H).status_code in (404, 405)
+
+    # Una nota escrita antes por el doctor se conserva y no se duplica
+    paciente_id = _crear_paciente()
+    cita = _cita(paciente_id, doctor_id, _dia_libre(), "09:00", "10:00").json()
+    manual = client.post(f"{API}/visitas/", json={
+        "paciente_id": paciente_id, "doctor_id": doctor_id, "cita_id": cita["id"],
+        "diagnostico": "Manual", "procedimiento_realizado": "Manual",
+    }, headers=H)
+    assert manual.status_code == 201, manual.text
+    client.patch(f"{API}/citas/{cita['id']}/sillon", json={"estado": "FINALIZADA"}, headers=H)
+    lista = visitas()
+    assert len(lista) == 1 and lista[0]["generada_automaticamente"] is False
+    assert client.put(f"{API}/visitas/{lista[0]['id']}", json={"diagnostico": "Editada"}, headers=H).status_code == 200
+
+    # Una cita sin plan también genera su evolución con el motivo de la consulta
+    paciente_id = _crear_paciente()
+    cita = _cita(paciente_id, doctor_id, _dia_libre(), "09:00", "10:00").json()
+    client.put(f"{API}/citas/{cita['id']}", json={"estado": "FINALIZADA"}, headers=H)
+    lista = visitas()
+    assert len(lista) == 1 and lista[0]["procedimiento_realizado"] == "Prueba de agenda"
+    print("✔ Evolución: creada al finalizar, con la fecha de la cita y solo admite observaciones.")
+
+
 if __name__ == "__main__":
+    test_box_y_horas_de_sillon()
+    test_evolucion_automatica()
     test_agenda()
     test_odontograma()
     test_saldo_presupuesto()

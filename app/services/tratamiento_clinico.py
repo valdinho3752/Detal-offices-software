@@ -8,12 +8,15 @@ que se crea como copia del inicial la primera vez que hace falta.
 import re
 import unicodedata
 from dataclasses import dataclass
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.models.auditoria import AuditoriaLog
+from app.models.cita import Cita
 from app.models.enums import (
+    AuditoriaAccionEnum,
     CategoriaTratamientoEnum,
     CondicionDentalEnum,
     EstadoClinicoHallazgoEnum,
@@ -23,6 +26,7 @@ from app.models.enums import (
 )
 from app.models.odontograma import HallazgoSuperficie, Odontograma, PiezaDental
 from app.models.tratamiento import CatalogoTratamiento, ItemPlanTratamiento
+from app.models.visita import VisitaEvolucion
 
 COLOR_REALIZADO = "#3B82F6"
 COLOR_PENDIENTE = "#EF4444"
@@ -142,6 +146,89 @@ def _obtener_odontograma_evolucion(paciente_id: UUID, doctor_id: UUID, db: Sessi
         return evolucion
     inicial = ultimo(TipoOdontogramaEnum.INICIAL_INGRESO)
     return clonar_odontograma_como_evolucion(inicial, doctor_id, db) if inicial else None
+
+
+def _texto_enum(valor) -> str:
+    return (valor.value if hasattr(valor, "value") else str(valor)).replace("_", " ").capitalize()
+
+
+def describir_diagnostico(paciente_id: UUID, item: ItemPlanTratamiento, db: Session) -> Optional[str]:
+    """
+    Describe la patología pendiente que atiende el ítem, según el odontograma vigente.
+    Debe llamarse antes de registrar el tratamiento, que cambia esos hallazgos.
+    Devuelve None si no hay ninguna: el diagnóstico no se inventa.
+    """
+    numero_fdi = item.pieza_fdi or (item.hallazgo.pieza.numero_fdi if item.hallazgo else None)
+    if not numero_fdi:
+        return None
+    odontograma = (
+        db.query(Odontograma)
+        .filter(Odontograma.paciente_id == paciente_id)
+        .order_by(Odontograma.fecha_registro.desc())
+        .first()
+    )
+    if not odontograma:
+        return None
+    pieza = db.query(PiezaDental).filter_by(odontograma_id=odontograma.id, numero_fdi=numero_fdi).first()
+    if not pieza:
+        return None
+
+    objetivo = normalizar_superficie(item.superficie)
+    descripciones = [
+        f"{_texto_enum(h.condicion)} en pieza {numero_fdi}"
+        + ("" if h.superficie == SuperficieDentalEnum.GENERAL else f" ({_texto_enum(h.superficie)})")
+        for h in pieza.hallazgos
+        if h.estado_clinico == EstadoClinicoHallazgoEnum.REQUERIDO_PATOLOGIA
+        and _superficies_coinciden(h.superficie, objetivo)
+    ]
+    return "; ".join(descripciones) or None
+
+
+def crear_evolucion_de_cita(
+    cita: Cita,
+    items: List[ItemPlanTratamiento],
+    diagnosticos: List[str],
+    usuario_id: UUID,
+    db: Session,
+) -> Optional[VisitaEvolucion]:
+    """
+    Crea la evolución de una cita finalizada, con la fecha de la cita. No admite más
+    cambios que agregar observaciones. Si el doctor ya registró una nota para esta
+    cita, la conserva y no crea otra.
+    """
+    if db.query(VisitaEvolucion).filter(VisitaEvolucion.cita_id == cita.id).first():
+        return None
+
+    procedimientos = []
+    for item in items:
+        nombre = item.tratamiento.nombre if item.tratamiento else "Tratamiento"
+        superficie = normalizar_superficie(item.superficie)
+        detalle = f" - Pieza {item.pieza_fdi}" if item.pieza_fdi else ""
+        if item.pieza_fdi and superficie != SuperficieDentalEnum.GENERAL:
+            detalle += f" ({_texto_enum(superficie)})"
+        procedimientos.append(f"{nombre}{detalle}")
+
+    visita = VisitaEvolucion(
+        paciente_id=cita.paciente_id,
+        doctor_id=cita.doctor_id,
+        cita_id=cita.id,
+        item_plan_id=items[0].id if items else None,
+        fecha_hora=cita.fecha_inicio_programada,
+        motivo_visita=cita.motivo_consulta,
+        diagnostico="; ".join(diagnosticos) or "Sin diagnóstico registrado en el odontograma",
+        procedimiento_realizado="\n".join(procedimientos) or cita.motivo_consulta,
+        generada_automaticamente=True,
+    )
+    db.add(visita)
+    db.flush()
+    db.add(AuditoriaLog(
+        usuario_id=usuario_id,
+        tabla_afectada="visitas_evolucion",
+        registro_id=visita.id,
+        accion=AuditoriaAccionEnum.INSERT,
+        seccion_consultada="EVOLUCION_AUTOMATICA_CITA",
+    ))
+    return visita
 
 
 def registrar_tratamiento_realizado(

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ErrorModal from '../components/ErrorModal';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import {
@@ -77,6 +78,7 @@ export default function CobranzasView() {
 
   const handleRegistrarPago = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       await api.registrarPago({
         paciente_id: selectedPacienteId,
@@ -292,6 +294,7 @@ export default function CobranzasView() {
             </p>
 
             <form onSubmit={handleRegistrarPago} className="space-y-4">
+              <ErrorModal mensaje={error} />
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Monto a Cobrar ($) *</label>
                 <input

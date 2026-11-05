@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ErrorModal from '../components/ErrorModal';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -106,6 +107,7 @@ export default function ProtesisLaboratorioView() {
 
   const handleCreateProtesis = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       await api.createProtesis({
         paciente_id: form.paciente_id,
@@ -305,6 +307,7 @@ export default function ProtesisLaboratorioView() {
             </p>
 
             <form onSubmit={handleCreateProtesis} className="space-y-4">
+              <ErrorModal mensaje={error} />
               <PacienteSearchInput
                 label="Paciente"
                 required

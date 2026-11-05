@@ -17,6 +17,7 @@ export function AuthProvider({ children }) {
     return {
       ...raw,
       rol_str: rolStr,
+      isAdmin: rolStr === 'ADMIN',
       nombre_completo: raw.nombre_completo || `${raw.nombre || ''} ${raw.apellido || ''}`.trim() || raw.username,
     };
   };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ErrorModal from '../components/ErrorModal';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -62,6 +63,7 @@ export default function CajaOperativaView() {
 
   const handleAbrirCaja = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       await api.abrirCaja({
         monto_apertura: Number(montoApertura),
@@ -78,6 +80,7 @@ export default function CajaOperativaView() {
 
   const handleRegistrarEgreso = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       await api.registrarEgreso({
         categoria: egresoForm.categoria,
@@ -103,6 +106,7 @@ export default function CajaOperativaView() {
 
   const handleCerrarCaja = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       const saldoTeorico = Number(caja?.saldo_en_gaveta || 0);
       const montoReal = Number(cierreForm.monto_real_fisico);
@@ -337,6 +341,7 @@ export default function CajaOperativaView() {
             </p>
 
             <form onSubmit={handleAbrirCaja} className="space-y-4">
+              <ErrorModal mensaje={error} />
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Fondo Inicial ($) *</label>
                 <input
@@ -379,6 +384,7 @@ export default function CajaOperativaView() {
             </p>
 
             <form onSubmit={handleRegistrarEgreso} className="space-y-4">
+              <ErrorModal mensaje={error} />
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Categoría de Gasto *</label>
                 <select
@@ -461,6 +467,7 @@ export default function CajaOperativaView() {
             </p>
 
             <form onSubmit={handleCerrarCaja} className="space-y-4">
+              <ErrorModal mensaje={error} />
               <div className="p-3.5 bg-slate-800/80 rounded-xl border border-slate-700 flex justify-between items-center text-xs">
                 <span className="text-slate-400">Saldo Teórico del Sistema:</span>
                 <span className="font-mono font-bold text-white text-sm">

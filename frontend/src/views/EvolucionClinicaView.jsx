@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ErrorModal from '../components/ErrorModal';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -25,7 +26,9 @@ import {
 import PacienteSearchInput from '../components/PacienteSearchInput';
 
 export default function EvolucionClinicaView() {
-  const { user } = useAuth();
+  const { user, isAdmin, isDoctor, isAsistente } = useAuth();
+  const puedeObservar = isAdmin || isDoctor || isAsistente;
+  const [observacionesNuevas, setObservacionesNuevas] = useState({});
   const [searchParams] = useSearchParams();
   const pacienteIdParam = searchParams.get('paciente_id');
 
@@ -120,24 +123,9 @@ export default function EvolucionClinicaView() {
 
   const handleCreateVisita = async (e) => {
     e.preventDefault();
+    setError('');
     try {
-      // 1. Si se seleccionó un item para completar
-      if (formVisita.item_plan_completado_id) {
-        await api.updateItemPlan(formVisita.item_plan_completado_id, {
-          estado: 'COMPLETADO',
-          es_proxima_sesion: false,
-        });
-      }
-
-      // 2. Si se seleccionó un item para próxima sesión
-      if (formVisita.item_plan_proxima_sesion_id) {
-        await api.updateItemPlan(formVisita.item_plan_proxima_sesion_id, {
-          estado: 'PROXIMA_SESION',
-          es_proxima_sesion: true,
-        });
-      }
-
-      // 3. Crear registro de visita con fecha_hora y cita_id vinculado
+      // La API actualiza los ítems del plan y el odontograma en la misma operación
       await api.createVisita({
         paciente_id: selectedPacienteId,
         doctor_id: selectedDoctorId || user?.doctor_id,
@@ -174,6 +162,21 @@ export default function EvolucionClinicaView() {
     }
   };
 
+  const handleAgregarObservacion = async (e, visitaId) => {
+    e.preventDefault();
+    const texto = (observacionesNuevas[visitaId] || '').trim();
+    if (!texto) return;
+    try {
+      await api.agregarObservacionVisita(visitaId, texto);
+      setObservacionesNuevas((prev) => ({ ...prev, [visitaId]: '' }));
+      setSuccess('Observación agregada a la evolución');
+      setTimeout(() => setSuccess(''), 3000);
+      loadVisitasYPlanes();
+    } catch (err) {
+      setError(err.message || 'Error al agregar la observación');
+    }
+  };
+
   // Extraer todos los items de los planes del paciente
   const todosLosItems = [];
   planes.forEach((p) => {
@@ -188,6 +191,8 @@ export default function EvolucionClinicaView() {
 
   // Filtrar citas del paciente para vincular en el modal
   const citasFiltradas = citasPaciente.filter((c) => {
+    // Una cita cancelada no se atendió, y cada cita admite una sola evolución
+    if (c.estado === 'CANCELADA' || visitas.some((v) => v.cita_id === c.id)) return false;
     if (filtroFechaCita) {
       const fechaC = c.fecha_inicio_programada ? c.fecha_inicio_programada.slice(0, 10) : '';
       if (fechaC !== filtroFechaCita) return false;
@@ -447,7 +452,7 @@ export default function EvolucionClinicaView() {
               : visita.created_at
               ? new Date(visita.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
               : '';
-            const doctorNombre = visita.doctor ? visita.doctor.nombre_completo || visita.doctor.username : 'Dr(a). Tratante';
+            const doctorNombre = visita.doctor_nombre || 'Dr(a). Tratante';
 
             return (
               <div
@@ -470,7 +475,15 @@ export default function EvolucionClinicaView() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {visita.generada_automaticamente && (
+                      <span
+                        className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700/60 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 flex items-center gap-1"
+                        title="Se creó al finalizar la cita. Solo admite observaciones del doctor o asistente"
+                      >
+                        <Shield className="w-3 h-3" /> Generada al finalizar la cita
+                      </span>
+                    )}
                     {visita.cita_id && (
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 dark:bg-primary-500/10 border border-primary-200 dark:border-primary-500/30 text-primary-600 dark:text-primary-400 flex items-center gap-1">
                         <LinkIcon className="w-3 h-3" /> Vinculada a Cita Programada
@@ -491,7 +504,7 @@ export default function EvolucionClinicaView() {
                       Observaciones Clínicas / Diagnóstico:
                     </span>
                     <p className="text-slate-700 dark:text-slate-200 whitespace-pre-line mt-1">
-                      {visita.observaciones_clinicas || visita.diagnostico || 'Sin observaciones registradas.'}
+                      {visita.recomendaciones || visita.diagnostico || 'Sin observaciones registradas.'}
                     </p>
                   </div>
 
@@ -506,7 +519,7 @@ export default function EvolucionClinicaView() {
                 </div>
 
                 {/* Receta Médica si existe */}
-                {(visita.receta_medicamentos || visita.indicaciones_postoperatorias) && (
+                {(visita.receta_medicamentos || visita.indicaciones_proxima_visita) && (
                   <div className="p-4 bg-primary-50/50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-500/30 rounded-xl space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-primary-700 dark:text-primary-400 flex items-center gap-1.5 uppercase tracking-wider">
@@ -526,13 +539,54 @@ export default function EvolucionClinicaView() {
                       </div>
                     )}
 
-                    {visita.indicaciones_postoperatorias && (
+                    {visita.indicaciones_proxima_visita && (
                       <p className="text-[11px] text-slate-600 dark:text-slate-300 italic pt-1">
-                        Indicaciones: {visita.indicaciones_postoperatorias}
+                        Indicaciones: {visita.indicaciones_proxima_visita}
                       </p>
                     )}
                   </div>
                 )}
+
+                {/* Observaciones del doctor y asistente: solo se agregan */}
+                <div className="pt-3 border-t border-slate-200 dark:border-slate-700/60 space-y-2 text-xs">
+                  <span className="font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">
+                    Observaciones del Doctor / Asistente
+                  </span>
+                  {(visita.observaciones || []).map((obs) => (
+                    <div
+                      key={obs.id}
+                      className="p-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/40 rounded-lg"
+                    >
+                      <p className="text-slate-700 dark:text-slate-200 whitespace-pre-line">{obs.texto}</p>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                        {obs.autor_nombre || 'Usuario'} ({obs.rol_autor}) · {new Date(obs.created_at).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                  {puedeObservar ? (
+                    <form onSubmit={(e) => handleAgregarObservacion(e, visita.id)} className="flex items-start gap-2">
+                      <textarea
+                        rows="2"
+                        maxLength={2000}
+                        placeholder="Agregar una observación. Una vez guardada no se puede modificar."
+                        value={observacionesNuevas[visita.id] || ''}
+                        onChange={(e) => setObservacionesNuevas((prev) => ({ ...prev, [visita.id]: e.target.value }))}
+                        className="flex-1 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!(observacionesNuevas[visita.id] || '').trim()}
+                        className="px-3 py-2 bg-primary-600 hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-xs font-semibold transition flex items-center gap-1 whitespace-nowrap"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Agregar
+                      </button>
+                    </form>
+                  ) : (
+                    (visita.observaciones || []).length === 0 && (
+                      <p className="text-slate-500 dark:text-slate-400">Sin observaciones registradas.</p>
+                    )
+                  )}
+                </div>
               </div>
             );
           })
@@ -549,6 +603,7 @@ export default function EvolucionClinicaView() {
             </p>
 
             <form onSubmit={handleCreateVisita} className="space-y-4">
+              <ErrorModal mensaje={error} />
               {/* SECCIÓN FECHA Y VINCULACIÓN A CITA (Point 4) */}
               <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
                 <span className="text-[11px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -650,7 +705,7 @@ export default function EvolucionClinicaView() {
                           ...formVisita,
                           cita_id: cid,
                           fecha_hora: cita.fecha_inicio_programada ? cita.fecha_inicio_programada.slice(0, 16) : formVisita.fecha_hora,
-                          motivo_consulta: formVisita.motivo_consulta || cita.motivo || 'Atención en cita programada',
+                          motivo_consulta: formVisita.motivo_consulta || cita.motivo_consulta || 'Atención en cita programada',
                           item_plan_completado_id: cita.item_plan_id || formVisita.item_plan_completado_id,
                         });
                         if (cita.doctor_id) {
@@ -669,7 +724,7 @@ export default function EvolucionClinicaView() {
                       const fHora = c.fecha_inicio_programada ? c.fecha_inicio_programada.slice(11, 16) : '';
                       return (
                         <option key={c.id} value={c.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-                          [{fFecha} {fHora}] {doc ? `Dr(a). ${doc.nombre_completo || doc.username}` : ''} - {c.motivo || 'Cita general'} ({c.estado})
+                          [{fFecha} {fHora}] {doc ? `Dr(a). ${doc.nombre_completo || doc.username}` : ''} - {c.motivo_consulta || 'Cita general'} ({c.estado})
                         </option>
                       );
                     })}

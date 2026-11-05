@@ -235,6 +235,8 @@ export default function DashboardView() {
                             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                             : cita.estado === 'EN_ESPERA'
                             ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                            : cita.estado === 'CANCELADA'
+                            ? 'bg-stone-500/10 border-dashed border-stone-500/50 text-stone-400 line-through'
                             : 'bg-slate-800 border-slate-700 text-slate-400'
                         }`}
                       >
@@ -242,7 +244,7 @@ export default function DashboardView() {
                       </span>
 
                       {/* Botones de acción de flujo */}
-                      {cita.estado === 'PROGRAMADA' && (
+                      {(cita.estado === 'PROGRAMADA' || cita.estado === 'CONFIRMADA') && (
                         <button
                           onClick={() => handleUpdateSillon(cita.id, 'EN_ESPERA')}
                           className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 text-xs rounded-lg transition"

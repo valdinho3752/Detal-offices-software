@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ErrorModal from '../components/ErrorModal';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import {
@@ -122,6 +123,7 @@ export default function PacientesView() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       if (editingId) {
         await api.updatePaciente(editingId, form);
@@ -432,6 +434,7 @@ export default function PacientesView() {
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              <ErrorModal mensaje={error} />
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">Nombres *</label>

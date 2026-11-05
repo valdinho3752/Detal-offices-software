@@ -1,7 +1,7 @@
-from typing import Optional
+from typing import Annotated, List, Optional
 from uuid import UUID
 from datetime import date, datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, StringConstraints
 
 class VisitaEvolucionBase(BaseModel):
     paciente_id: UUID
@@ -38,10 +38,28 @@ class VisitaEvolucionUpdate(BaseModel):
     fecha_proximo_control: Optional[date] = None
     indicaciones_proxima_visita: Optional[str] = None
 
+class ObservacionEvolucionCreate(BaseModel):
+    texto: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=2000)]
+
+class ObservacionEvolucionResponse(BaseModel):
+    id: UUID
+    visita_id: UUID
+    autor_usuario_id: Optional[UUID] = None
+    autor_nombre: Optional[str] = None
+    rol_autor: str
+    texto: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
 class VisitaEvolucionResponse(VisitaEvolucionBase):
     id: UUID
     fecha_hora: datetime
     created_at: datetime
+    generada_automaticamente: bool = False
+    doctor_nombre: Optional[str] = None
+    observaciones: List[ObservacionEvolucionResponse] = []
 
     class Config:
         from_attributes = True

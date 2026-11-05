@@ -6,7 +6,7 @@ from app.models.paciente import Paciente, AntecedenteMedico
 from app.models.odontograma import Odontograma, PiezaDental, HallazgoSuperficie
 from app.models.tratamiento import CatalogoTratamiento, PlanTratamiento, ItemPlanTratamiento
 from app.models.cita import Cita
-from app.models.visita import VisitaEvolucion
+from app.models.visita import VisitaEvolucion, ObservacionEvolucion
 from app.models.radiografia import RadiografiaEstudio
 from app.models.caja import CajaSesion, Pago, PagoEmpleado, EgresoCaja
 from app.models.protesis import OrdenLaboratorioProtesis
@@ -26,7 +26,7 @@ __all__ = [
     "Paciente", "AntecedenteMedico",
     "Odontograma", "PiezaDental", "HallazgoSuperficie",
     "CatalogoTratamiento", "PlanTratamiento", "ItemPlanTratamiento",
-    "Cita", "VisitaEvolucion", "RadiografiaEstudio",
+    "Cita", "VisitaEvolucion", "ObservacionEvolucion", "RadiografiaEstudio",
     "CajaSesion", "Pago", "PagoEmpleado", "EgresoCaja",
     "OrdenLaboratorioProtesis"
 ]

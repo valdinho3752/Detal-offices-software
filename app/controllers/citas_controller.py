@@ -1,18 +1,27 @@
+import re
 from typing import List, Optional
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Cita, EstadoCitaEnum, Usuario, Doctor, RolCodigoEnum, AuditoriaLog, AuditoriaAccionEnum
 from app.core.dependencies import get_current_user
 from app.schemas.cita import CitaCreate, CitaUpdate, CitaSillonControl, CitaResponse
-from app.services.tratamiento_clinico import registrar_tratamiento_realizado
+from app.services.tratamiento_clinico import (
+    crear_evolucion_de_cita, describir_diagnostico, registrar_tratamiento_realizado
+)
 
 router = APIRouter(prefix="/citas", tags=["Agenda y Citas Dentales"])
 
 # Estas citas ya no ocupan el horario del doctor.
 ESTADOS_SIN_RESERVA = (EstadoCitaEnum.CANCELADA, EstadoCitaEnum.NO_ASISTIO)
+
+HORA_POR_ESTADO = {
+    EstadoCitaEnum.EN_ESPERA: "hora_llegada_recepcion",
+    EstadoCitaEnum.EN_SILLON: "hora_inicio_sillon",
+    EstadoCitaEnum.FINALIZADA: "hora_fin_sillon",
+}
 
 @router.get("/", response_model=List[CitaResponse])
 def listar_citas(
@@ -132,8 +141,13 @@ def agendar_cita(
     db.refresh(nueva_cita)
     return nueva_cita
 
+def _box_de_cita(cita: Cita) -> int:
+    """El box se guarda en las notas; sin indicación, la agenda la muestra en el Box 1."""
+    coincidencia = re.search(r"Box\s*(\d+)", cita.notas_adicionales or "")
+    return int(coincidencia.group(1)) if coincidencia else 1
+
 def _validar_horario_cita(cita: Cita, db: Session):
-    """Comprueba que el horario sea coherente y que el doctor no tenga otra cita en ese rango."""
+    """Comprueba que el horario sea coherente y que el doctor y el box estén libres en ese rango."""
     if cita.fecha_fin_programada <= cita.fecha_inicio_programada:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -142,30 +156,45 @@ def _validar_horario_cita(cita: Cita, db: Session):
 
     # El bloqueo evita que dos peticiones simultáneas reserven el mismo horario.
     db.query(Doctor).filter(Doctor.id == cita.doctor_id).with_for_update().first()
-    conflicto = db.query(Cita).filter(
-        Cita.doctor_id == cita.doctor_id,
+    superpuestas = db.query(Cita).filter(
         Cita.id != cita.id,
         Cita.estado.notin_(ESTADOS_SIN_RESERVA),
         Cita.fecha_inicio_programada < cita.fecha_fin_programada,
         Cita.fecha_fin_programada > cita.fecha_inicio_programada,
-    ).first()
-    if conflicto:
-        inicio = conflicto.fecha_inicio_programada.strftime("%d/%m/%Y %H:%M")
-        fin = conflicto.fecha_fin_programada.strftime("%H:%M")
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"El doctor ya tiene una cita de {inicio} a {fin}. Elige otro horario."
-        )
+    ).all()
 
-def _finalizar_tratamientos_cita(cita: Cita, db: Session):
+    def rango(otra: Cita) -> str:
+        inicio = otra.fecha_inicio_programada.strftime("%d/%m/%Y %H:%M")
+        return f"{inicio} a {otra.fecha_fin_programada.strftime('%H:%M')}"
+
+    for otra in superpuestas:
+        if otra.doctor_id == cita.doctor_id:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"El doctor ya tiene una cita de {rango(otra)}. Elige otro horario."
+            )
+    box = _box_de_cita(cita)
+    for otra in superpuestas:
+        if _box_de_cita(otra) == box:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"El Box {box} ya está ocupado de {rango(otra)}. Elige otro box u horario."
+            )
+
+def _registrar_hora_de_estado(cita: Cita, estado):
+    """La agenda solo envía el nuevo estado: la hora real se registra aquí si no llegó otra."""
+    campo = HORA_POR_ESTADO.get(estado)
+    if campo and getattr(cita, campo) is None:
+        setattr(cita, campo, datetime.now(timezone.utc))
+
+def _finalizar_tratamientos_cita(cita: Cita, usuario_id: UUID, db: Session):
     """
-    Sincroniza el plan de tratamiento y odontograma cuando la cita finaliza:
-    marca los ítems asignados (cita.item_plan_id y los incluidos en notas_adicionales)
-    como COMPLETADO y los registra en el odontograma de evolución del paciente.
+    Se ejecuta una sola vez, cuando la cita pasa a FINALIZADA: marca los ítems asignados
+    (cita.item_plan_id y los incluidos en notas_adicionales) como COMPLETADO, los registra
+    en el odontograma de evolución y crea la evolución clínica de la cita.
     """
     from app.models.tratamiento import ItemPlanTratamiento
     from app.models.enums import EstadoItemPlanEnum
-    import re
 
     item_ids = []
     if cita.item_plan_id:
@@ -177,12 +206,21 @@ def _finalizar_tratamientos_cita(cita: Cita, db: Session):
             if uid not in item_ids:
                 item_ids.append(uid)
 
+    items = []
+    diagnosticos = []
     for iid in item_ids:
         item = db.query(ItemPlanTratamiento).filter_by(id=iid).first()
         if not item:
             continue
-        item.estado = EstadoItemPlanEnum.COMPLETADO
-        registrar_tratamiento_realizado(cita.paciente_id, cita.doctor_id, item, db)
+        items.append(item)
+        diagnostico = describir_diagnostico(cita.paciente_id, item, db)
+        if diagnostico:
+            diagnosticos.append(diagnostico)
+        if item.estado != EstadoItemPlanEnum.COMPLETADO:
+            item.estado = EstadoItemPlanEnum.COMPLETADO
+            registrar_tratamiento_realizado(cita.paciente_id, cita.doctor_id, item, db)
+
+    crear_evolucion_de_cita(cita, items, diagnosticos, usuario_id, db)
     db.flush()
 
 @router.put("/{id}", response_model=CitaResponse)
@@ -217,7 +255,7 @@ def actualizar_cita(
                 )
             update_dict["doctor_id"] = current_user.doctor_perfil.id
 
-    horario_previo = (cita.doctor_id, cita.fecha_inicio_programada, cita.fecha_fin_programada)
+    horario_previo = (cita.doctor_id, cita.fecha_inicio_programada, cita.fecha_fin_programada, _box_de_cita(cita))
     estado_previo = cita.estado
 
     valid_fields = {
@@ -231,7 +269,7 @@ def actualizar_cita(
 
     db.flush()
     db.refresh(cita)
-    horario_actual = (cita.doctor_id, cita.fecha_inicio_programada, cita.fecha_fin_programada)
+    horario_actual = (cita.doctor_id, cita.fecha_inicio_programada, cita.fecha_fin_programada, _box_de_cita(cita))
     # Solo se valida si cambió el horario o si se reactiva una cita que no ocupaba lugar:
     # cambiar el estado de una cita existente no debe bloquearse por datos antiguos.
     if cita.estado not in ESTADOS_SIN_RESERVA and (
@@ -239,9 +277,10 @@ def actualizar_cita(
     ):
         _validar_horario_cita(cita, db)
 
-    # Si la cita pasa a FINALIZADA, actualizar tratamientos a Alta Clinica (Azul)
-    if update_dict.get("estado") in [EstadoCitaEnum.FINALIZADA, "FINALIZADA"]:
-        _finalizar_tratamientos_cita(cita, db)
+    if cita.estado != estado_previo:
+        _registrar_hora_de_estado(cita, cita.estado)
+        if cita.estado == EstadoCitaEnum.FINALIZADA:
+            _finalizar_tratamientos_cita(cita, current_user.id, db)
 
     db.commit()
     db.refresh(cita)
@@ -298,12 +337,14 @@ def controlar_tiempo_sillon(
     if not cita:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada")
 
+    estado_previo = cita.estado
     for field, value in control.model_dump(exclude_unset=True).items():
         setattr(cita, field, value)
 
-    # Si la cita pasa a FINALIZADA en sillon, actualizar tratamientos a Alta Clinica (Azul)
-    if control.estado in [EstadoCitaEnum.FINALIZADA, "FINALIZADA"]:
-        _finalizar_tratamientos_cita(cita, db)
+    if cita.estado != estado_previo:
+        _registrar_hora_de_estado(cita, cita.estado)
+        if cita.estado == EstadoCitaEnum.FINALIZADA:
+            _finalizar_tratamientos_cita(cita, current_user.id, db)
 
     db.commit()
     db.refresh(cita)

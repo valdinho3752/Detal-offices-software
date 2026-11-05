@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ErrorModal from '../components/ErrorModal';
 import { api } from '../services/api';
 import {
   Award,
@@ -72,6 +73,7 @@ export default function NominaComisionesView() {
 
   const handleRegistrarPago = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       const monto = Number(formPago.monto);
       await api.registrarPagoEmpleado({
@@ -293,6 +295,7 @@ export default function NominaComisionesView() {
             </p>
 
             <form onSubmit={handleRegistrarPago} className="space-y-4">
+              <ErrorModal mensaje={error} />
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Tipo de Pago *</label>
                 <select

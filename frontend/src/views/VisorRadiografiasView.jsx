@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ErrorModal from '../components/ErrorModal';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import {
@@ -94,6 +95,7 @@ export default function VisorRadiografiasView() {
 
   const handleSaveRx = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       await api.createRadiografia({
         paciente_id: selectedPacienteId,
@@ -361,6 +363,7 @@ export default function VisorRadiografiasView() {
             </p>
 
             <form onSubmit={handleSaveRx} className="space-y-4">
+              <ErrorModal mensaje={error} />
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Tipo de Estudio *</label>

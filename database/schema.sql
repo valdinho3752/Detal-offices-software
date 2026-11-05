@@ -497,7 +497,18 @@ CREATE TABLE visitas_evolucion (
     recomendaciones TEXT,
     fecha_proximo_control DATE,
     indicaciones_proxima_visita TEXT, -- Instrucciones para la siguiente cita
+    generada_automaticamente BOOLEAN NOT NULL DEFAULT false, -- Creada al finalizar la cita: solo admite observaciones
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Observaciones de doctores y asistentes: solo se agregan, nunca se editan ni eliminan
+CREATE TABLE observaciones_evolucion (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    visita_id UUID NOT NULL REFERENCES visitas_evolucion(id) ON DELETE CASCADE,
+    autor_usuario_id UUID REFERENCES usuarios(id) ON DELETE SET NULL,
+    rol_autor VARCHAR(50) NOT NULL,
+    texto TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 
@@ -629,6 +640,7 @@ CREATE INDEX idx_citas_estado ON citas(estado);
 CREATE INDEX idx_visitas_paciente_fecha ON visitas_evolucion(paciente_id, fecha_hora DESC);
 CREATE INDEX idx_visitas_doctor ON visitas_evolucion(doctor_id);
 CREATE INDEX idx_visitas_asistente ON visitas_evolucion(asistente_id);
+CREATE INDEX idx_observaciones_visita ON observaciones_evolucion(visita_id, created_at);
 
 -- Reportes financieros y caja
 CREATE INDEX idx_pagos_fecha ON pagos(fecha_hora);

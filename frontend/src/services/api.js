@@ -119,6 +119,8 @@ export const api = {
   getVisita: (id) => request(`/visitas/${id}`),
   createVisita: (data) => request('/visitas/', { method: 'POST', body: JSON.stringify(data) }),
   updateVisita: (id, data) => request(`/visitas/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  agregarObservacionVisita: (id, texto) =>
+    request(`/visitas/${id}/observaciones`, { method: 'POST', body: JSON.stringify({ texto }) }),
 
   // ==================== RADIOGRAFÍAS & IMÁGENES (HU-08) ====================
   getRadiografias: (pacienteId, piezaFdi = null) => {

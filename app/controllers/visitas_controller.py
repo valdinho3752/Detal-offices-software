@@ -4,13 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import (
-    VisitaEvolucion, ItemPlanTratamiento, EstadoItemPlanEnum,
-    Usuario, AuditoriaLog, AuditoriaAccionEnum, Doctor
+    VisitaEvolucion, ObservacionEvolucion, ItemPlanTratamiento, EstadoItemPlanEnum,
+    Usuario, AuditoriaLog, AuditoriaAccionEnum, Doctor, RolCodigoEnum
 )
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, require_role
 from app.services.tratamiento_clinico import registrar_tratamiento_realizado
 from app.schemas.visita import (
-    VisitaEvolucionCreate, VisitaEvolucionUpdate, VisitaEvolucionResponse
+    VisitaEvolucionCreate, VisitaEvolucionUpdate, VisitaEvolucionResponse,
+    ObservacionEvolucionCreate, ObservacionEvolucionResponse
 )
 
 router = APIRouter(prefix="/visitas", tags=["Historia Clínica y Evoluciones Diarias"])
@@ -40,6 +41,12 @@ def registrar_visita_evolucion(
     - Marca el ítem ejecutado hoy como COMPLETADO y actualiza el odontograma a azul (#3B82F6).
     - Marca el próximo ítem planificado como PROXIMA_SESION para la siguiente cita.
     """
+    if datos.cita_id and db.query(VisitaEvolucion).filter(VisitaEvolucion.cita_id == datos.cita_id).first():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Esta cita ya tiene una evolución registrada. Puedes agregarle observaciones."
+        )
+
     visita_dict = datos.model_dump()
     if not visita_dict.get("motivo_visita"):
         visita_dict["motivo_visita"] = visita_dict.get("motivo_consulta") or "Atención Odontológica"
@@ -134,6 +141,38 @@ def obtener_visita(
 
     return visita
 
+@router.post("/{id}/observaciones", response_model=ObservacionEvolucionResponse, status_code=status.HTTP_201_CREATED)
+def agregar_observacion(
+    id: UUID,
+    datos: ObservacionEvolucionCreate,
+    current_user: Usuario = Depends(require_role(RolCodigoEnum.DOCTOR, RolCodigoEnum.ASISTENTE)),
+    db: Session = Depends(get_db)
+):
+    """Agrega una observación del doctor o asistente. Las observaciones no se editan ni eliminan."""
+    visita = db.query(VisitaEvolucion).filter(VisitaEvolucion.id == id).first()
+    if not visita:
+        raise HTTPException(status_code=404, detail="Visita clínica no encontrada")
+
+    observacion = ObservacionEvolucion(
+        visita_id=visita.id,
+        autor_usuario_id=current_user.id,
+        rol_autor=str(current_user.rol.codigo).upper(),
+        texto=datos.texto,
+    )
+    db.add(observacion)
+    db.flush()
+    db.add(AuditoriaLog(
+        usuario_id=current_user.id,
+        tabla_afectada="observaciones_evolucion",
+        registro_id=observacion.id,
+        accion=AuditoriaAccionEnum.INSERT,
+        seccion_consultada="OBSERVACION_EVOLUCION",
+        datos_nuevos={"visita_id": str(visita.id), "texto": datos.texto},
+    ))
+    db.commit()
+    db.refresh(observacion)
+    return observacion
+
 @router.put("/{id}", response_model=VisitaEvolucionResponse)
 def actualizar_visita(
     id: UUID,
@@ -144,6 +183,11 @@ def actualizar_visita(
     visita = db.query(VisitaEvolucion).filter(VisitaEvolucion.id == id).first()
     if not visita:
         raise HTTPException(status_code=404, detail="Visita clínica no encontrada")
+    if visita.generada_automaticamente:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Esta evolución se generó al finalizar la cita: solo se le pueden agregar observaciones"
+        )
 
     update_data = datos.model_dump(exclude_unset=True)
     es_admin = current_user.rol and str(current_user.rol.codigo).upper() == "ADMIN"

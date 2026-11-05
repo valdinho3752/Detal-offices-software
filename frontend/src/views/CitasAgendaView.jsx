@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import ErrorModal from '../components/ErrorModal';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -134,6 +135,8 @@ export const getTratamientoConfig = (cita) => {
     iconColor: 'text-teal-600 dark:text-teal-400',
   };
 };
+
+const ESTADOS_SIN_RESERVA = ['CANCELADA', 'NO_ASISTIO'];
 
 export default function CitasAgendaView() {
   const { user, isAdmin, isRecepcion } = useAuth();
@@ -315,8 +318,7 @@ export default function CitasAgendaView() {
       const listaDoc = Array.isArray(dRes) ? dRes : [];
       const listaTrat = Array.isArray(tRes) ? tRes : [];
 
-      // Una cita cancelada se conserva en el historial, pero libera el calendario
-      setCitas((Array.isArray(cRes) ? cRes : []).filter((c) => c.estado !== 'CANCELADA'));
+      setCitas(Array.isArray(cRes) ? cRes : []);
       setPacientes(listaPac);
       setDoctores(listaDoc);
       setCatalogoTratamientos(listaTrat);
@@ -827,12 +829,36 @@ export default function CitasAgendaView() {
       case 'EN_ESPERA':
         return 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500';
       case 'NO_ASISTIO':
-      case 'CANCELADA':
         return 'bg-rose-100 text-rose-900 border-rose-300 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500';
+      case 'CANCELADA':
+        return 'bg-stone-200 text-stone-700 border-stone-400 border-dashed dark:bg-stone-700/40 dark:text-stone-300 dark:border-stone-500';
       default:
         return 'bg-indigo-100 text-indigo-900 border-indigo-300 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500';
     }
   };
+
+  // Canceladas e inasistencias quedan como constancia, pero el horario sigue disponible
+  const ocupaHorario = (c) => !ESTADOS_SIN_RESERVA.includes(c.estado);
+
+  const renderCitaSinReserva = (c) => (
+    <div
+      key={c.id}
+      onClick={(e) => {
+        e.stopPropagation();
+        handleEditCita(c);
+      }}
+      className={`px-2.5 py-1.5 mb-1.5 rounded-lg border text-xs cursor-pointer transition hover:brightness-95 dark:hover:brightness-110 ${getBadgeColor(c.estado)}`}
+      title={`${c.estado}: ${getCitaPacienteNombre(c)}. Click para ver el detalle`}
+    >
+      <div className="flex items-center justify-between gap-2 font-bold text-[10px]">
+        <span>{c.estado === 'CANCELADA' ? 'CANCELADA' : 'NO ASISTIÓ'}</span>
+        <span className="font-mono">{getCitaHoraInicio(c)} - {getCitaHoraFin(c)}</span>
+      </div>
+      <div className={`truncate mt-0.5 ${c.estado === 'CANCELADA' ? 'line-through' : ''}`}>
+        {getCitaPacienteNombre(c)} · Dr(a). {getCitaDoctorNombre(c)}
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -1057,6 +1083,9 @@ export default function CitasAgendaView() {
             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 dark:bg-teal-500/20 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30 font-semibold text-[11px]">
               <span className="w-2 h-2 rounded-full bg-teal-500" /> General / Control
             </span>
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-stone-200 text-stone-700 dark:bg-stone-700/40 dark:text-stone-300 border border-dashed border-stone-400 dark:border-stone-500 font-semibold text-[11px] line-through">
+              Cita cancelada
+            </span>
           </div>
 
           {/* TABLA MATRIZ SINCRONIZADA CON ESPACIOS AMPLIADOS */}
@@ -1074,7 +1103,7 @@ export default function CitasAgendaView() {
                         Box 1 <span className="font-normal text-slate-500 dark:text-slate-400">(General)</span>
                       </span>
                       <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-300">
-                        {citasDelDia.filter((c) => getCitaBox(c) === 1).length} citas
+                        {citasDelDia.filter((c) => getCitaBox(c) === 1 && ocupaHorario(c)).length} citas
                       </span>
                     </div>
                   </th>
@@ -1085,7 +1114,7 @@ export default function CitasAgendaView() {
                         Box 2 <span className="font-normal text-slate-500 dark:text-slate-400">(Cirugía)</span>
                       </span>
                       <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-300">
-                        {citasDelDia.filter((c) => getCitaBox(c) === 2).length} citas
+                        {citasDelDia.filter((c) => getCitaBox(c) === 2 && ocupaHorario(c)).length} citas
                       </span>
                     </div>
                   </th>
@@ -1096,7 +1125,7 @@ export default function CitasAgendaView() {
                         Box 3 <span className="font-normal text-slate-500 dark:text-slate-400">(Ortodoncia)</span>
                       </span>
                       <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-300">
-                        {citasDelDia.filter((c) => getCitaBox(c) === 3).length} citas
+                        {citasDelDia.filter((c) => getCitaBox(c) === 3 && ocupaHorario(c)).length} citas
                       </span>
                     </div>
                   </th>
@@ -1136,7 +1165,8 @@ export default function CitasAgendaView() {
                           return null;
                         }
 
-                        const citasBox = citasDelDia.filter((c) => getCitaBox(c) === boxNum);
+                        const citasBox = citasDelDia.filter((c) => getCitaBox(c) === boxNum && ocupaHorario(c));
+                        const sinReservaBox = citasDelDia.filter((c) => getCitaBox(c) === boxNum && !ocupaHorario(c));
                         const citaIniciando = citasBox.find((c) => {
                           const sIdx = getSlotIndexFromTime(getCitaHoraInicio(c));
                           return sIdx === slot.index;
@@ -1158,6 +1188,11 @@ export default function CitasAgendaView() {
                           const horaF = getCitaHoraFin(citaIniciando);
                           const motivo = getCitaMotivo(citaIniciando);
                           const tratConfig = getTratamientoConfig(citaIniciando);
+                          // Constancias que caen dentro del bloque de esta cita
+                          const sinReservaEnCelda = sinReservaBox.filter((c) => {
+                            const idx = getSlotIndexFromTime(getCitaHoraInicio(c));
+                            return idx >= slot.index && idx < slot.index + span;
+                          });
 
                           return (
                             <td
@@ -1166,9 +1201,10 @@ export default function CitasAgendaView() {
                               className="p-2 border-r border-b border-slate-200 dark:border-slate-800 align-top bg-white dark:bg-slate-900"
                               style={{ height: `${span * 64}px` }}
                             >
+                              {sinReservaEnCelda.map(renderCitaSinReserva)}
                               <div
                                 onClick={() => handleEditCita(citaIniciando)}
-                                className={`p-3 rounded-xl border border-l-4 ${tratConfig.borderLeft} ${tratConfig.bgCard} transition-all shadow-xs hover:shadow-md cursor-pointer group flex flex-col justify-between h-full min-h-[58px]`}
+                                className={`p-3 rounded-xl border border-l-4 ${tratConfig.borderLeft} ${tratConfig.bgCard} transition-all shadow-xs hover:shadow-md cursor-pointer group flex flex-col justify-between ${sinReservaEnCelda.length === 0 ? 'h-full' : ''} min-h-[58px]`}
                                 title="Click para editar cita odontológica"
                               >
                                 <div>
@@ -1232,7 +1268,7 @@ export default function CitasAgendaView() {
                                   onClick={(e) => e.stopPropagation()}
                                   className="pt-2 mt-2 border-t border-slate-200/80 dark:border-slate-700/60 flex items-center gap-1.5"
                                 >
-                                  {citaIniciando.estado === 'PROGRAMADA' && (
+                                  {(citaIniciando.estado === 'PROGRAMADA' || citaIniciando.estado === 'CONFIRMADA') && (
                                     <button
                                       onClick={() => handleUpdateEstado(citaIniciando.id, 'EN_ESPERA')}
                                       className="w-full py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-600/20 dark:hover:bg-blue-600/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5"
@@ -1275,6 +1311,9 @@ export default function CitasAgendaView() {
                             className="h-16 min-h-[64px] p-2 border-r border-b border-slate-200 dark:border-slate-800/80 bg-white/40 hover:bg-primary-50/50 dark:bg-slate-900/30 dark:hover:bg-slate-800/60 align-middle transition-colors cursor-pointer group"
                             title={`Click para agendar cita en Box ${boxNum} a las ${slot.time}`}
                           >
+                            {sinReservaBox
+                              .filter((c) => getSlotIndexFromTime(getCitaHoraInicio(c)) === slot.index)
+                              .map(renderCitaSinReserva)}
                             <div className="h-full min-h-[46px] rounded-xl border border-dashed border-slate-200 dark:border-slate-800 group-hover:border-primary-400 dark:group-hover:border-primary-500 bg-slate-50/40 group-hover:bg-primary-50/60 dark:bg-slate-900/40 dark:group-hover:bg-primary-950/20 transition-all flex items-center justify-between px-3.5">
                               <span className="text-xs text-slate-400 dark:text-slate-500 group-hover:text-primary-700 dark:group-hover:text-primary-300 font-medium transition flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700 group-hover:bg-primary-500 transition" />
@@ -1392,7 +1431,7 @@ export default function CitasAgendaView() {
                           title={`Click para editar: ${hora} - ${pac} (Box ${box})`}
                         >
                           <span className="font-mono font-bold mr-1">{hora}</span>
-                          <span className="truncate flex-1">{pac}</span>
+                          <span className={`truncate flex-1 ${c.estado === 'CANCELADA' ? 'line-through' : ''}`}>{pac}</span>
                         </div>
                       );
                     })}
@@ -1436,6 +1475,7 @@ export default function CitasAgendaView() {
             </div>
 
             <form onSubmit={handleSaveCita} className="space-y-4">
+              <ErrorModal mensaje={error} />
               <PacienteSearchInput
                 label="Paciente"
                 required
@@ -1807,7 +1847,7 @@ export default function CitasAgendaView() {
 
               {/* Botones de Acción */}
               <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800">
-                {editingCitaId ? (
+                {editingCitaId && formCita.estado !== 'CANCELADA' && formCita.estado !== 'FINALIZADA' ? (
                   <button
                     type="button"
                     onClick={handleDeleteCita}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ErrorModal from '../components/ErrorModal';
 import { api } from '../services/api';
 import {
   Users,
@@ -120,6 +121,7 @@ export default function UsuariosRolesView() {
 
   const handleSaveUser = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       const selectedRole = roles.find((r) => r.id === userForm.rol_id);
       const isRoleDoctor = selectedRole?.codigo === 'DOCTOR';
@@ -171,6 +173,7 @@ export default function UsuariosRolesView() {
 
   const handleSaveRole = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       await api.createRol(roleForm);
       setSuccess('Rol creado exitosamente');
@@ -487,6 +490,7 @@ export default function UsuariosRolesView() {
             </p>
 
             <form onSubmit={handleSaveUser} className="space-y-4">
+              <ErrorModal mensaje={error} />
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">Username *</label>
@@ -644,6 +648,7 @@ export default function UsuariosRolesView() {
             </p>
 
             <form onSubmit={handleSaveRole} className="space-y-4">
+              <ErrorModal mensaje={error} />
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Nombre del Rol *</label>
                 <input
