@@ -10,7 +10,7 @@ from app.models import (
     Usuario, RolCodigoEnum, AuditoriaLog, AuditoriaAccionEnum
 )
 from app.core.dependencies import get_current_user, require_permission, tiene_permiso
-from app.services.saldos import validar_monto_cobro
+from app.services.saldos import validar_cobro_directo, validar_monto_cobro
 from app.schemas.caja import (
     CajaAperturaRequest, CajaCierreRequest, CajaSesionResponse,
     PagoCreate, PagoResponse, EgresoCajaCreate, EgresoCajaResponse
@@ -208,7 +208,10 @@ def registrar_pago_paciente(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No se puede registrar un cobro en efectivo si no hay una caja abierta"
         )
-    validar_monto_cobro(datos.paciente_id, datos.plan_id, datos.monto, db)
+    if datos.es_cobro_directo:
+        validar_cobro_directo(datos.paciente_id, datos.plan_id, datos.observaciones, db)
+    else:
+        validar_monto_cobro(datos.paciente_id, datos.plan_id, datos.monto, db)
 
     nuevo_pago = Pago(
         **datos.model_dump(),

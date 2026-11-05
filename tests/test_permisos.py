@@ -4,7 +4,9 @@ la privacidad de las comisiones y el catálogo de tratamientos.
 Escribe datos: ejecutar contra una base de pruebas.
 """
 import os
+import random
 import sys
+from datetime import date, timedelta
 from uuid import uuid4
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -370,6 +372,146 @@ def test_limite_de_cobros():
     print("✔ Cobros: un pago o adelanto nunca supera el saldo de los planes aprobados.")
 
 
+def _cita(paciente_id, doctor_id, headers=H):
+    dia = date(2031, 1, 1) + timedelta(days=random.randint(0, 18000))
+    return client.post(f"{API}/citas/", json={
+        "paciente_id": paciente_id, "doctor_id": doctor_id, "motivo_consulta": "Prueba",
+        "fecha_inicio_programada": f"{dia}T09:00:00Z", "fecha_fin_programada": f"{dia}T10:00:00Z",
+    }, headers=headers)
+
+
+def test_citas_entre_doctores():
+    _, cab_a = _crear_usuario(ROLES["DOCTOR"]["id"])
+    _, cab_b = _crear_usuario(ROLES["DOCTOR"]["id"])
+    doc_a = client.get(f"{API}/auth/me", headers=cab_a).json()["doctor_id"]
+    doc_b = client.get(f"{API}/auth/me", headers=cab_b).json()["doctor_id"]
+    paciente_id = _crear_paciente()
+
+    def nueva_cita_de_b():
+        res = _cita(paciente_id, doc_b)
+        assert res.status_code == 201, res.text
+        return res.json()["id"]
+
+    # El doctor A no puede cambiar nada de una cita del doctor B
+    ajena = nueva_cita_de_b()
+    assert client.put(f"{API}/citas/{ajena}", json={"motivo_consulta": "Cambiada"}, headers=cab_a).status_code == 403
+    assert client.put(f"{API}/citas/{ajena}", json={"doctor_id": doc_a}, headers=cab_a).status_code == 403
+    assert client.patch(f"{API}/citas/{ajena}/sillon", json={"estado": "EN_ESPERA"}, headers=cab_a).status_code == 403
+    assert client.delete(f"{API}/citas/{ajena}", headers=cab_a).status_code == 403
+    guardada = next(c for c in client.get(f"{API}/citas/?paciente_id={paciente_id}", headers=H).json() if c["id"] == ajena)
+    assert guardada["motivo_consulta"] == "Prueba" and guardada["estado"] == "PROGRAMADA"
+    # Pero sí puede verla, y agendar a otro doctor sigue bloqueado
+    assert ajena in [c["id"] for c in client.get(f"{API}/citas/?paciente_id={paciente_id}", headers=cab_a).json()]
+    assert _cita(paciente_id, doc_b, headers=cab_a).status_code == 403
+
+    # El doctor dueño sí puede
+    assert client.put(f"{API}/citas/{ajena}", json={"motivo_consulta": "Propia"}, headers=cab_b).status_code == 200
+    assert client.patch(f"{API}/citas/{ajena}/sillon", json={"estado": "EN_ESPERA"}, headers=cab_b).status_code == 200
+    assert client.delete(f"{API}/citas/{ajena}", headers=cab_b).status_code == 204
+
+    # Asistente, recepción y administrador pueden cambiar las de cualquiera
+    otros = [_crear_usuario(ROLES[r]["id"])[1] for r in ("ASISTENTE", "RECEPCION")] + [H]
+    for cabeceras in otros:
+        cita_id = nueva_cita_de_b()
+        assert client.put(f"{API}/citas/{cita_id}", json={"motivo_consulta": "Reagendada"}, headers=cabeceras).status_code == 200
+        assert client.patch(f"{API}/citas/{cita_id}/sillon", json={"estado": "EN_ESPERA"}, headers=cabeceras).status_code == 200
+        assert client.put(f"{API}/citas/{cita_id}", json={"doctor_id": doc_a}, headers=cabeceras).status_code == 200
+        assert client.delete(f"{API}/citas/{cita_id}", headers=cabeceras).status_code == 204
+    print("✔ Citas: un doctor solo cambia las suyas; asistente, recepción y admin, todas.")
+
+
+def test_cobro_directo():
+    _caja_abierta()
+    url = f"{API}/caja/pagos"
+    doctor = client.get(f"{API}/usuarios/doctores/lista", headers=H).json()[0]["id"]
+
+    def directo(paciente_id, monto=40, **extra):
+        return client.post(url, json={
+            "paciente_id": paciente_id, "monto": monto, "metodo_pago": "TRANSFERENCIA",
+            "es_cobro_directo": True, "observaciones": "Consulta general", **extra,
+        }, headers=H)
+
+    def saldo(paciente_id):
+        return client.get(f"{API}/pacientes/{paciente_id}/saldo", headers=H).json()
+
+    # Sin ningún plan, o con el plan solo propuesto, se puede cobrar la consulta
+    paciente_id = _crear_paciente()
+    assert directo(paciente_id).status_code == 201
+    propuesto = _plan(paciente_id, 500, "PROPUESTO")
+    assert directo(paciente_id).status_code == 201
+    datos = saldo(paciente_id)
+    assert datos["saldo_pendiente"] == 0 and datos["total_pagado"] == 0 and datos["estado_saldo"] == "AL_DIA"
+    assert [p["es_cobro_directo"] for p in datos["pagos"]] == [True, True]
+
+    # El plan propuesto sigue sin poder cobrarse como abono
+    abono = {"paciente_id": paciente_id, "monto": 10, "metodo_pago": "TRANSFERENCIA"}
+    assert client.post(url, json=abono, headers=H).status_code == 400
+    assert client.post(url, json={**abono, "plan_id": propuesto}, headers=H).status_code == 400
+
+    # Si luego aprueba un plan, lo cobrado por la consulta no descuenta su deuda
+    _plan(paciente_id, 300)
+    assert saldo(paciente_id)["saldo_pendiente"] == 300
+    assert client.post(url, json={**abono, "monto": 301}, headers=H).status_code == 400
+    assert directo(paciente_id, monto=1000).status_code == 201, "El límite del saldo no aplica a una consulta"
+    assert saldo(paciente_id)["saldo_pendiente"] == 300
+
+    # Debe tener concepto, un monto válido y no apuntar a un plan
+    assert directo(paciente_id, observaciones="   ").status_code == 400
+    assert directo(paciente_id, monto=0).status_code == 422
+    assert directo(paciente_id, plan_id=propuesto).status_code == 400
+    assert directo(str(uuid4())).status_code == 404
+
+    # Sigue las reglas de caja y comisión de cualquier cobro
+    antes = client.get(f"{API}/caja/estado", headers=H).json()["saldo_en_gaveta"]
+    comision = client.get(f"{API}/empleados/comisiones-doctor/{doctor}", headers=H).json()["total_cobrado_por_sus_tratamientos"]
+    assert directo(paciente_id, monto=25, metodo_pago="EFECTIVO", doctor_comision_id=doctor).status_code == 201
+    assert client.get(f"{API}/caja/estado", headers=H).json()["saldo_en_gaveta"] == antes + 25
+    assert client.get(f"{API}/empleados/comisiones-doctor/{doctor}", headers=H).json()["total_cobrado_por_sus_tratamientos"] == comision + 25
+    _, doctor_cab = _crear_usuario(ROLES["DOCTOR"]["id"])
+    assert client.post(url, json={**abono, "es_cobro_directo": True, "observaciones": "x"}, headers=doctor_cab).status_code == 403
+    print("✔ Cobro directo: sin plan, con concepto, y sin alterar el saldo de los planes.")
+
+
+def test_anticipos_se_descuentan():
+    _caja_abierta()
+    usuario, cabeceras = _crear_usuario(ROLES["DOCTOR"]["id"])
+    doctor_id = client.get(f"{API}/auth/me", headers=cabeceras).json()["doctor_id"]
+    assert client.post(f"{API}/personal/contratos", json={
+        "usuario_id": usuario["id"], "tipo_remuneracion": "PORCENTAJE_COMISION", "porcentaje_comision": 40,
+    }, headers=H).status_code == 201
+    paciente_id = _crear_paciente()
+    assert client.post(f"{API}/caja/pagos", json={
+        "paciente_id": paciente_id, "monto": 1000, "metodo_pago": "TRANSFERENCIA",
+        "es_cobro_directo": True, "observaciones": "Consulta", "doctor_comision_id": doctor_id,
+    }, headers=H).status_code == 201
+
+    def comisiones():
+        return client.get(f"{API}/empleados/comisiones-doctor/{doctor_id}", headers=cabeceras).json()
+
+    def pagar(tipo, monto, **extra):
+        res = client.post(f"{API}/empleados/pagos", json={
+            "usuario_empleado_id": usuario["id"], "tipo_pago": tipo, "monto_neto_pagado": monto,
+            "metodo_pago": "TRANSFERENCIA", **extra,
+        }, headers=H)
+        assert res.status_code == 201, res.text
+
+    assert comisiones()["saldo_comision_por_pagar"] == 400
+    pagar("ADELANTO", 100)
+    datos = comisiones()
+    assert datos["total_anticipos"] == 100 and datos["saldo_comision_por_pagar"] == 300
+
+    # Liquidar el neto deja el saldo en cero, sin descontar el anticipo dos veces
+    pagar("COMISION_TRATAMIENTOS", 300, monto_comisiones=300)
+    datos = comisiones()
+    assert datos["comisiones_ya_liquidadas"] == 300 and datos["total_anticipos"] == 100
+    assert datos["saldo_comision_por_pagar"] == 0
+
+    # Un bono o sueldo no se descuenta de las comisiones
+    pagar("BONO", 50)
+    assert comisiones()["saldo_comision_por_pagar"] == 0
+    print("✔ Anticipos: se descuentan una sola vez de las comisiones del doctor.")
+
+
 def test_catalogo_de_tratamientos():
     url = f"{API}/tratamientos/catalogo"
     _, doctor = _crear_usuario(ROLES["DOCTOR"]["id"])
@@ -433,5 +575,8 @@ if __name__ == "__main__":
     test_rol_personalizado_clinico()
     test_no_hay_escalada_de_privilegios()
     test_limite_de_cobros()
+    test_citas_entre_doctores()
+    test_cobro_directo()
+    test_anticipos_se_descuentan()
     test_catalogo_de_tratamientos()
     print("TODAS LAS PRUEBAS DE PERMISOS PASARON")

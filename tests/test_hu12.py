@@ -160,7 +160,8 @@ def test_hu12_completo():
     res_comision_post = client.get(f"/api/v1/empleados/comisiones-doctor/{doctor_id}", headers=headers_admin).json()
     esperado_pagado_com = com_ya_pagada_ini + monto_liquidacion
     assert abs(res_comision_post["comisiones_ya_liquidadas"] - esperado_pagado_com) < 0.01
-    esperado_saldo_com = com_bruta_ini - esperado_pagado_com
+    assert res_comision_post["total_anticipos"] == 200.00
+    esperado_saldo_com = com_bruta_ini - esperado_pagado_com - 200.00
     assert abs(res_comision_post["saldo_comision_por_pagar"] - esperado_saldo_com) < 0.01
     print(f"✔ [Escenario 3] Liquidación de $500.00 aplicada. Comisiones liquidadas: ${res_comision_post['comisiones_ya_liquidadas']:.2f}, Nuevo saldo pendiente: ${res_comision_post['saldo_comision_por_pagar']:.2f}.")
 

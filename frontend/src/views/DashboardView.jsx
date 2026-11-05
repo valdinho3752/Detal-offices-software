@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { puedeAcceder } from '../config/accesos';
+import { puedeAcceder, puedeModificarCita } from '../config/accesos';
 import {
   Users,
   Calendar,
@@ -26,6 +26,7 @@ export default function DashboardView() {
   const auth = useAuth();
   const { user, tienePermiso } = auth;
   const accesible = (ruta) => puedeAcceder(ruta, auth);
+  const puedeAvanzar = (cita) => tienePermiso('CITAS_SILLON') && puedeModificarCita(cita, user);
   const verCaja = tienePermiso('CAJA_READ');
   const verFinanzas = tienePermiso('REPORTES_READ');
   const verCitas = tienePermiso('CITAS_READ');
@@ -252,7 +253,7 @@ export default function DashboardView() {
                       </span>
 
                       {/* Botones de acción de flujo */}
-                      {(cita.estado === 'PROGRAMADA' || cita.estado === 'CONFIRMADA') && (
+                      {puedeAvanzar(cita) && (cita.estado === 'PROGRAMADA' || cita.estado === 'CONFIRMADA') && (
                         <button
                           onClick={() => handleUpdateSillon(cita.id, 'EN_ESPERA')}
                           className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 text-xs rounded-lg transition"
@@ -261,7 +262,7 @@ export default function DashboardView() {
                           En Espera
                         </button>
                       )}
-                      {cita.estado === 'EN_ESPERA' && (
+                      {puedeAvanzar(cita) && cita.estado === 'EN_ESPERA' && (
                         <button
                           onClick={() => handleUpdateSillon(cita.id, 'EN_SILLON')}
                           className="px-2.5 py-1 bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/30 text-xs rounded-lg transition flex items-center gap-1"
@@ -270,7 +271,7 @@ export default function DashboardView() {
                           <Play className="w-3 h-3" /> A Sillón
                         </button>
                       )}
-                      {cita.estado === 'EN_SILLON' && (
+                      {puedeAvanzar(cita) && cita.estado === 'EN_SILLON' && (
                         <button
                           onClick={() => handleUpdateSillon(cita.id, 'FINALIZADA')}
                           className="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 text-xs rounded-lg transition flex items-center gap-1"

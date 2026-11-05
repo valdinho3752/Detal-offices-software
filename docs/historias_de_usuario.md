@@ -573,7 +573,7 @@ Escenario: Cálculo automatizado de comisiones por doctor
   Cuando el Administrador consulta "GET /api/v1/empleados/comisiones-doctor/{doctor_id}"
   Entonces el sistema calcula:
     comision_bruta_generada = $3,000.00 * 40% = $1,200.00
-    saldo_comision_por_pagar = $1,200.00 - comisiones_ya_liquidadas.
+    saldo_comision_por_pagar = $1,200.00 - comisiones_ya_liquidadas - anticipos_entregados.
 
 Escenario: Pago de anticipo en efectivo desde la caja diaria
   Dado un empleado que solicita un adelanto de $100.00 en efectivo

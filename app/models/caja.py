@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, DateTime, ForeignKey, Numeric, Text
+from sqlalchemy import Boolean, Column, String, DateTime, ForeignKey, Numeric, Text
 from sqlalchemy.dialects.postgresql import UUID, ENUM
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -42,6 +42,7 @@ class Pago(Base):
     monto = Column(Numeric(12, 2), nullable=False)
     metodo_pago = Column(ENUM(MetodoPagoEnum, name="metodo_pago_enum", create_type=False), default=MetodoPagoEnum.EFECTIVO, nullable=False)
     referencia_comprobante = Column(String(150), nullable=True)
+    es_cobro_directo = Column(Boolean, default=False, nullable=False)
     fecha_hora = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     observaciones = Column(Text, nullable=True)
 

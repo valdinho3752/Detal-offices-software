@@ -28,7 +28,11 @@ def calcular_saldo_paciente(paciente_id: UUID, db: Session) -> SaldoPaciente:
         PlanTratamiento.paciente_id == paciente_id,
         PlanTratamiento.estado.in_(ESTADOS_PLAN_CON_DEUDA),
     ).scalar()
-    pagado = db.query(func.coalesce(func.sum(Pago.monto), 0)).filter(Pago.paciente_id == paciente_id).scalar()
+    # Un cobro directo paga una consulta aparte: no reduce lo que se debe por los planes
+    pagado = db.query(func.coalesce(func.sum(Pago.monto), 0)).filter(
+        Pago.paciente_id == paciente_id,
+        Pago.es_cobro_directo.is_(False),
+    ).scalar()
     return SaldoPaciente(Decimal(presupuestado), Decimal(pagado))
 
 
@@ -38,6 +42,22 @@ def _rechazar(monto: Decimal, disponible: Decimal, contexto: str):
     else:
         detalle = f"El cobro de ${monto:.2f} supera el saldo pendiente de ${disponible:.2f} de {contexto}"
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detalle)
+
+
+def validar_cobro_directo(paciente_id: UUID, plan_id, concepto, db: Session) -> None:
+    """Una consulta se cobra sin plan aprobado, pero debe quedar claro qué se cobró."""
+    if plan_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Un cobro directo no se aplica a un plan: elige un abono al plan o quita el plan"
+        )
+    if not (concepto or "").strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Indica el concepto del cobro directo, por ejemplo Consulta general"
+        )
+    if not db.query(Paciente.id).filter(Paciente.id == paciente_id).first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado")
 
 
 def validar_monto_cobro(paciente_id: UUID, plan_id, monto: Decimal, db: Session) -> None:

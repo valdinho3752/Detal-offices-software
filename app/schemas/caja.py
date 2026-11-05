@@ -44,6 +44,7 @@ class PagoCreate(BaseModel):
     monto: Decimal = Field(gt=0)
     metodo_pago: MetodoPagoEnum = MetodoPagoEnum.EFECTIVO
     referencia_comprobante: Optional[str] = None
+    es_cobro_directo: bool = False
     observaciones: Optional[str] = None
 
 class PagoResponse(PagoCreate):

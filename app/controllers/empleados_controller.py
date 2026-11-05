@@ -122,7 +122,13 @@ def calcular_comisiones_doctor(
         PagoEmpleado.usuario_empleado_id == doctor.usuario_id
     ).scalar()
 
-    saldo_comision_pendiente = comision_generada - float(comisiones_ya_pagadas)
+    # Los anticipos ya entregados al doctor se descuentan de lo que falta por pagarle
+    anticipos = db.query(func.coalesce(func.sum(PagoEmpleado.monto_neto_pagado), 0)).filter(
+        PagoEmpleado.usuario_empleado_id == doctor.usuario_id,
+        PagoEmpleado.tipo_pago == TipoPagoEmpleadoEnum.ADELANTO,
+    ).scalar()
+
+    saldo_comision_pendiente = comision_generada - float(comisiones_ya_pagadas) - float(anticipos)
 
     return {
         "doctor_id": str(doctor.id),
@@ -131,5 +137,6 @@ def calcular_comisiones_doctor(
         "total_cobrado_por_sus_tratamientos": float(total_cobrado),
         "comision_bruta_generada": comision_generada,
         "comisiones_ya_liquidadas": float(comisiones_ya_pagadas),
+        "total_anticipos": float(anticipos),
         "saldo_comision_por_pagar": saldo_comision_pendiente
     }

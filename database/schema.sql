@@ -564,6 +564,7 @@ CREATE TABLE pagos (
     monto NUMERIC(12, 2) NOT NULL,
     metodo_pago metodo_pago_enum NOT NULL DEFAULT 'EFECTIVO',
     referencia_comprobante VARCHAR(150),
+    es_cobro_directo BOOLEAN NOT NULL DEFAULT false, -- Consulta cobrada sin plan: no afecta el saldo de los planes
     fecha_hora TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     observaciones TEXT
 );

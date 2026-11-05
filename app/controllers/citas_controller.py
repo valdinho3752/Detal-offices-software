@@ -17,6 +17,8 @@ router = APIRouter(prefix="/citas", tags=["Agenda y Citas Dentales"])
 # Estas citas ya no ocupan el horario del doctor.
 ESTADOS_SIN_RESERVA = (EstadoCitaEnum.CANCELADA, EstadoCitaEnum.NO_ASISTIO)
 
+ROLES_GESTION_AGENDA = ("ADMIN", "RECEPCION", "RECEPCIONISTA", "ASISTENTE")
+
 HORA_POR_ESTADO = {
     EstadoCitaEnum.EN_ESPERA: "hora_llegada_recepcion",
     EstadoCitaEnum.EN_SILLON: "hora_inicio_sillon",
@@ -72,10 +74,8 @@ def agendar_cita(
             (Doctor.id == datos.doctor_id) | (Doctor.usuario_id == datos.doctor_id)
         ).first()
 
-    rol_str = str(current_user.rol.codigo.value if hasattr(current_user.rol.codigo, "value") else current_user.rol.codigo).upper() if current_user.rol else ""
-
     resolved_doctor_id = None
-    if rol_str in ["ADMIN", "RECEPCION", "RECEPCIONISTA"] or not current_user.doctor_perfil:
+    if _gestiona_agenda(current_user):
         if doctor_obj:
             resolved_doctor_id = doctor_obj.id
         elif current_user.doctor_perfil:
@@ -135,6 +135,19 @@ def agendar_cita(
     db.commit()
     db.refresh(nueva_cita)
     return nueva_cita
+
+def _gestiona_agenda(usuario: Usuario) -> bool:
+    """Administración, recepción, asistentes y roles sin perfil médico trabajan con la agenda de todos."""
+    rol = str(usuario.rol.codigo).upper() if usuario.rol else ""
+    return rol in ROLES_GESTION_AGENDA or not usuario.doctor_perfil
+
+def _validar_puede_modificar(cita: Cita, usuario: Usuario) -> None:
+    """Un doctor solo puede cambiar sus propias citas."""
+    if not _gestiona_agenda(usuario) and cita.doctor_id != usuario.doctor_perfil.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo puedes modificar tus propias citas"
+        )
 
 def _box_de_cita(cita: Cita) -> int:
     """El box se guarda en las notas; sin indicación, la agenda la muestra en el Box 1."""
@@ -228,6 +241,7 @@ def actualizar_cita(
     cita = db.query(Cita).filter(Cita.id == id).first()
     if not cita:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada")
+    _validar_puede_modificar(cita, current_user)
 
     update_dict = datos.model_dump(exclude_unset=True)
     if "doctor_id" in update_dict and update_dict["doctor_id"] is not None:
@@ -236,9 +250,7 @@ def actualizar_cita(
             (Doctor.id == target_doc) | (Doctor.usuario_id == target_doc)
         ).first()
 
-        rol_str = str(current_user.rol.codigo.value if hasattr(current_user.rol.codigo, "value") else current_user.rol.codigo).upper() if current_user.rol else ""
-
-        if rol_str in ["ADMIN", "RECEPCION", "RECEPCIONISTA"] or not current_user.doctor_perfil:
+        if _gestiona_agenda(current_user):
             if not doctor_obj:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor no encontrado")
             update_dict["doctor_id"] = doctor_obj.id
@@ -294,6 +306,7 @@ def cancelar_cita(
     cita = db.query(Cita).filter(Cita.id == id).first()
     if not cita:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada")
+    _validar_puede_modificar(cita, current_user)
     if cita.estado == EstadoCitaEnum.FINALIZADA:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -331,6 +344,7 @@ def controlar_tiempo_sillon(
     cita = db.query(Cita).filter(Cita.id == id).first()
     if not cita:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada")
+    _validar_puede_modificar(cita, current_user)
 
     estado_previo = cita.estado
     for field, value in control.model_dump(exclude_unset=True).items():

@@ -175,6 +175,7 @@ def consultar_saldo_paciente(
             "medio_pago": p.metodo_pago.value if hasattr(p.metodo_pago, "value") else str(p.metodo_pago),
             "numero_comprobante": p.referencia_comprobante or f"REC-{str(p.id)[:8]}",
             "observaciones": p.observaciones,
+            "es_cobro_directo": p.es_cobro_directo,
             "created_at": p.fecha_hora.isoformat() if p.fecha_hora else None,
         }
         for p in pagos_db

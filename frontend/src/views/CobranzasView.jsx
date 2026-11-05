@@ -38,6 +38,7 @@ export default function CobranzasView() {
     numero_comprobante: '',
     doctor_comision_id: '',
     observaciones: '',
+    tipo_cobro: 'PLAN',
   });
 
   useEffect(() => {
@@ -87,17 +88,11 @@ export default function CobranzasView() {
         referencia_comprobante: formPago.numero_comprobante || null,
         doctor_comision_id: formPago.doctor_comision_id || null,
         observaciones: formPago.observaciones,
+        es_cobro_directo: esDirecto,
       });
 
-      setSuccess('Pago recibido y acreditado a la cuenta del paciente');
+      setSuccess(esDirecto ? 'Consulta cobrada: no afecta el saldo de los planes' : 'Pago recibido y acreditado a la cuenta del paciente');
       setShowModal(false);
-      setFormPago({
-        monto: '',
-        medio_pago: 'EFECTIVO',
-        numero_comprobante: '',
-        doctor_comision_id: '',
-        observaciones: '',
-      });
       setTimeout(() => setSuccess(''), 3000);
       loadSaldo();
     } catch (err) {
@@ -107,6 +102,28 @@ export default function CobranzasView() {
 
   const selectedPaciente = pacientes.find((p) => p.id === selectedPacienteId);
   const deuda = Number(saldoInfo?.saldo_pendiente || 0);
+  const esDirecto = formPago.tipo_cobro === 'DIRECTO';
+  const cobrosDirectos = (saldoInfo?.pagos || [])
+    .filter((p) => p.es_cobro_directo)
+    .reduce((total, p) => total + Number(p.monto), 0);
+
+  const abrirCobro = () => {
+    setError('');
+    setFormPago({
+      monto: deuda > 0 ? deuda.toFixed(2) : '',
+      medio_pago: 'EFECTIVO',
+      numero_comprobante: '',
+      doctor_comision_id: '',
+      observaciones: '',
+      // Sin saldo en planes aprobados, lo único que se puede cobrar es una consulta
+      tipo_cobro: deuda > 0 ? 'PLAN' : 'DIRECTO',
+    });
+    setShowModal(true);
+  };
+
+  const cambiarTipoCobro = (tipo) => {
+    setFormPago({ ...formPago, tipo_cobro: tipo, monto: tipo === 'PLAN' ? deuda.toFixed(2) : '' });
+  };
 
   return (
     <div className="space-y-6">
@@ -131,18 +148,8 @@ export default function CobranzasView() {
           </div>
 
           <button
-            disabled={deuda <= 0}
-            title={deuda > 0 ? 'Registrar un pago o adelanto' : 'El paciente no tiene saldo pendiente en planes aprobados'}
-            onClick={() => {
-              setFormPago({
-                monto: deuda > 0 ? deuda.toFixed(2) : '',
-                medio_pago: 'EFECTIVO',
-                numero_comprobante: '',
-                doctor_comision_id: '',
-                observaciones: '',
-              });
-              setShowModal(true);
-            }}
+            disabled={!selectedPacienteId}
+            onClick={abrirCobro}
             className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20 whitespace-nowrap"
           >
             <Plus className="w-4 h-4" />
@@ -204,11 +211,15 @@ export default function CobranzasView() {
           </div>
 
           <div className="p-4 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/50 rounded-xl">
-            <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Total Pagado / Abonado</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Total Abonado a Planes</span>
             <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
               ${Number(saldoInfo?.total_pagado || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
             </div>
-            <div className="text-[11px] text-emerald-600 dark:text-emerald-500 mt-1">Ingresado al flujo de caja</div>
+            <div className="text-[11px] text-emerald-600 dark:text-emerald-500 mt-1">
+              {cobrosDirectos > 0
+                ? `Además, $${cobrosDirectos.toFixed(2)} en consultas directas`
+                : 'Ingresado al flujo de caja'}
+            </div>
           </div>
 
           <div className={`p-4 rounded-xl border ${deuda > 0 ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30' : 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30'}`}>
@@ -242,7 +253,7 @@ export default function CobranzasView() {
           <div className="py-8 text-center text-slate-500 dark:text-slate-400 text-xs">
             No se han registrado pagos para este paciente.{' '}
             <button
-              onClick={() => setShowModal(true)}
+              onClick={abrirCobro}
               className="text-primary-600 dark:text-primary-400 hover:underline font-semibold"
             >
               Registrar el primer cobro
@@ -273,6 +284,11 @@ export default function CobranzasView() {
                       <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-300 rounded font-semibold text-[11px]">
                         {pago.medio_pago}
                       </span>
+                      {pago.es_cobro_directo && (
+                        <span className="ml-1.5 px-2 py-0.5 bg-sky-500/10 border border-sky-500/30 text-sky-700 dark:text-sky-300 rounded font-semibold text-[11px]">
+                          Consulta directa
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-slate-500 dark:text-slate-400 italic">{pago.observaciones || '-'}</td>
                     <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
@@ -298,12 +314,30 @@ export default function CobranzasView() {
             <form onSubmit={handleRegistrarPago} className="space-y-4">
               <ErrorModal mensaje={error} />
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Monto a Cobrar ($) * <span className="font-normal text-slate-500 dark:text-slate-400">· máximo ${deuda.toFixed(2)}</span></label>
+                <label htmlFor="cobro-tipo" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Tipo de Cobro *</label>
+                <select
+                  id="cobro-tipo"
+                  value={formPago.tipo_cobro}
+                  onChange={(e) => cambiarTipoCobro(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="PLAN" disabled={deuda <= 0} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+                    Abono o adelanto a plan aprobado{deuda > 0 ? '' : ' (sin saldo pendiente)'}
+                  </option>
+                  <option value="DIRECTO" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Consulta directa (sin plan)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Monto a Cobrar ($) *{' '}
+                  {!esDirecto && <span className="font-normal text-slate-500 dark:text-slate-400">· máximo ${deuda.toFixed(2)}</span>}
+                </label>
                 <input
                   type="number"
                   step="0.01"
                   min="0.01"
-                  max={deuda > 0 ? deuda.toFixed(2) : undefined}
+                  max={!esDirecto && deuda > 0 ? deuda.toFixed(2) : undefined}
                   required
                   placeholder="0.00"
                   value={formPago.monto}
@@ -354,10 +388,14 @@ export default function CobranzasView() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Observaciones</label>
+                <label htmlFor="cobro-concepto" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  {esDirecto ? 'Concepto del Cobro *' : 'Observaciones'}
+                </label>
                 <textarea
+                  id="cobro-concepto"
                   rows="2"
-                  placeholder="Abono a corona zirconio pieza 16..."
+                  required={esDirecto}
+                  placeholder={esDirecto ? 'Consulta general, evaluación...' : 'Abono a corona zirconio pieza 16...'}
                   value={formPago.observaciones}
                   onChange={(e) => setFormPago({ ...formPago, observaciones: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"

@@ -15,6 +15,13 @@ const PERMISOS_POR_RUTA = {
   '/usuarios': ['USUARIOS_MANAGE', 'ROLES_MANAGE'],
 };
 
+// Un doctor solo puede cambiar sus propias citas; la API aplica la misma regla
+const ROLES_GESTION_AGENDA = ['ADMIN', 'RECEPCION', 'RECEPCIONISTA', 'ASISTENTE'];
+
+export function puedeModificarCita(cita, user) {
+  return ROLES_GESTION_AGENDA.includes(user?.rol_str) || !user?.doctor_id || cita?.doctor_id === user.doctor_id;
+}
+
 export function puedeAcceder(ruta, { user, isAdmin, tienePermiso }) {
   if (isAdmin) return true;
   if (ruta === '/tratamientos') return false; // Exclusivo del administrador

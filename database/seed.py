@@ -118,7 +118,7 @@ def seed_database():
 
         # ASISTENTE: Consulta de pacientes, apoyo en sillón, ver odontograma/radiografías y fichaje
         permisos_asistente = [
-            "PACIENTES_READ", "CITAS_READ", "ODONTOGRAMA_READ", "TRATAMIENTOS_READ",
+            "PACIENTES_READ", "CITAS_READ", "CITAS_UPDATE", "CITAS_SILLON", "ODONTOGRAMA_READ", "TRATAMIENTOS_READ",
             "HISTORIA_CLINICA_READ", "HISTORIA_CLINICA_OBSERVAR",
             "RADIOGRAFIAS_READ", "RADIOGRAFIAS_CREATE", "PROTESIS_READ", "ASISTENCIA_FICHAR"
         ]

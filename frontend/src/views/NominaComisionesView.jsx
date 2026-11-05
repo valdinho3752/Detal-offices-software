@@ -193,7 +193,7 @@ export default function NominaComisionesView() {
         </div>
 
         {/* 4 Métricas de Comisión */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Producción Cobrada */}
           <div className="p-4 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/50 rounded-xl">
             <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Total Producido Efectivo</span>
@@ -221,13 +221,22 @@ export default function NominaComisionesView() {
             <div className="text-[11px] text-amber-600 dark:text-amber-500 mt-1">Pagadas al profesional</div>
           </div>
 
+          {/* Anticipos entregados */}
+          <div className="p-4 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/50 rounded-xl">
+            <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Anticipos Entregados</span>
+            <div className="text-xl font-bold text-amber-600 dark:text-amber-400 font-mono">
+              -${Number(comisionesData?.total_anticipos || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+            </div>
+            <div className="text-[11px] text-amber-600 dark:text-amber-500 mt-1">Se descuentan de la comisión</div>
+          </div>
+
           {/* Neto a Pagar */}
           <div className="p-4 bg-primary-50 dark:bg-primary-600/10 border border-primary-200 dark:border-primary-500/30 rounded-xl">
             <span className="text-xs text-primary-700 dark:text-primary-300 block mb-1 font-semibold">Neto a Liquidar</span>
             <div className="text-2xl font-bold text-primary-600 dark:text-primary-400 font-mono">
               ${Number(comisionesData?.saldo_comision_por_pagar || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
             </div>
-            <div className="text-[11px] text-primary-600/80 dark:text-primary-300/80 mt-1">Bruta menos lo ya liquidado</div>
+            <div className="text-[11px] text-primary-600/80 dark:text-primary-300/80 mt-1">Bruta menos lo liquidado y los anticipos</div>
           </div>
         </div>
       </div>

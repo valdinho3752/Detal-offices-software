@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import ErrorModal from '../components/ErrorModal';
+import { puedeModificarCita } from '../config/accesos';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -139,7 +140,7 @@ export const getTratamientoConfig = (cita) => {
 const ESTADOS_SIN_RESERVA = ['CANCELADA', 'NO_ASISTIO'];
 
 export default function CitasAgendaView() {
-  const { user, isAdmin, isRecepcion } = useAuth();
+  const { user, isRecepcion, tienePermiso } = useAuth();
   const [searchParams] = useSearchParams();
   const queryPacienteId = searchParams.get('paciente_id');
   const queryAction = searchParams.get('action');
@@ -839,6 +840,9 @@ export default function CitasAgendaView() {
 
   // Canceladas e inasistencias quedan como constancia, pero el horario sigue disponible
   const ocupaHorario = (c) => !ESTADOS_SIN_RESERVA.includes(c.estado);
+  const puedeAvanzarCita = (c) => tienePermiso('CITAS_SILLON') && puedeModificarCita(c, user);
+  const citaEnEdicion = citas.find((c) => c.id === editingCitaId);
+  const soloLectura = Boolean(editingCitaId) && !(tienePermiso('CITAS_UPDATE') && puedeModificarCita(citaEnEdicion, user));
 
   const renderCitaSinReserva = (c) => (
     <div
@@ -1266,6 +1270,7 @@ export default function CitasAgendaView() {
                                 {/* Acciones Rápidas de Sillón */}
                                 <div
                                   onClick={(e) => e.stopPropagation()}
+                                  style={puedeAvanzarCita(citaIniciando) || citaIniciando.estado === 'FINALIZADA' ? undefined : { display: 'none' }}
                                   className="pt-2 mt-2 border-t border-slate-200/80 dark:border-slate-700/60 flex items-center gap-1.5"
                                 >
                                   {(citaIniciando.estado === 'PROGRAMADA' || citaIniciando.estado === 'CONFIRMADA') && (
@@ -1476,6 +1481,12 @@ export default function CitasAgendaView() {
 
             <form onSubmit={handleSaveCita} className="space-y-4">
               <ErrorModal mensaje={error} />
+              {soloLectura && (
+                <p className="p-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300">
+                  Solo puedes consultar esta cita: pertenece a otro doctor o tu rol no permite modificarla.
+                </p>
+              )}
+              <fieldset disabled={soloLectura} className="space-y-4 border-0 p-0 m-0 min-w-0">
               <PacienteSearchInput
                 label="Paciente"
                 required
@@ -1495,7 +1506,7 @@ export default function CitasAgendaView() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Doctor Asignado *</label>
-                {isAdmin || isRecepcion || user?.rol_str === 'ADMIN' || user?.rol_str === 'RECEPCION' || user?.rol_str === 'RECEPCIONISTA' ? (
+                {user?.puedeElegirDoctor || isRecepcion ? (
                   <select
                     required
                     value={formCita.doctor_id}
@@ -1845,9 +1856,11 @@ export default function CitasAgendaView() {
                 </div>
               )}
 
+              </fieldset>
+
               {/* Botones de Acción */}
               <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800">
-                {editingCitaId && formCita.estado !== 'CANCELADA' && formCita.estado !== 'FINALIZADA' ? (
+                {editingCitaId && !soloLectura && formCita.estado !== 'CANCELADA' && formCita.estado !== 'FINALIZADA' ? (
                   <button
                     type="button"
                     onClick={handleDeleteCita}
@@ -1873,6 +1886,7 @@ export default function CitasAgendaView() {
                   </button>
                   <button
                     type="submit"
+                    style={soloLectura ? { display: 'none' } : undefined}
                     className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-primary-600/20 font-semibold"
                   >
                     {editingCitaId ? 'Guardar Cambios' : 'Agendar Cita'}
