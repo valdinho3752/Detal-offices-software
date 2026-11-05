@@ -179,6 +179,44 @@ def test_no_sale_mas_efectivo_del_que_hay():
     print("✔ Caja: no sale más efectivo del que hay en la gaveta.")
 
 
+def test_cambiar_el_porcentaje_no_altera_el_pasado():
+    usuario_id, cobro_viejo = _doctor_con_cobro(1000, porcentaje=40)
+    doctor_id = next(d["id"] for d in _ok(client.get(f"{API}/usuarios/doctores/lista", headers=H)) if d["usuario_id"] == usuario_id)
+    contrato = next(c for c in _ok(client.get(f"{API}/personal/contratos", headers=H)) if c["usuario_id"] == usuario_id)
+    assert _liquidacion(usuario_id)["comision_bruta_generada"] == 400
+
+    _ok(client.put(f"{API}/personal/contratos/{contrato['id']}", json={"porcentaje_comision": 10}, headers=H))
+    datos = _liquidacion(usuario_id)
+    assert datos["comision_bruta_generada"] == 400 and datos["porcentaje_pactado"] == 10, "El cobro anterior conserva su 40%"
+
+    cobro_nuevo = _ok(client.post(f"{API}/caja/pagos", json={
+        "paciente_id": _paciente(), "monto": 1000, "metodo_pago": "TRANSFERENCIA", "es_cobro_directo": True,
+        "observaciones": "Consulta", "doctor_comision_id": doctor_id,
+    }, headers=H), 201)
+    assert _liquidacion(usuario_id)["comision_bruta_generada"] == 500, "40% del anterior y 10% del nuevo"
+
+    # Anular resta exactamente lo que ese cobro generó
+    _caja()
+    _ok(client.post(f"{API}/caja/pagos/{cobro_viejo}/anular", json={"motivo": "Error"}, headers=H))
+    assert _liquidacion(usuario_id)["comision_bruta_generada"] == 100
+    _ok(client.post(f"{API}/caja/pagos/{cobro_nuevo['id']}/anular", json={"motivo": "Error"}, headers=H))
+    assert _liquidacion(usuario_id)["comision_bruta_generada"] == 0
+    print("✔ Comisiones: cada cobro conserva el porcentaje con el que se registró.")
+
+
+def test_contrato_nuevo_no_genera_comision_sobre_cobros_anteriores():
+    usuario_id, cabeceras = _usuario("DOCTOR")
+    doctor_id = _ok(client.get(f"{API}/auth/me", headers=cabeceras))["doctor_id"]
+    _ok(client.post(f"{API}/caja/pagos", json={
+        "paciente_id": _paciente(), "monto": 1000, "metodo_pago": "TRANSFERENCIA", "es_cobro_directo": True,
+        "observaciones": "Consulta", "doctor_comision_id": doctor_id,
+    }, headers=H), 201)
+    _ok(client.post(f"{API}/personal/contratos", json={"usuario_id": usuario_id, "porcentaje_comision": 50}, headers=H), 201)
+    datos = _liquidacion(usuario_id)
+    assert datos["total_cobrado_por_sus_tratamientos"] == 1000 and datos["comision_bruta_generada"] == 0
+    print("✔ Comisiones: un contrato nuevo no genera comisión sobre cobros anteriores.")
+
+
 def test_privacidad():
     propio, cabeceras = _usuario("DOCTOR")
     otro, _ = _usuario("RECEPCION", salario_base=2000)
@@ -213,6 +251,8 @@ if __name__ == "__main__":
     test_sueldo_cubierto_por_adelantos()
     test_sueldo_y_comision_no_cuentan_dos_veces()
     test_no_sale_mas_efectivo_del_que_hay()
+    test_cambiar_el_porcentaje_no_altera_el_pasado()
+    test_contrato_nuevo_no_genera_comision_sobre_cobros_anteriores()
     test_privacidad()
     test_contrato_rechaza_valores_invalidos()
     print("TODAS LAS PRUEBAS PASARON")

@@ -18,6 +18,7 @@ from app.schemas.caja import (
 )
 
 from app.services.gaveta import exigir_efectivo
+from app.services.nomina import porcentaje_vigente
 
 router = APIRouter(prefix="/caja", tags=["Caja Diaria y Finanzas"])
 
@@ -218,6 +219,7 @@ def registrar_pago_paciente(
 
     nuevo_pago = Pago(
         **datos.model_dump(),
+        porcentaje_comision=porcentaje_vigente(datos.doctor_comision_id, db),
         caja_sesion_id=caja.id if caja else None,
         registrado_por_usuario_id=current_user.id
     )

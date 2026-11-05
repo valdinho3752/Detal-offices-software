@@ -599,6 +599,7 @@ CREATE TABLE pagos (
     visita_id UUID REFERENCES visitas_evolucion(id) ON DELETE SET NULL,
     caja_sesion_id UUID REFERENCES cajas_sesiones(id) ON DELETE SET NULL,
     doctor_comision_id UUID REFERENCES doctores(id) ON DELETE SET NULL, -- Para comisiones
+    porcentaje_comision NUMERIC(5, 2) DEFAULT 0 NOT NULL, -- Vigente al registrar el cobro
     registrado_por_usuario_id UUID NOT NULL REFERENCES usuarios(id),
     monto NUMERIC(12, 2) NOT NULL,
     metodo_pago metodo_pago_enum NOT NULL DEFAULT 'EFECTIVO',

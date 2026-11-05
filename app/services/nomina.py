@@ -2,11 +2,12 @@
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Optional
+from uuid import UUID
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models import ContratoRemuneracion, Pago, PagoEmpleado, TipoPagoEmpleadoEnum, Usuario
+from app.models import ContratoRemuneracion, Doctor, Pago, PagoEmpleado, TipoPagoEmpleadoEnum, Usuario
 
 CENTAVO = Decimal("0.01")
 TIPOS_SUELDO = (TipoPagoEmpleadoEnum.SUELDO_MENSUAL, TipoPagoEmpleadoEnum.QUINCENA)
@@ -37,20 +38,35 @@ def _suma(columna, db: Session, *filtros) -> Decimal:
     return Decimal(db.query(func.coalesce(func.sum(columna), 0)).filter(*filtros).scalar())
 
 
+def porcentaje_vigente(doctor_id: Optional[UUID], db: Session) -> Decimal:
+    """Porcentaje que se guarda en cada cobro: cambiar el contrato después no altera ese cobro."""
+    if not doctor_id:
+        return Decimal("0")
+    porcentaje = (
+        db.query(ContratoRemuneracion.porcentaje_comision)
+        .join(Doctor, Doctor.usuario_id == ContratoRemuneracion.usuario_id)
+        .filter(Doctor.id == doctor_id)
+        .scalar()
+    )
+    return Decimal(porcentaje or 0)
+
+
 def calcular_liquidacion(usuario: Usuario, db: Session) -> Liquidacion:
     contrato = db.query(ContratoRemuneracion).filter(ContratoRemuneracion.usuario_id == usuario.id).first()
     porcentaje = Decimal(contrato.porcentaje_comision) if contrato else Decimal("0")
 
-    total_cobrado = Decimal("0")
+    total_cobrado = comision_bruta = Decimal("0")
     if usuario.doctor_perfil:
-        total_cobrado = _suma(Pago.monto, db, Pago.doctor_comision_id == usuario.doctor_perfil.id, Pago.anulado.is_(False))
+        cobros = (Pago.doctor_comision_id == usuario.doctor_perfil.id, Pago.anulado.is_(False))
+        total_cobrado = _suma(Pago.monto, db, *cobros)
+        comision_bruta = _suma(Pago.monto * Pago.porcentaje_comision / 100, db, *cobros)
 
     return Liquidacion(
         contrato=contrato,
         salario_base=Decimal(contrato.salario_base) if contrato else Decimal("0"),
         porcentaje_comision=porcentaje,
         total_cobrado=total_cobrado,
-        comision_bruta=(total_cobrado * porcentaje / 100).quantize(CENTAVO),
+        comision_bruta=comision_bruta.quantize(CENTAVO),
         comisiones_liquidadas=_suma(PagoEmpleado.monto_comisiones, db, PagoEmpleado.usuario_empleado_id == usuario.id),
         adelantos_entregados=_suma(
             PagoEmpleado.monto_neto_pagado, db,

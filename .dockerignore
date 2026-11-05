@@ -1,0 +1,12 @@
+# Solo entra lo que el Dockerfile copia: los secretos y las copias de seguridad nunca van en la imagen
+.git
+.env
+.env.*
+venv
+backups
+tests
+docs
+deploy
+frontend
+**/__pycache__
+**/*.pyc

@@ -13,6 +13,7 @@ from app.models import (
     EstadoCajaEnum, EstadoCobroCitaEnum, ItemPlanTratamiento, MetodoPagoEnum, Pago,
 )
 from app.models.cobro_cita import ESTADOS_PLAN_CON_DEUDA
+from app.services.nomina import porcentaje_vigente
 from app.services.saldos import calcular_saldo_paciente, validar_monto_cobro
 from app.services.tratamiento_clinico import describir_procedimiento
 
@@ -157,6 +158,7 @@ def confirmar_pago(cobro: CobroCita, datos, usuario_id: UUID, db: Session) -> No
             cobro_cita_id=cobro.id,
             caja_sesion_id=caja.id if caja else None,
             doctor_comision_id=doctor_id,
+            porcentaje_comision=porcentaje_vigente(doctor_id, db),
             registrado_por_usuario_id=usuario_id,
             monto=monto,
             metodo_pago=datos.metodo_pago,

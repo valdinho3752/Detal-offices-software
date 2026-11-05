@@ -1,0 +1,95 @@
+# Uso: python scripts/preparar_docker.py y luego docker compose up --build -d
+# Guía completa en docs/DOCKER.md
+name: clinica-dental
+
+x-backend: &backend
+  build: .
+  image: clinica-dental-backend
+  env_file:
+    - .env.docker
+  environment:
+    DB_HOST: db
+    DB_PORT: "5432"
+
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    volumes:
+      - datos_postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Instala la base la primera vez y aplica las migraciones pendientes en cada arranque
+  migraciones:
+    <<: *backend
+    command: ["python", "scripts/iniciar_base_docker.py"]
+    env_file:
+      - .env.docker
+      - path: .env.docker.admin
+        required: false
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    <<: *backend
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      HOST: 0.0.0.0
+      PORT: "8000"
+      # Solo la web puede llegar al backend: se confía en la IP del cliente que ella informa
+      FORWARDED_ALLOW_IPS: "*"
+    depends_on:
+      migraciones:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+  web:
+    build: ./frontend
+    image: clinica-dental-web
+    restart: unless-stopped
+    # Por HTTP solo se abre en este equipo; exponerlo a la red requiere HTTPS. Consulta docs/DOCKER.md
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # Copia de seguridad a ./backups: docker compose run --rm respaldo
+  respaldo:
+    image: postgres:18-alpine
+    profiles: ["herramientas"]
+    env_file:
+      - .env.docker
+    environment:
+      PGHOST: db
+    volumes:
+      - ./backups:/backups
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        archivo="/backups/clinica_docker_$$(date +%Y%m%d_%H%M%S).dump" &&
+        PGPASSWORD="$$POSTGRES_PASSWORD" pg_dump -U "$$POSTGRES_USER" --format=custom --file="$$archivo.parcial" "$$POSTGRES_DB" &&
+        pg_restore --list "$$archivo.parcial" > /dev/null &&
+        mv "$$archivo.parcial" "$$archivo" &&
+        echo "Copia creada y comprobada: $$archivo"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  datos_postgres:

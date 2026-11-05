@@ -38,6 +38,7 @@ class Pago(Base):
     visita_id = Column(UUID(as_uuid=True), ForeignKey("visitas_evolucion.id", ondelete="SET NULL"), nullable=True)
     caja_sesion_id = Column(UUID(as_uuid=True), ForeignKey("cajas_sesiones.id", ondelete="SET NULL"), nullable=True)
     doctor_comision_id = Column(UUID(as_uuid=True), ForeignKey("doctores.id", ondelete="SET NULL"), nullable=True)
+    porcentaje_comision = Column(Numeric(5, 2), default=0, server_default="0", nullable=False)  # Vigente al registrar el cobro
     registrado_por_usuario_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id"), nullable=False)
     monto = Column(Numeric(12, 2), nullable=False)
     metodo_pago = Column(ENUM(MetodoPagoEnum, name="metodo_pago_enum", create_type=False), default=MetodoPagoEnum.EFECTIVO, nullable=False)

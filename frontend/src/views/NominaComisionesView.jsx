@@ -252,7 +252,7 @@ export default function NominaComisionesView() {
           <div className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <Metrica titulo="Total cobrado" valor={moneda(liquidacion?.total_cobrado_por_sus_tratamientos)} nota="Tratamientos pagados por pacientes" />
-              <Metrica titulo="Comisión generada" valor={moneda(liquidacion?.comision_bruta_generada)} nota={`${Number(liquidacion?.porcentaje_pactado || 0)}% de lo cobrado`} />
+              <Metrica titulo="Comisión generada" valor={moneda(liquidacion?.comision_bruta_generada)} nota={`Con el porcentaje de cada cobro. Actual: ${Number(liquidacion?.porcentaje_pactado || 0)}%`} />
               <Metrica titulo="Comisiones liquidadas" valor={descuento(liquidacion?.comisiones_ya_liquidadas)} nota="Ya pagadas" />
               <Metrica titulo="Adelantos pendientes" valor={descuento(adelantosPendientes)} nota="Se descuentan de la comisión" />
               {saldoComision < 0 ? (
@@ -409,8 +409,8 @@ export default function NominaComisionesView() {
                   <input id="valor-hora" type="number" step="0.01" min="0" value={formContrato.valor_hora} onChange={(e) => setFormContrato({ ...formContrato, valor_hora: e.target.value })} className={ENTRADA} />
                 </div>
               </div>
-              <p className="text-[11px] text-amber-700 dark:text-amber-300">
-                Cambiar el porcentaje recalcula toda la comisión de esta persona, también la de cobros anteriores.
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                El porcentaje se aplica a los cobros nuevos. Los ya registrados conservan el suyo.
               </p>
               <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-800">
                 <button type="button" onClick={() => { setFormContrato(null); setError(''); }} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs">Cancelar</button>
