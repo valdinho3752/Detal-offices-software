@@ -64,6 +64,8 @@ export const api = {
       body: JSON.stringify({ tipo_evento, observaciones }),
     }),
   getEstadoFichaje: () => request('/auth/fichaje/estado'),
+  getJornadasSinSalida: () => request('/personal/asistencia/jornadas-sin-salida'),
+  corregirMarcaje: (data) => request('/personal/asistencia/correcciones', { method: 'POST', body: JSON.stringify(data) }),
   getAsistencias: (params = '') => request(`/personal/asistencia${params}`),
 
   // ==================== USUARIOS & ROLES ====================

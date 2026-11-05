@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { aFechaLocal, periodoDelDia } from '../utils/fechas';
 import { useAuth } from '../context/AuthContext';
+import ErrorModal from '../components/ErrorModal';
 import {
   Clock,
   LogIn,
@@ -13,6 +14,8 @@ import {
   User,
   Users,
   Shield,
+  Pencil,
+  AlertTriangle,
 } from 'lucide-react';
 
 const BOTONES_MARCAJE = [
@@ -29,6 +32,10 @@ const ESTADOS_TURNO = {
 };
 const NOMBRES_EVENTO = { ENTRADA: 'Entrada', INICIO_DESCANSO: 'Inicio de descanso', FIN_DESCANSO: 'Fin de descanso', SALIDA: 'Salida' };
 
+const CAMPO = 'w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-primary-500';
+const ETIQUETA = 'block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1';
+const CORRECCION_VACIA = { usuario_id: '', tipo_evento: 'SALIDA', fecha: '', hora: '', motivo: '' };
+
 function motivoDeBloqueo(tipo, estado) {
   if (tipo === 'ENTRADA') return estado === 'EN_DESCANSO' ? 'Estás en descanso' : 'Ya tienes un turno abierto';
   if (estado === 'SIN_TURNO' || estado === 'TURNO_CERRADO') return 'Primero marca tu entrada';
@@ -37,7 +44,11 @@ function motivoDeBloqueo(tipo, estado) {
 }
 
 export default function AsistenciaFichajeView() {
-  const { user, tienePermiso } = useAuth();
+  const { user, tienePermiso, isAdmin } = useAuth();
+  const [jornadas, setJornadas] = useState([]);
+  const [correccion, setCorreccion] = useState(null);
+  const [errorCorreccion, setErrorCorreccion] = useState('');
+  const [guardandoCorreccion, setGuardandoCorreccion] = useState(false);
   const puedeFichar = tienePermiso('ASISTENCIA_FICHAR');
   const [turno, setTurno] = useState(null);
   const [asistencias, setAsistencias] = useState([]);
@@ -72,6 +83,49 @@ export default function AsistenciaFichajeView() {
       setError(err.message || 'Error cargando asistencias');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const cargarJornadas = async () => {
+    if (!isAdmin) return;
+    try {
+      setJornadas(await api.getJornadasSinSalida());
+    } catch (err) {
+      setError(err.message || 'No se pudieron consultar las jornadas sin salida');
+    }
+  };
+
+  useEffect(() => { cargarJornadas(); }, []);
+
+  const abrirCorreccion = (datos = {}) => {
+    setErrorCorreccion('');
+    setCorreccion({ ...CORRECCION_VACIA, fecha: aFechaLocal(), ...datos });
+  };
+
+  const guardarCorreccion = async (e) => {
+    e.preventDefault();
+    setErrorCorreccion('');
+    setGuardandoCorreccion(true);
+    try {
+      await api.corregirMarcaje({
+        usuario_id: correccion.usuario_id,
+        tipo_evento: correccion.tipo_evento,
+        fecha_hora: new Date(`${correccion.fecha}T${correccion.hora}:00`).toISOString(),
+        motivo: correccion.motivo,
+      });
+      const { fecha } = correccion;
+      setCorreccion(null);
+      setSuccess('Corrección registrada');
+      setTimeout(() => setSuccess(''), 3000);
+      // Se muestra el día corregido para que se vea el resultado
+      if (fecha === fechaFiltro) loadData();
+      else setFechaFiltro(fecha);
+      cargarJornadas();
+      cargarTurno();
+    } catch (err) {
+      setErrorCorreccion(err.message || 'No se pudo registrar la corrección');
+    } finally {
+      setGuardandoCorreccion(false);
     }
   };
 
@@ -126,6 +180,16 @@ export default function AsistenciaFichajeView() {
             Registro de jornada de doctores y personal clínico con trazabilidad de IP
           </p>
         </div>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => abrirCorreccion()}
+            className="self-start sm:self-auto px-4 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            Corregir Marcaje
+          </button>
+        )}
       </div>
 
       {/* Alertas */}
@@ -197,6 +261,35 @@ export default function AsistenciaFichajeView() {
           </div>
         </div>
       </div>
+
+      {jornadas.length > 0 && (
+        <section aria-label="Jornadas sin salida" className="bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 rounded-2xl p-5 space-y-3">
+          <h2 className="text-sm font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            Jornadas sin salida ({jornadas.length})
+          </h2>
+          <ul className="divide-y divide-amber-200 dark:divide-amber-500/20">
+            {jornadas.map((j) => (
+              <li key={`${j.usuario_id}-${j.fecha}`} className="py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-700 dark:text-slate-300">
+                <span>
+                  <strong className="text-slate-900 dark:text-white">{j.empleado_nombre}</strong>
+                  {' · '}
+                  {new Date(`${j.fecha}T00:00:00`).toLocaleDateString()}
+                  {' · Último marcaje: '}
+                  {NOMBRES_EVENTO[j.ultimo_evento]} a las {new Date(j.ultima_hora).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => abrirCorreccion({ usuario_id: j.usuario_id, fecha: j.fecha, tipo_evento: j.ultimo_evento === 'INICIO_DESCANSO' ? 'FIN_DESCANSO' : 'SALIDA' })}
+                  className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-500/40 text-amber-800 dark:text-amber-300 rounded-lg font-semibold"
+                >
+                  Corregir
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Supervisión y Filtros */}
       <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-4 flex flex-wrap items-center gap-4">
@@ -279,9 +372,14 @@ export default function AsistenciaFichajeView() {
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${badgeClass}`}>
                           {NOMBRES_EVENTO[a.tipo_evento] || a.tipo_evento}
                         </span>
+                        {a.es_correccion && (
+                          <span className="block mt-1 text-[10px] font-bold text-amber-700 dark:text-amber-400">Corregido</span>
+                        )}
                       </td>
                       <td className="py-3 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400">{a.ip_registro || '-'}</td>
-                      <td className="py-3 px-4 text-slate-500 dark:text-slate-400 italic">{a.observaciones || '-'}</td>
+                      <td className="py-3 px-4 text-slate-500 dark:text-slate-400 italic">
+                        {a.es_correccion ? `${a.motivo_correccion} (registró ${a.corregido_por_nombre || 'administrador'})` : a.observaciones || '-'}
+                      </td>
                     </tr>
                   );
                 })}
@@ -290,6 +388,55 @@ export default function AsistenciaFichajeView() {
           </div>
         )}
       </div>
+
+      {correccion && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div role="dialog" aria-label="Corregir marcaje" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Corregir Marcaje</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              Agrega un marcaje olvidado. Los marcajes existentes no cambian, y este queda identificado como corrección.
+            </p>
+            <form onSubmit={guardarCorreccion} className="space-y-4">
+              <ErrorModal mensaje={errorCorreccion} />
+              <div>
+                <label htmlFor="cor-empleado" className={ETIQUETA}>Empleado *</label>
+                <select id="cor-empleado" required value={correccion.usuario_id} onChange={(e) => setCorreccion({ ...correccion, usuario_id: e.target.value })} className={CAMPO}>
+                  <option value="">Selecciona a la persona</option>
+                  {usuarios.map((u) => (
+                    <option key={u.id} value={u.id}>{`${u.nombre || ''} ${u.apellido || ''}`.trim() || u.username}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="cor-tipo" className={ETIQUETA}>Marcaje *</label>
+                <select id="cor-tipo" value={correccion.tipo_evento} onChange={(e) => setCorreccion({ ...correccion, tipo_evento: e.target.value })} className={CAMPO}>
+                  {Object.entries(NOMBRES_EVENTO).map(([tipo, nombre]) => <option key={tipo} value={tipo}>{nombre}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="cor-fecha" className={ETIQUETA}>Fecha *</label>
+                  <input id="cor-fecha" type="date" required max={aFechaLocal()} value={correccion.fecha} onChange={(e) => setCorreccion({ ...correccion, fecha: e.target.value })} className={CAMPO} />
+                </div>
+                <div>
+                  <label htmlFor="cor-hora" className={ETIQUETA}>Hora real *</label>
+                  <input id="cor-hora" type="time" required value={correccion.hora} onChange={(e) => setCorreccion({ ...correccion, hora: e.target.value })} className={CAMPO} />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="cor-motivo" className={ETIQUETA}>Motivo *</label>
+                <textarea id="cor-motivo" rows="2" required maxLength={500} placeholder="Ej. Olvidó marcar la salida" value={correccion.motivo} onChange={(e) => setCorreccion({ ...correccion, motivo: e.target.value })} className={CAMPO} />
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <button type="button" onClick={() => setCorreccion(null)} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs">Cancelar</button>
+                <button type="submit" disabled={guardandoCorreccion} className="px-4 py-2 bg-primary-600 hover:bg-primary-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold">
+                  {guardandoCorreccion ? 'Guardando...' : 'Guardar Corrección'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -26,6 +26,8 @@ PROTECCION = {
     ("GET", "/auth/me"): SESION,
     ("POST", "/auth/fichar"): "ASISTENCIA_FICHAR",
     ("GET", "/auth/fichaje/estado"): SESION,
+    ("GET", "/personal/asistencia/jornadas-sin-salida"): ADMIN,
+    ("POST", "/personal/asistencia/correcciones"): ADMIN,
     ("POST", "/configuracion/logo"): ADMIN,
     ("DELETE", "/configuracion/logo"): ADMIN,
     ("GET", "/usuarios/roles"): ("USUARIOS_MANAGE", "ROLES_MANAGE"),

@@ -67,7 +67,7 @@ class Usuario(Base):
     doctor_perfil = relationship("Doctor", back_populates="usuario", uselist=False, cascade="all, delete-orphan")
     asistente_perfil = relationship("Asistente", back_populates="usuario", uselist=False, cascade="all, delete-orphan")
     contrato = relationship("ContratoRemuneracion", back_populates="usuario", uselist=False, cascade="all, delete-orphan")
-    asistencias = relationship("RegistroAsistencia", back_populates="usuario", cascade="all, delete-orphan")
+    asistencias = relationship("RegistroAsistencia", back_populates="usuario", foreign_keys="RegistroAsistencia.usuario_id", cascade="all, delete-orphan")
     auditorias = relationship("AuditoriaLog", back_populates="usuario")
 
 class UsuarioPermisoEspecial(Base):

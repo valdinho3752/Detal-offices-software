@@ -31,8 +31,12 @@ class RegistroAsistencia(Base):
     fecha_hora = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     observaciones = Column(Text, nullable=True)
     ip_registro = Column(String(45), nullable=True)
+    es_correccion = Column(Boolean, default=False, server_default="false", nullable=False)
+    motivo_correccion = Column(Text, nullable=True)
+    corregido_por_usuario_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
 
-    usuario = relationship("Usuario", back_populates="asistencias")
+    usuario = relationship("Usuario", back_populates="asistencias", foreign_keys=[usuario_id])
+    corregido_por = relationship("Usuario", foreign_keys=[corregido_por_usuario_id])
 
     @property
     def empleado_nombre(self):
@@ -41,3 +45,7 @@ class RegistroAsistencia(Base):
     @property
     def empleado_rol(self):
         return self.usuario.rol.nombre if self.usuario and self.usuario.rol else None
+
+    @property
+    def corregido_por_nombre(self):
+        return f"{self.corregido_por.nombre} {self.corregido_por.apellido}" if self.corregido_por else None

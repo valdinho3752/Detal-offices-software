@@ -318,7 +318,10 @@ CREATE TABLE registro_asistencia (
     tipo_evento asistencia_tipo_enum NOT NULL,
     fecha_hora TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     observaciones TEXT,
-    ip_registro VARCHAR(45)
+    ip_registro VARCHAR(45),
+    es_correccion BOOLEAN NOT NULL DEFAULT false, -- Agregado por el administrador
+    motivo_correccion TEXT,
+    corregido_por_usuario_id UUID REFERENCES usuarios(id) ON DELETE SET NULL
 );
 
 
