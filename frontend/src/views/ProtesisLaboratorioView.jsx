@@ -319,7 +319,7 @@ export default function ProtesisLaboratorioView() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Doctor Solicitante *</label>
-                {user?.isAdmin ? (
+                {user?.puedeElegirDoctor ? (
                   <select
                     required
                     value={form.doctor_id}

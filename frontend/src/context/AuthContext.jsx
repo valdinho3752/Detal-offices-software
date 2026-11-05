@@ -18,6 +18,8 @@ export function AuthProvider({ children }) {
       ...raw,
       rol_str: rolStr,
       isAdmin: rolStr === 'ADMIN',
+      // Sin perfil médico propio hay que indicar a qué doctor corresponde cada registro
+      puedeElegirDoctor: rolStr === 'ADMIN' || !raw.doctor_id,
       nombre_completo: raw.nombre_completo || `${raw.nombre || ''} ${raw.apellido || ''}`.trim() || raw.username,
     };
   };
@@ -60,8 +62,12 @@ export function AuthProvider({ children }) {
 
   const rol = user?.rol_str || (typeof user?.rol === 'string' ? user?.rol : user?.rol?.codigo) || '';
 
+  const permisos = user?.permisos || [];
+  const tienePermiso = (codigo) => rol === 'ADMIN' || permisos.includes(codigo);
+
   const value = {
     user,
+    tienePermiso,
     token,
     loading,
     login,

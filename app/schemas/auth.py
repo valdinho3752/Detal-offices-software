@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 from pydantic import BaseModel, EmailStr
 from app.models.enums import RolCodigoEnum
@@ -22,8 +22,10 @@ class UsuarioSimpleResponse(BaseModel):
     email: EmailStr
     telefono: Optional[str] = None
     rol: str
+    rol_nombre: Optional[str] = None
     activo: bool
     doctor_id: Optional[UUID] = None
+    permisos: List[str] = []
 
     class Config:
         from_attributes = True

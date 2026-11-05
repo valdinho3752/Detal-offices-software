@@ -20,6 +20,8 @@ import CobranzasView from './views/CobranzasView';
 import NominaComisionesView from './views/NominaComisionesView';
 import AuditoriaForenseView from './views/AuditoriaForenseView';
 import ReportesBIView from './views/ReportesBIView';
+import TratamientosCatalogoView from './views/TratamientosCatalogoView';
+import { puedeAcceder } from './config/accesos';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -42,6 +44,30 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+// Sin acceso a una pantalla se vuelve al panel principal; la API también rechaza la operación
+function RutaProtegida({ ruta, children }) {
+  const auth = useAuth();
+  return puedeAcceder(ruta, auth) ? children : <Navigate to="/" replace />;
+}
+
+const RUTAS = [
+  ['usuarios', UsuariosRolesView],
+  ['pacientes', PacientesView],
+  ['odontograma', OdontogramaView],
+  ['citas', CitasAgendaView],
+  ['asistencia', AsistenciaFichajeView],
+  ['evolucion', EvolucionClinicaView],
+  ['visitas', EvolucionClinicaView],
+  ['radiografias', VisorRadiografiasView],
+  ['protesis', ProtesisLaboratorioView],
+  ['caja', CajaOperativaView],
+  ['cobranzas', CobranzasView],
+  ['nomina', NominaComisionesView],
+  ['auditoria', AuditoriaForenseView],
+  ['reportes', ReportesBIView],
+  ['tratamientos', TratamientosCatalogoView],
+];
+
 export default function App() {
   return (
     <ThemeProvider>
@@ -59,20 +85,17 @@ export default function App() {
               }
             >
               <Route index element={<DashboardView />} />
-              <Route path="usuarios" element={<UsuariosRolesView />} />
-              <Route path="pacientes" element={<PacientesView />} />
-              <Route path="odontograma" element={<OdontogramaView />} />
-              <Route path="citas" element={<CitasAgendaView />} />
-              <Route path="asistencia" element={<AsistenciaFichajeView />} />
-              <Route path="evolucion" element={<EvolucionClinicaView />} />
-              <Route path="visitas" element={<EvolucionClinicaView />} />
-              <Route path="radiografias" element={<VisorRadiografiasView />} />
-              <Route path="protesis" element={<ProtesisLaboratorioView />} />
-              <Route path="caja" element={<CajaOperativaView />} />
-              <Route path="cobranzas" element={<CobranzasView />} />
-              <Route path="nomina" element={<NominaComisionesView />} />
-              <Route path="auditoria" element={<AuditoriaForenseView />} />
-              <Route path="reportes" element={<ReportesBIView />} />
+              {RUTAS.map(([ruta, Vista]) => (
+                <Route
+                  key={ruta}
+                  path={ruta}
+                  element={
+                    <RutaProtegida ruta={`/${ruta}`}>
+                      <Vista />
+                    </RutaProtegida>
+                  }
+                />
+              ))}
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

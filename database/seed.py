@@ -41,6 +41,7 @@ def seed_database():
             ("HISTORIA_CLINICA", "READ", "HISTORIA_CLINICA_READ", "Consultar evoluciones médicas pasadas"),
             ("HISTORIA_CLINICA", "CREATE", "HISTORIA_CLINICA_CREATE", "Registrar atención médica de hoy y recetas"),
             ("HISTORIA_CLINICA", "UPDATE", "HISTORIA_CLINICA_UPDATE", "Modificar notas de evolución"),
+            ("HISTORIA_CLINICA", "CREATE", "HISTORIA_CLINICA_OBSERVAR", "Agregar observaciones a una evolución clínica"),
 
             # Módulo Radiografías e Imágenes
             ("RADIOGRAFIAS", "READ", "RADIOGRAFIAS_READ", "Visualizar radiografías e imágenes clínicas"),
@@ -67,6 +68,7 @@ def seed_database():
 
             # Módulo Seguridad y Auditoría
             ("AUDITORIA", "READ", "AUDITORIA_READ", "Consultar bitácora de cambios y accesos VIEW"),
+            ("REPORTES", "READ", "REPORTES_READ", "Consultar reportes de productividad y finanzas"),
             ("USUARIOS", "MANAGE", "USUARIOS_MANAGE", "Crear y desactivar cuentas de usuarios"),
             ("ROLES", "MANAGE", "ROLES_MANAGE", "Crear roles y asignar permisos granulares"),
         ]
@@ -105,10 +107,10 @@ def seed_database():
         # DOCTOR: Todo lo clínico, citas, radiografías, prótesis y fichaje
         permisos_doctor = [
             "PACIENTES_READ", "PACIENTES_CREATE", "PACIENTES_UPDATE", "ANTECEDENTES_UPDATE",
-            "CITAS_READ", "CITAS_SILLON",
+            "CITAS_READ", "CITAS_CREATE", "CITAS_UPDATE", "CITAS_SILLON",
             "ODONTOGRAMA_READ", "ODONTOGRAMA_CREATE", "ODONTOGRAMA_UPDATE", "ODONTOGRAMA_DELETE",
             "TRATAMIENTOS_READ", "TRATAMIENTOS_CREATE", "TRATAMIENTOS_UPDATE",
-            "HISTORIA_CLINICA_READ", "HISTORIA_CLINICA_CREATE", "HISTORIA_CLINICA_UPDATE",
+            "HISTORIA_CLINICA_READ", "HISTORIA_CLINICA_CREATE", "HISTORIA_CLINICA_UPDATE", "HISTORIA_CLINICA_OBSERVAR",
             "RADIOGRAFIAS_READ", "RADIOGRAFIAS_CREATE",
             "PROTESIS_READ", "PROTESIS_CREATE", "PROTESIS_UPDATE",
             "ASISTENCIA_FICHAR"
@@ -116,7 +118,8 @@ def seed_database():
 
         # ASISTENTE: Consulta de pacientes, apoyo en sillón, ver odontograma/radiografías y fichaje
         permisos_asistente = [
-            "PACIENTES_READ", "CITAS_READ", "ODONTOGRAMA_READ", "HISTORIA_CLINICA_READ",
+            "PACIENTES_READ", "CITAS_READ", "ODONTOGRAMA_READ", "TRATAMIENTOS_READ",
+            "HISTORIA_CLINICA_READ", "HISTORIA_CLINICA_OBSERVAR",
             "RADIOGRAFIAS_READ", "RADIOGRAFIAS_CREATE", "PROTESIS_READ", "ASISTENCIA_FICHAR"
         ]
 
@@ -124,7 +127,7 @@ def seed_database():
         permisos_recepcion = [
             "PACIENTES_READ", "PACIENTES_CREATE", "PACIENTES_UPDATE",
             "CITAS_READ", "CITAS_CREATE", "CITAS_UPDATE", "CITAS_SILLON",
-            "PROTESIS_READ", "PROTESIS_UPDATE",
+            "TRATAMIENTOS_READ", "PROTESIS_READ", "PROTESIS_UPDATE",
             "CAJA_READ", "CAJA_APERTURA", "CAJA_CIERRE", "CAJA_PAGOS", "CAJA_EGRESOS",
             "ASISTENCIA_FICHAR"
         ]

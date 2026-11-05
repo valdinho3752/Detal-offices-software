@@ -2,13 +2,14 @@ from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, func
+from sqlalchemy import or_
 from app.database import get_db
 from app.models import (
     Paciente, AntecedenteMedico, AuditoriaLog, AuditoriaAccionEnum,
-    PlanTratamiento, Pago, Usuario, RolCodigoEnum, EstadoPlanEnum
+    Pago, Usuario
 )
-from app.core.dependencies import get_current_user, require_role
+from app.core.dependencies import require_permission
+from app.services.saldos import calcular_saldo_paciente
 from app.schemas.paciente import (
     PacienteCreate, PacienteUpdate, PacienteResponse,
     AntecedenteMedicoUpdate, AntecedenteMedicoResponse
@@ -21,7 +22,7 @@ def listar_pacientes(
     q: Optional[str] = Query(None, description="Buscar por nombre, apellido o documento"),
     skip: int = 0,
     limit: int = 50,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("PACIENTES_READ")),
     db: Session = Depends(get_db)
 ):
     query = db.query(Paciente)
@@ -39,7 +40,7 @@ def listar_pacientes(
 @router.post("/", response_model=PacienteResponse, status_code=status.HTTP_201_CREATED)
 def crear_paciente(
     datos: PacienteCreate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("PACIENTES_CREATE")),
     db: Session = Depends(get_db)
 ):
     # Validar documento duplicado
@@ -79,7 +80,7 @@ def crear_paciente(
 def obtener_paciente(
     id: UUID,
     request: Request,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("PACIENTES_READ")),
     db: Session = Depends(get_db)
 ):
     paciente = db.query(Paciente).filter(Paciente.id == id).first()
@@ -107,7 +108,7 @@ def obtener_paciente(
 def actualizar_paciente(
     id: UUID,
     datos: PacienteUpdate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("PACIENTES_UPDATE")),
     db: Session = Depends(get_db)
 ):
     paciente = db.query(Paciente).filter(Paciente.id == id).first()
@@ -150,7 +151,7 @@ def actualizar_paciente(
 @router.get("/{id}/saldo")
 def consultar_saldo_paciente(
     id: UUID,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("PACIENTES_READ")),
     db: Session = Depends(get_db)
 ):
     """
@@ -160,22 +161,10 @@ def consultar_saldo_paciente(
     if not paciente:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado")
 
-    # Solo generan deuda los planes aceptados: un presupuesto PROPUESTO aún no es un compromiso de pago
-    total_presupuestado = db.query(func.coalesce(func.sum(PlanTratamiento.costo_total), 0)).filter(
-        PlanTratamiento.paciente_id == id,
-        PlanTratamiento.estado.in_([
-            EstadoPlanEnum.APROBADO,
-            EstadoPlanEnum.EN_CURSO,
-            EstadoPlanEnum.COMPLETADO
-        ])
-    ).scalar()
-
-    # Total pagado
-    total_pagado = db.query(func.coalesce(func.sum(Pago.monto), 0)).filter(
-        Pago.paciente_id == id
-    ).scalar()
-
-    saldo_pendiente = float(total_presupuestado) - float(total_pagado)
+    saldo = calcular_saldo_paciente(id, db)
+    total_presupuestado = saldo.total_presupuestado
+    total_pagado = saldo.total_pagado
+    saldo_pendiente = float(saldo.pendiente)
 
     # Historial de pagos para la vista de cobranzas
     pagos_db = db.query(Pago).filter(Pago.paciente_id == id).order_by(Pago.fecha_hora.desc()).all()
@@ -206,7 +195,7 @@ def consultar_saldo_paciente(
 def actualizar_antecedentes(
     id: UUID,
     datos: AntecedenteMedicoUpdate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("ANTECEDENTES_UPDATE")),
     db: Session = Depends(get_db)
 ):
     ant = db.query(AntecedenteMedico).filter(AntecedenteMedico.paciente_id == id).first()

@@ -7,7 +7,7 @@ from app.models import (
     OrdenLaboratorioProtesis, EstadoOrdenProtesisEnum, Usuario, Doctor, RolCodigoEnum,
     AuditoriaLog, AuditoriaAccionEnum
 )
-from app.core.dependencies import get_current_user
+from app.core.dependencies import es_admin, require_permission
 from app.schemas.protesis import OrdenLaboratorioCreate, OrdenLaboratorioUpdate, OrdenLaboratorioResponse
 
 router = APIRouter(prefix="/protesis", tags=["Órdenes de Laboratorio y Prótesis"])
@@ -17,7 +17,7 @@ def listar_ordenes_protesis(
     paciente_id: Optional[UUID] = None,
     doctor_id: Optional[UUID] = None,
     estado: Optional[EstadoOrdenProtesisEnum] = None,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("PROTESIS_READ")),
     db: Session = Depends(get_db)
 ):
     query = db.query(OrdenLaboratorioProtesis)
@@ -33,7 +33,7 @@ def listar_ordenes_protesis(
 @router.post("/", response_model=OrdenLaboratorioResponse, status_code=status.HTTP_201_CREATED)
 def crear_orden_protesis(
     datos: OrdenLaboratorioCreate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("PROTESIS_CREATE")),
     db: Session = Depends(get_db)
 ):
     doctor_obj = None
@@ -42,9 +42,9 @@ def crear_orden_protesis(
             (Doctor.id == datos.doctor_id) | (Doctor.usuario_id == datos.doctor_id)
         ).first()
 
-    es_admin = current_user.rol and str(current_user.rol.codigo).upper() == "ADMIN"
+    puede_elegir_doctor = es_admin(current_user) or not current_user.doctor_perfil
     resolved_doctor_id = None
-    if es_admin:
+    if puede_elegir_doctor:
         if doctor_obj:
             resolved_doctor_id = doctor_obj.id
         elif current_user.doctor_perfil:
@@ -55,11 +55,6 @@ def crear_orden_protesis(
                 detail="Debes especificar un doctor válido para la orden de prótesis"
             )
     else:
-        if not current_user.doctor_perfil:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Solo personal médico o administradores pueden crear órdenes de laboratorio"
-            )
         resolved_doctor_id = current_user.doctor_perfil.id
         if doctor_obj and doctor_obj.id != current_user.doctor_perfil.id:
             raise HTTPException(
@@ -89,7 +84,7 @@ def crear_orden_protesis(
 def actualizar_orden_protesis(
     id: UUID,
     datos: OrdenLaboratorioUpdate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("PROTESIS_UPDATE")),
     db: Session = Depends(get_db)
 ):
     orden = db.query(OrdenLaboratorioProtesis).filter(OrdenLaboratorioProtesis.id == id).first()
@@ -103,13 +98,12 @@ def actualizar_orden_protesis(
             (Doctor.id == target_doc) | (Doctor.usuario_id == target_doc)
         ).first()
 
-        es_admin = current_user.rol and str(current_user.rol.codigo).upper() == "ADMIN"
-        if es_admin:
+        if es_admin(current_user) or not current_user.doctor_perfil:
             if not doctor_obj:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor no encontrado")
             update_dict["doctor_id"] = doctor_obj.id
         else:
-            if not current_user.doctor_perfil or (doctor_obj and doctor_obj.id != current_user.doctor_perfil.id):
+            if doctor_obj and doctor_obj.id != current_user.doctor_perfil.id:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Solo administradores pueden reasignar órdenes de prótesis a otros doctores"

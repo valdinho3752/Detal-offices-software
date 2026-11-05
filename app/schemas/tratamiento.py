@@ -1,8 +1,8 @@
-from typing import Optional, List
+from typing import Annotated, Optional, List
 from uuid import UUID
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, StringConstraints, model_validator
 from app.models.enums import CategoriaTratamientoEnum, EstadoPlanEnum, EstadoItemPlanEnum
 
 class CatalogoTratamientoBase(BaseModel):
@@ -15,15 +15,18 @@ class CatalogoTratamientoBase(BaseModel):
     activo: Optional[bool] = True
 
 class CatalogoTratamientoCreate(CatalogoTratamientoBase):
-    pass
+    codigo: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=30)]
+    nombre: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+    costo_base: Decimal = Field(default=Decimal("0.00"), ge=0)
+    duracion_estimada_min: int = Field(default=30, gt=0)
 
 class CatalogoTratamientoUpdate(BaseModel):
-    codigo: Optional[str] = None
+    codigo: Optional[Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=30)]] = None
     categoria: Optional[CategoriaTratamientoEnum] = None
-    nombre: Optional[str] = None
+    nombre: Optional[Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]] = None
     descripcion: Optional[str] = None
-    costo_base: Optional[Decimal] = None
-    duracion_estimada_min: Optional[int] = None
+    costo_base: Optional[Decimal] = Field(default=None, ge=0)
+    duracion_estimada_min: Optional[int] = Field(default=None, gt=0)
     activo: Optional[bool] = None
 
 class CatalogoTratamientoResponse(CatalogoTratamientoBase):

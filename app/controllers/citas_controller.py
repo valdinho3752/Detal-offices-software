@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Cita, EstadoCitaEnum, Usuario, Doctor, RolCodigoEnum, AuditoriaLog, AuditoriaAccionEnum
-from app.core.dependencies import get_current_user
+from app.core.dependencies import require_permission
 from app.schemas.cita import CitaCreate, CitaUpdate, CitaSillonControl, CitaResponse
 from app.services.tratamiento_clinico import (
     crear_evolucion_de_cita, describir_diagnostico, registrar_tratamiento_realizado
@@ -34,7 +34,7 @@ def listar_citas(
     fecha_inicio: Optional[datetime] = None,
     fecha_fin: Optional[datetime] = None,
     estado: Optional[EstadoCitaEnum] = None,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("CITAS_READ")),
     db: Session = Depends(get_db)
 ):
     desde = fecha_desde or fecha_inicio
@@ -63,7 +63,7 @@ def listar_citas(
 @router.post("/", response_model=CitaResponse, status_code=status.HTTP_201_CREATED)
 def agendar_cita(
     datos: CitaCreate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("CITAS_CREATE")),
     db: Session = Depends(get_db)
 ):
     doctor_obj = None
@@ -75,7 +75,7 @@ def agendar_cita(
     rol_str = str(current_user.rol.codigo.value if hasattr(current_user.rol.codigo, "value") else current_user.rol.codigo).upper() if current_user.rol else ""
 
     resolved_doctor_id = None
-    if rol_str in ["ADMIN", "RECEPCION", "RECEPCIONISTA"]:
+    if rol_str in ["ADMIN", "RECEPCION", "RECEPCIONISTA"] or not current_user.doctor_perfil:
         if doctor_obj:
             resolved_doctor_id = doctor_obj.id
         elif current_user.doctor_perfil:
@@ -90,11 +90,6 @@ def agendar_cita(
                     detail="Debes especificar un doctor válido para agendar la cita"
                 )
     else:
-        if not current_user.doctor_perfil:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Solo personal médico o recepción pueden agendar citas"
-            )
         resolved_doctor_id = current_user.doctor_perfil.id
         if doctor_obj and doctor_obj.id != current_user.doctor_perfil.id:
             raise HTTPException(
@@ -227,7 +222,7 @@ def _finalizar_tratamientos_cita(cita: Cita, usuario_id: UUID, db: Session):
 def actualizar_cita(
     id: UUID,
     datos: CitaUpdate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("CITAS_UPDATE")),
     db: Session = Depends(get_db)
 ):
     cita = db.query(Cita).filter(Cita.id == id).first()
@@ -243,12 +238,12 @@ def actualizar_cita(
 
         rol_str = str(current_user.rol.codigo.value if hasattr(current_user.rol.codigo, "value") else current_user.rol.codigo).upper() if current_user.rol else ""
 
-        if rol_str in ["ADMIN", "RECEPCION", "RECEPCIONISTA"]:
+        if rol_str in ["ADMIN", "RECEPCION", "RECEPCIONISTA"] or not current_user.doctor_perfil:
             if not doctor_obj:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor no encontrado")
             update_dict["doctor_id"] = doctor_obj.id
         else:
-            if not current_user.doctor_perfil or (doctor_obj and doctor_obj.id != current_user.doctor_perfil.id):
+            if doctor_obj and doctor_obj.id != current_user.doctor_perfil.id:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Solo administradores o recepción pueden reasignar citas a otros doctores"
@@ -289,7 +284,7 @@ def actualizar_cita(
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def cancelar_cita(
     id: UUID,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("CITAS_UPDATE")),
     db: Session = Depends(get_db)
 ):
     """
@@ -323,7 +318,7 @@ def cancelar_cita(
 def controlar_tiempo_sillon(
     id: UUID,
     control: CitaSillonControl,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("CITAS_SILLON")),
     db: Session = Depends(get_db)
 ):
     """

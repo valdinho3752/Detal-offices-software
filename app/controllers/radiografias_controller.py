@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import RadiografiaEstudio, Usuario, AuditoriaLog, AuditoriaAccionEnum
-from app.core.dependencies import get_current_user
+from app.core.dependencies import require_permission
 from app.schemas.radiografia import (
     RadiografiaCreate, RadiografiaUpdate, RadiografiaResponse
 )
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/radiografias", tags=["Radiografías e Imágenes Dent
 def listar_radiografias(
     paciente_id: UUID,
     pieza_fdi: Optional[int] = None,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("RADIOGRAFIAS_READ")),
     db: Session = Depends(get_db)
 ):
     query = db.query(RadiografiaEstudio).filter(RadiografiaEstudio.paciente_id == paciente_id)
@@ -26,7 +26,7 @@ def listar_radiografias(
 @router.post("/", response_model=RadiografiaResponse, status_code=status.HTTP_201_CREATED)
 def registrar_radiografia(
     datos: RadiografiaCreate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("RADIOGRAFIAS_CREATE")),
     db: Session = Depends(get_db)
 ):
     estudio = RadiografiaEstudio(
@@ -53,7 +53,7 @@ def registrar_radiografia(
 def obtener_radiografia(
     id: UUID,
     request: Request,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("RADIOGRAFIAS_READ")),
     db: Session = Depends(get_db)
 ):
     estudio = db.query(RadiografiaEstudio).filter(RadiografiaEstudio.id == id).first()
@@ -81,7 +81,7 @@ def obtener_radiografia(
 def actualizar_radiografia(
     id: UUID,
     datos: RadiografiaUpdate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("RADIOGRAFIAS_CREATE")),
     db: Session = Depends(get_db)
 ):
     estudio = db.query(RadiografiaEstudio).filter(RadiografiaEstudio.id == id).first()
@@ -96,7 +96,7 @@ def actualizar_radiografia(
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def eliminar_radiografia(
     id: UUID,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("RADIOGRAFIAS_DELETE")),
     db: Session = Depends(get_db)
 ):
     estudio = db.query(RadiografiaEstudio).filter(RadiografiaEstudio.id == id).first()

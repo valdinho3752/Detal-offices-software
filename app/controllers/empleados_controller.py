@@ -11,7 +11,7 @@ from app.models import (
     Pago, Doctor, Usuario, RolCodigoEnum, CategoriaEgresoCajaEnum, EstadoCajaEnum,
     TipoPagoEmpleadoEnum, AuditoriaLog, AuditoriaAccionEnum
 )
-from app.core.dependencies import get_current_user, require_role
+from app.core.dependencies import get_current_user, require_permission, tiene_permiso
 from app.schemas.pago_empleado import PagoEmpleadoCreate, PagoEmpleadoResponse
 
 router = APIRouter(prefix="/empleados", tags=["Nómina, Sueldos y Comisiones de Empleados"])
@@ -23,9 +23,8 @@ def listar_pagos_empleados(
     db: Session = Depends(get_db)
 ):
     query = db.query(PagoEmpleado)
-    # Si no es admin, solo ve sus propios pagos
-    rol_actual = str(current_user.rol.codigo.value if hasattr(current_user.rol.codigo, "value") else current_user.rol.codigo).upper()
-    if rol_actual != "ADMIN":
+    # Sin permiso de consulta general, cada empleado solo ve sus propios pagos
+    if not tiene_permiso(current_user, "EMPLEADOS_READ", db):
         query = query.filter(PagoEmpleado.usuario_empleado_id == current_user.id)
     elif usuario_empleado_id:
         query = query.filter(PagoEmpleado.usuario_empleado_id == usuario_empleado_id)
@@ -34,7 +33,7 @@ def listar_pagos_empleados(
 @router.post("/pagos", response_model=PagoEmpleadoResponse, status_code=status.HTTP_201_CREATED)
 def registrar_pago_empleado(
     datos: PagoEmpleadoCreate,
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    current_user: Usuario = Depends(require_permission("EMPLEADOS_PAGOS")),
     db: Session = Depends(get_db)
 ):
     """
@@ -101,6 +100,11 @@ def calcular_comisiones_doctor(
     doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor no encontrado")
+    if doctor.usuario_id != current_user.id and not tiene_permiso(current_user, "EMPLEADOS_READ", db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo puedes consultar tus propias comisiones"
+        )
 
     # Contrato del doctor
     contrato = db.query(ContratoRemuneracion).filter(ContratoRemuneracion.usuario_id == doctor.usuario_id).first()

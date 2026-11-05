@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ErrorModal from '../components/ErrorModal';
+import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import {
   Award,
@@ -15,6 +16,9 @@ import {
 } from 'lucide-react';
 
 export default function NominaComisionesView() {
+  const { user, tienePermiso } = useAuth();
+  // Sin permiso de consulta general, cada doctor solo ve sus propias comisiones
+  const verTodos = tienePermiso('EMPLEADOS_READ');
   const [doctores, setDoctores] = useState([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
   const [comisionesData, setComisionesData] = useState(null);
@@ -36,9 +40,10 @@ export default function NominaComisionesView() {
     const init = async () => {
       try {
         const dRes = await api.getDoctores();
-        setDoctores(Array.isArray(dRes) ? dRes : []);
-        if (dRes?.length > 0) {
-          setSelectedDoctorId(dRes[0].id);
+        const lista = (Array.isArray(dRes) ? dRes : []).filter((d) => verTodos || d.id === user?.doctor_id);
+        setDoctores(lista);
+        if (lista.length > 0) {
+          setSelectedDoctorId(lista[0].id);
         }
       } catch (err) {
         console.error(err);
@@ -131,6 +136,7 @@ export default function NominaComisionesView() {
           </div>
 
           <button
+            style={tienePermiso('EMPLEADOS_PAGOS') ? undefined : { display: 'none' }}
             onClick={() => {
               setFormPago({
                 tipo_pago: 'COMISION_TRATAMIENTOS',

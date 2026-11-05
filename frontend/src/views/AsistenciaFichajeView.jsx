@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 export default function AsistenciaFichajeView() {
-  const { user } = useAuth();
+  const { user, tienePermiso } = useAuth();
   const [asistencias, setAsistencias] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,9 +38,10 @@ export default function AsistenciaFichajeView() {
       if (fechaFiltro) params.push(`fecha=${fechaFiltro}`);
       if (params.length > 0) query = `?${params.join('&')}`;
 
+      // Sin permiso para ver a todo el personal, cada empleado consulta solo sus fichajes
       const [asistRes, userRes] = await Promise.all([
         api.getAsistencias(query),
-        api.getUsuarios(),
+        tienePermiso('USUARIOS_MANAGE') ? api.getUsuarios() : [],
       ]);
 
       setAsistencias(Array.isArray(asistRes) ? asistRes : []);
@@ -167,7 +168,10 @@ export default function AsistenciaFichajeView() {
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div
+          className="flex items-center gap-2"
+          style={usuarios.length > 0 ? undefined : { display: 'none' }}
+        >
           <Users className="w-4 h-4 text-teal-600 dark:text-teal-400" />
           <select
             value={selectedUsuarioId}
@@ -177,7 +181,7 @@ export default function AsistenciaFichajeView() {
             <option value="">Todo el Personal</option>
             {usuarios.map((u) => (
               <option key={u.id} value={u.id}>
-                {u.nombre_completo || u.username} ({u.rol?.nombre})
+                {`${u.nombre || ''} ${u.apellido || ''}`.trim() || u.username} ({u.rol?.nombre})
               </option>
             ))}
           </select>

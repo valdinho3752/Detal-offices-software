@@ -1359,12 +1359,12 @@ export default function OdontogramaView() {
 
           {/* Selector de Doctor Asignado */}
           <div className="flex items-center gap-2 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl shadow-sm">
-            <Shield className={`w-4 h-4 ${user?.isAdmin ? 'text-emerald-500' : 'text-slate-400'}`} />
+            <Shield className={`w-4 h-4 ${user?.puedeElegirDoctor ? 'text-emerald-500' : 'text-slate-400'}`} />
             <div className="flex flex-col">
               <span className="text-[10px] text-slate-500 dark:text-slate-400 leading-none">
-                {user?.isAdmin ? 'Doctor Tratante (Admin)' : 'Doctor Tratante'}
+                {user?.puedeElegirDoctor ? 'Doctor Tratante (Elegir)' : 'Doctor Tratante'}
               </span>
-              {user?.isAdmin ? (
+              {user?.puedeElegirDoctor ? (
                 <select
                   value={selectedDoctorId}
                   onChange={(e) => handleDoctorChange(e.target.value)}

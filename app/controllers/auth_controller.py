@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Usuario, RegistroAsistencia, Rol
 from app.core.security import verify_password, create_access_token
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, permisos_efectivos, require_permission
 from app.schemas.auth import Token, UsuarioSimpleResponse
 from app.schemas.asistencia import AsistenciaCreate, AsistenciaResponse
 
@@ -38,7 +38,7 @@ def login(
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/me", response_model=UsuarioSimpleResponse)
-def get_me(current_user: Usuario = Depends(get_current_user)):
+def get_me(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Devuelve los datos del usuario autenticado en la sesión actual.
     """
@@ -52,15 +52,17 @@ def get_me(current_user: Usuario = Depends(get_current_user)):
         email=current_user.email,
         telefono=current_user.telefono,
         rol=rol_codigo,
+        rol_nombre=current_user.rol.nombre,
         activo=current_user.activo,
-        doctor_id=doc_id
+        doctor_id=doc_id,
+        permisos=sorted(permisos_efectivos(current_user, db))
     )
 
 @router.post("/fichar", response_model=AsistenciaResponse)
 def registrar_asistencia(
     datos: AsistenciaCreate,
     request: Request,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("ASISTENCIA_FICHAR")),
     db: Session = Depends(get_db)
 ):
     """

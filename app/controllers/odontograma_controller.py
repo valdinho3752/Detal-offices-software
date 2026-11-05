@@ -8,7 +8,7 @@ from app.models import (
     AuditoriaAccionEnum, TipoDenticionEnum, Doctor, EstadoClinicoHallazgoEnum,
     TipoOdontogramaEnum
 )
-from app.core.dependencies import get_current_user
+from app.core.dependencies import doctor_solicitado, require_permission
 from app.services.tratamiento_clinico import clonar_odontograma_como_evolucion
 from app.schemas.odontograma import (
     OdontogramaCreate, OdontogramaUpdate, OdontogramaResponse,
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/odontogramas", tags=["Odontograma y Tooth Chart Inte
 def listar_odontogramas_paciente(
     paciente_id: UUID,
     tipo_registro: Optional[TipoOdontogramaEnum] = None,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("ODONTOGRAMA_READ")),
     db: Session = Depends(get_db)
 ):
     query = db.query(Odontograma).filter(Odontograma.paciente_id == paciente_id)
@@ -33,7 +33,7 @@ def listar_odontogramas_paciente(
 @router.post("/", response_model=OdontogramaResponse, status_code=status.HTTP_201_CREATED)
 def crear_odontograma(
     datos: OdontogramaCreate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("ODONTOGRAMA_CREATE")),
     db: Session = Depends(get_db)
 ):
     """
@@ -60,18 +60,16 @@ def crear_odontograma(
     else:
         # No es Admin: Solo un DOCTOR puede registrar odontograma y queda estrictamente bajo su autoría
         if not current_user.doctor_perfil:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acceso denegado: solo personal médico o administradores pueden crear odontogramas"
-            )
-        if datos.doctor_id:
-            target_doc = db.query(Doctor).filter((Doctor.id == datos.doctor_id) | (Doctor.usuario_id == datos.doctor_id)).first()
-            if target_doc and target_doc.id != current_user.doctor_perfil.id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="No tienes permiso para registrar odontogramas a nombre de otros doctores"
-                )
-        doctor = current_user.doctor_perfil
+            doctor = doctor_solicitado(datos.doctor_id, db)
+        else:
+            if datos.doctor_id:
+                target_doc = db.query(Doctor).filter((Doctor.id == datos.doctor_id) | (Doctor.usuario_id == datos.doctor_id)).first()
+                if target_doc and target_doc.id != current_user.doctor_perfil.id:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="No tienes permiso para registrar odontogramas a nombre de otros doctores"
+                    )
+            doctor = current_user.doctor_perfil
 
     odontograma_data["doctor_id"] = doctor.id
     odontograma = Odontograma(**odontograma_data)
@@ -110,7 +108,7 @@ def crear_odontograma(
 def obtener_odontograma(
     id: UUID,
     request: Request,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("ODONTOGRAMA_READ")),
     db: Session = Depends(get_db)
 ):
     odontograma = db.query(Odontograma).filter(Odontograma.id == id).first()
@@ -138,7 +136,7 @@ def obtener_odontograma(
 def actualizar_odontograma(
     id: UUID,
     datos: OdontogramaUpdate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("ODONTOGRAMA_UPDATE")),
     db: Session = Depends(get_db)
 ):
     odontograma = db.query(Odontograma).filter(Odontograma.id == id).first()
@@ -167,7 +165,7 @@ def actualizar_odontograma(
 @router.post("/{id}/clonar-como-evolucion", response_model=OdontogramaResponse, status_code=status.HTTP_201_CREATED)
 def clonar_como_evolucion(
     id: UUID,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("ODONTOGRAMA_CREATE")),
     db: Session = Depends(get_db)
 ):
     origen = db.query(Odontograma).filter(Odontograma.id == id).first()
@@ -198,7 +196,7 @@ def clonar_como_evolucion(
 def actualizar_pieza_dental(
     id: UUID,
     datos: PiezaDentalUpdate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("ODONTOGRAMA_UPDATE")),
     db: Session = Depends(get_db)
 ):
     pieza = db.query(PiezaDental).filter(PiezaDental.id == id).first()
@@ -215,7 +213,7 @@ def actualizar_pieza_dental(
 @router.post("/hallazgos", response_model=HallazgoSuperficieResponse, status_code=status.HTTP_201_CREATED)
 def registrar_hallazgo_superficie(
     datos: HallazgoSuperficieCreate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("ODONTOGRAMA_UPDATE")),
     db: Session = Depends(get_db)
 ):
     pieza_id = datos.pieza_dental_id
@@ -267,7 +265,7 @@ def registrar_hallazgo_superficie(
 def actualizar_hallazgo_superficie(
     id: UUID,
     datos: HallazgoSuperficieUpdate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("ODONTOGRAMA_UPDATE")),
     db: Session = Depends(get_db)
 ):
     hallazgo = db.query(HallazgoSuperficie).filter(HallazgoSuperficie.id == id).first()
@@ -282,7 +280,7 @@ def actualizar_hallazgo_superficie(
 @router.delete("/hallazgos/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def eliminar_hallazgo_superficie(
     id: UUID,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("ODONTOGRAMA_DELETE")),
     db: Session = Depends(get_db)
 ):
     hallazgo = db.query(HallazgoSuperficie).filter(HallazgoSuperficie.id == id).first()

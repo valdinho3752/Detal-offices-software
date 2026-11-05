@@ -1,24 +1,8 @@
-from typing import Optional, List
+from typing import Annotated, Optional, List
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, StringConstraints
 from app.models.enums import RolCodigoEnum
-
-class RolBase(BaseModel):
-    codigo: str
-    nombre: str
-    descripcion: Optional[str] = None
-    es_sistema: Optional[bool] = False
-
-class RolCreate(RolBase):
-    pass
-
-class RolResponse(RolBase):
-    id: UUID
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 class PermisoResponse(BaseModel):
     id: UUID
@@ -27,6 +11,26 @@ class PermisoResponse(BaseModel):
     codigo_permiso: str
     descripcion: Optional[str] = None
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class RolBase(BaseModel):
+    codigo: str
+    nombre: str
+    descripcion: Optional[str] = None
+    es_sistema: Optional[bool] = False
+
+class RolCreate(BaseModel):
+    nombre: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
+    codigo: Optional[str] = None
+    descripcion: Optional[str] = None
+    permiso_ids: List[UUID] = []
+
+class RolResponse(RolBase):
+    id: UUID
+    created_at: datetime
+    permisos: List[PermisoResponse] = []
 
     class Config:
         from_attributes = True

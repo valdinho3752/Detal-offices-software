@@ -72,6 +72,12 @@ def test_hu12_completo():
 
     pacientes_res = client.get("/api/v1/pacientes/", headers=headers_admin).json()
     paciente_id = pacientes_res[0]["id"]
+    # Los cobros no pueden superar el saldo: el paciente necesita un plan aprobado
+    plan_saldo = client.post("/api/v1/tratamientos/planes", json={
+        "paciente_id": paciente_id, "titulo": "Plan con saldo para cobros"
+    }, headers=headers_admin).json()
+    client.put(f"/api/v1/tratamientos/planes/{plan_saldo['id']}", json={"estado": "APROBADO", "costo_total": 5000}, headers=headers_admin)
+
 
     # Simulamos 2 cobros de $1,500.00 c/u asociados al doctor = $3,000.00
     client.post("/api/v1/caja/pagos", json={

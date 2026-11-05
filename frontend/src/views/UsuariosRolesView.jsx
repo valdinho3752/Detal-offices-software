@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ErrorModal from '../components/ErrorModal';
+import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import {
   Users,
@@ -18,7 +19,8 @@ import {
 } from 'lucide-react';
 
 export default function UsuariosRolesView() {
-  const [tab, setTab] = useState('usuarios'); // 'usuarios' | 'roles'
+  const { tienePermiso } = useAuth();
+  const [tab, setTab] = useState(tienePermiso('USUARIOS_MANAGE') ? 'usuarios' : 'roles'); // 'usuarios' | 'roles'
   const [usuarios, setUsuarios] = useState([]);
   const [roles, setRoles] = useState([]);
   const [permisos, setPermisos] = useState([]);
@@ -60,16 +62,19 @@ export default function UsuariosRolesView() {
     setLoading(true);
     setError('');
     try {
+      // Quien solo administra roles no puede listar usuarios, y viceversa
       const [uRes, rRes, pRes] = await Promise.all([
-        api.getUsuarios(),
+        tienePermiso('USUARIOS_MANAGE') ? api.getUsuarios() : [],
         api.getRoles(),
         api.getPermisos(),
       ]);
       setUsuarios(Array.isArray(uRes) ? uRes : []);
       setRoles(Array.isArray(rRes) ? rRes : []);
       setPermisos(Array.isArray(pRes) ? pRes : []);
-      if (rRes?.length > 0 && !selectedRoleForPerms) {
-        handleSelectRolePerms(rRes[0]);
+      // Tras guardar se conserva el rol elegido, con sus permisos actualizados
+      const rolVigente = rRes?.find((r) => r.id === selectedRoleForPerms?.id) || rRes?.[0];
+      if (rolVigente) {
+        handleSelectRolePerms(rolVigente);
       }
     } catch (err) {
       setError(err.message || 'Error cargando datos');
@@ -176,10 +181,11 @@ export default function UsuariosRolesView() {
     setError('');
     try {
       await api.createRol(roleForm);
-      setSuccess('Rol creado exitosamente');
+      setSuccess('Rol creado. Selecciónalo en la lista y marca sus permisos: sin permisos no podrá acceder a nada.');
       setShowRoleModal(false);
       setRoleForm({ nombre: '', descripcion: '', permiso_ids: [] });
-      setTimeout(() => setSuccess(''), 3000);
+      setTimeout(() => setSuccess(''), 6000);
+      setTab('roles');
       loadAll();
     } catch (err) {
       setError(err.message || 'Error al crear rol');
@@ -191,7 +197,7 @@ export default function UsuariosRolesView() {
     return (
       u.username?.toLowerCase().includes(q) ||
       u.email?.toLowerCase().includes(q) ||
-      u.nombre_completo?.toLowerCase().includes(q)
+      `${u.nombre || ''} ${u.apellido || ''}`.toLowerCase().includes(q)
     );
   });
 
@@ -315,7 +321,7 @@ export default function UsuariosRolesView() {
                   {filteredUsuarios.map((u) => (
                     <tr key={u.id} className="hover:bg-slate-700/20 transition">
                       <td className="py-3 px-4">
-                        <div className="font-semibold text-white">{u.nombre_completo || u.username}</div>
+                        <div className="font-semibold text-white">{`${u.nombre || ''} ${u.apellido || ''}`.trim() || u.username}</div>
                         <div className="text-[11px] text-slate-400 font-mono">@{u.username}</div>
                       </td>
                       <td className="py-3 px-4 font-mono text-[11px]">{u.email}</td>
@@ -325,11 +331,11 @@ export default function UsuariosRolesView() {
                         </span>
                       </td>
                       <td className="py-3 px-4">
-                        {u.especialidad ? (
+                        {u.doctor_perfil ? (
                           <div>
-                            <span className="text-teal-400 font-medium">{u.especialidad}</span>
-                            {u.numero_colegiado && (
-                              <div className="text-[10px] text-slate-500">Col: {u.numero_colegiado}</div>
+                            <span className="text-teal-400 font-medium">{u.doctor_perfil.especialidad}</span>
+                            {u.doctor_perfil.numero_colegiatura && (
+                              <div className="text-[10px] text-slate-500">Col: {u.doctor_perfil.numero_colegiatura}</div>
                             )}
                           </div>
                         ) : (
@@ -467,7 +473,7 @@ export default function UsuariosRolesView() {
                       className="mt-0.5 rounded border-slate-700 text-primary-500 focus:ring-0 cursor-pointer"
                     />
                     <div>
-                      <div className="text-xs font-semibold text-white">{p.codigo}</div>
+                      <div className="text-xs font-semibold text-white">{p.codigo_permiso}</div>
                       <div className="text-[11px] text-slate-400 mt-0.5">{p.descripcion}</div>
                     </div>
                   </div>

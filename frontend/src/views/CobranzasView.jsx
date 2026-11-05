@@ -131,6 +131,8 @@ export default function CobranzasView() {
           </div>
 
           <button
+            disabled={deuda <= 0}
+            title={deuda > 0 ? 'Registrar un pago o adelanto' : 'El paciente no tiene saldo pendiente en planes aprobados'}
             onClick={() => {
               setFormPago({
                 monto: deuda > 0 ? deuda.toFixed(2) : '',
@@ -141,7 +143,7 @@ export default function CobranzasView() {
               });
               setShowModal(true);
             }}
-            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20 whitespace-nowrap"
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20 whitespace-nowrap"
           >
             <Plus className="w-4 h-4" />
             Registrar Abono / Pago
@@ -296,10 +298,12 @@ export default function CobranzasView() {
             <form onSubmit={handleRegistrarPago} className="space-y-4">
               <ErrorModal mensaje={error} />
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Monto a Cobrar ($) *</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Monto a Cobrar ($) * <span className="font-normal text-slate-500 dark:text-slate-400">· máximo ${deuda.toFixed(2)}</span></label>
                 <input
                   type="number"
                   step="0.01"
+                  min="0.01"
+                  max={deuda > 0 ? deuda.toFixed(2) : undefined}
                   required
                   placeholder="0.00"
                   value={formPago.monto}

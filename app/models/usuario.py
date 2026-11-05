@@ -20,6 +20,10 @@ class Rol(Base):
     usuarios = relationship("Usuario", back_populates="rol")
     permisos_asociados = relationship("RolPermiso", back_populates="rol", cascade="all, delete-orphan")
 
+    @property
+    def permisos(self):
+        return [rp.permiso for rp in self.permisos_asociados]
+
 class Permiso(Base):
     __tablename__ = "permisos"
 

@@ -25,6 +25,12 @@ def test_hu10_completo():
     pacientes_res = client.get("/api/v1/pacientes/", headers=headers)
     assert len(pacientes_res.json()) > 0
     paciente_id = pacientes_res.json()[0]["id"]
+    # Los cobros no pueden superar el saldo: el paciente necesita un plan aprobado
+    plan_saldo = client.post("/api/v1/tratamientos/planes", json={
+        "paciente_id": paciente_id, "titulo": "Plan con saldo para cobros"
+    }, headers=headers).json()
+    client.put(f"/api/v1/tratamientos/planes/{plan_saldo['id']}", json={"estado": "APROBADO", "costo_total": 5000}, headers=headers)
+
 
     # 3. Limpieza previa: si hay una caja abierta de ejecuciones anteriores, la cerramos
     estado_ini = client.get("/api/v1/caja/estado", headers=headers).json()

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import RegistroAsistencia, ContratoRemuneracion, Usuario, RolCodigoEnum
-from app.core.dependencies import get_current_user, require_role
+from app.core.dependencies import get_current_user, require_permission, require_role, tiene_permiso
 from app.schemas.asistencia import AsistenciaResponse
 from app.schemas.contrato import (
     ContratoRemuneracionCreate, ContratoRemuneracionUpdate, ContratoRemuneracionResponse
@@ -24,9 +24,8 @@ def listar_asistencias(
     db: Session = Depends(get_db)
 ):
     query = db.query(RegistroAsistencia)
-    # Si no es admin, solo ve sus propias asistencias
-    rol_actual = str(current_user.rol.codigo.value if hasattr(current_user.rol.codigo, "value") else current_user.rol.codigo).upper()
-    if rol_actual != "ADMIN":
+    # Sin permiso de auditoría, cada empleado solo ve sus propios fichajes
+    if not tiene_permiso(current_user, "ASISTENCIA_READ_ALL", db):
         query = query.filter(RegistroAsistencia.usuario_id == current_user.id)
     elif usuario_id:
         query = query.filter(RegistroAsistencia.usuario_id == usuario_id)
@@ -42,7 +41,7 @@ def listar_asistencias(
 
 @router.get("/contratos", response_model=List[ContratoRemuneracionResponse])
 def listar_contratos(
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    current_user: Usuario = Depends(require_permission("EMPLEADOS_READ")),
     db: Session = Depends(get_db)
 ):
     return db.query(ContratoRemuneracion).all()

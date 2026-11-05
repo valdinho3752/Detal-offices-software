@@ -6,9 +6,9 @@ from sqlalchemy import func
 from app.database import get_db
 from app.models import (
     CatalogoTratamiento, PlanTratamiento, ItemPlanTratamiento,
-    Usuario, AuditoriaLog, AuditoriaAccionEnum, Doctor
+    Usuario, AuditoriaLog, AuditoriaAccionEnum, Doctor, Cita, RolCodigoEnum
 )
-from app.core.dependencies import get_current_user
+from app.core.dependencies import doctor_solicitado, require_permission, require_role
 from app.schemas.tratamiento import (
     CatalogoTratamientoCreate, CatalogoTratamientoUpdate, CatalogoTratamientoResponse,
     PlanTratamientoCreate, PlanTratamientoUpdate, PlanTratamientoResponse,
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/tratamientos", tags=["Catálogo y Planes de Tratamie
 @router.get("/catalogo", response_model=List[CatalogoTratamientoResponse])
 def listar_catalogo(
     activo_solo: bool = True,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("TRATAMIENTOS_READ")),
     db: Session = Depends(get_db)
 ):
     query = db.query(CatalogoTratamiento)
@@ -30,16 +30,40 @@ def listar_catalogo(
         query = query.filter(CatalogoTratamiento.activo == True)
     return query.order_by(CatalogoTratamiento.categoria, CatalogoTratamiento.nombre).all()
 
+def _datos_auditoria(item: CatalogoTratamiento) -> dict:
+    return {
+        "codigo": item.codigo,
+        "categoria": item.categoria.value if hasattr(item.categoria, "value") else str(item.categoria),
+        "nombre": item.nombre,
+        "descripcion": item.descripcion,
+        "costo_base": str(item.costo_base),
+        "duracion_estimada_min": item.duracion_estimada_min,
+        "activo": item.activo,
+    }
+
+def _auditar_catalogo(usuario: Usuario, item: CatalogoTratamiento, accion: AuditoriaAccionEnum, previos=None, nuevos=None) -> AuditoriaLog:
+    return AuditoriaLog(
+        usuario_id=usuario.id,
+        tabla_afectada="catalogo_tratamientos",
+        registro_id=item.id,
+        accion=accion,
+        seccion_consultada="CATALOGO_TRATAMIENTOS",
+        datos_previos=previos,
+        datos_nuevos=nuevos,
+    )
+
 @router.post("/catalogo", response_model=CatalogoTratamientoResponse, status_code=status.HTTP_201_CREATED)
 def crear_tratamiento_catalogo(
     datos: CatalogoTratamientoCreate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
     db: Session = Depends(get_db)
 ):
     if db.query(CatalogoTratamiento).filter(CatalogoTratamiento.codigo == datos.codigo).first():
         raise HTTPException(status_code=400, detail="El código de tratamiento ya existe")
     item = CatalogoTratamiento(**datos.model_dump())
     db.add(item)
+    db.flush()
+    db.add(_auditar_catalogo(current_user, item, AuditoriaAccionEnum.INSERT, nuevos=_datos_auditoria(item)))
     db.commit()
     db.refresh(item)
     return item
@@ -48,17 +72,54 @@ def crear_tratamiento_catalogo(
 def actualizar_tratamiento_catalogo(
     id: UUID,
     datos: CatalogoTratamientoUpdate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
     db: Session = Depends(get_db)
 ):
     item = db.query(CatalogoTratamiento).filter(CatalogoTratamiento.id == id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Tratamiento de catálogo no encontrado")
-    for field, value in datos.model_dump(exclude_unset=True).items():
+    cambios = datos.model_dump(exclude_unset=True)
+    codigo = cambios.get("codigo")
+    if codigo and db.query(CatalogoTratamiento).filter(CatalogoTratamiento.codigo == codigo, CatalogoTratamiento.id != id).first():
+        raise HTTPException(status_code=400, detail="El código de tratamiento ya existe")
+
+    previos = _datos_auditoria(item)
+    for field, value in cambios.items():
         setattr(item, field, value)
+    db.add(_auditar_catalogo(current_user, item, AuditoriaAccionEnum.UPDATE, previos=previos, nuevos=_datos_auditoria(item)))
     db.commit()
     db.refresh(item)
     return item
+
+@router.delete("/catalogo/{id}")
+def eliminar_tratamiento_catalogo(
+    id: UUID,
+    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    db: Session = Depends(get_db)
+):
+    """
+    Elimina un tratamiento. Si ya se usó en planes o citas se desactiva en su lugar:
+    deja de ofrecerse, pero la historia clínica y los presupuestos conservan su nombre y precio.
+    """
+    item = db.query(CatalogoTratamiento).filter(CatalogoTratamiento.id == id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Tratamiento de catálogo no encontrado")
+
+    previos = _datos_auditoria(item)
+    en_uso = (
+        db.query(ItemPlanTratamiento.id).filter(ItemPlanTratamiento.tratamiento_id == id).first()
+        or db.query(Cita.id).filter(Cita.tratamiento_id == id).first()
+    )
+    if en_uso:
+        item.activo = False
+        db.add(_auditar_catalogo(current_user, item, AuditoriaAccionEnum.UPDATE, previos=previos, nuevos=_datos_auditoria(item)))
+        db.commit()
+        return {"resultado": "DESACTIVADO", "mensaje": "El tratamiento ya se usó en planes o citas: se desactivó para conservar el historial."}
+
+    db.add(_auditar_catalogo(current_user, item, AuditoriaAccionEnum.DELETE, previos=previos))
+    db.delete(item)
+    db.commit()
+    return {"resultado": "ELIMINADO", "mensaje": "Tratamiento eliminado del catálogo."}
 
 # ==================== PLANES DE TRATAMIENTO ====================
 
@@ -66,7 +127,7 @@ def actualizar_tratamiento_catalogo(
 def listar_planes(
     paciente_id: Optional[UUID] = None,
     doctor_id: Optional[UUID] = None,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("TRATAMIENTOS_READ")),
     db: Session = Depends(get_db)
 ):
     query = db.query(PlanTratamiento)
@@ -79,7 +140,7 @@ def listar_planes(
 @router.post("/planes", response_model=PlanTratamientoResponse, status_code=status.HTTP_201_CREATED)
 def crear_plan_tratamiento(
     datos: PlanTratamientoCreate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("TRATAMIENTOS_CREATE")),
     db: Session = Depends(get_db)
 ):
     plan_dict = datos.model_dump(exclude={"items"})
@@ -102,12 +163,7 @@ def crear_plan_tratamiento(
             db.add(doctor)
             db.flush()
     else:
-        if not current_user.doctor_perfil:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acceso denegado: solo personal médico o administradores pueden formular planes de tratamiento"
-            )
-        doctor = current_user.doctor_perfil
+        doctor = current_user.doctor_perfil or doctor_solicitado(plan_dict.get("doctor_id"), db)
 
     plan_dict["doctor_id"] = doctor.id
     nuevo_plan = PlanTratamiento(**plan_dict)
@@ -138,7 +194,7 @@ def crear_plan_tratamiento(
 @router.get("/planes/{id}", response_model=PlanTratamientoResponse)
 def obtener_plan_tratamiento(
     id: UUID,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("TRATAMIENTOS_READ")),
     db: Session = Depends(get_db)
 ):
     plan = db.query(PlanTratamiento).filter(PlanTratamiento.id == id).first()
@@ -150,7 +206,7 @@ def obtener_plan_tratamiento(
 def actualizar_plan_tratamiento(
     id: UUID,
     datos: PlanTratamientoUpdate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("TRATAMIENTOS_UPDATE")),
     db: Session = Depends(get_db)
 ):
     plan = db.query(PlanTratamiento).filter(PlanTratamiento.id == id).first()
@@ -186,7 +242,7 @@ def actualizar_plan_tratamiento(
 @router.post("/items", response_model=ItemPlanTratamientoResponse, status_code=status.HTTP_201_CREATED)
 def agregar_item_a_plan(
     datos: ItemPlanTratamientoCreate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("TRATAMIENTOS_UPDATE")),
     db: Session = Depends(get_db)
 ):
     plan = db.query(PlanTratamiento).filter(PlanTratamiento.id == datos.plan_id).first()
@@ -220,7 +276,7 @@ def agregar_item_a_plan(
 def actualizar_item_plan(
     id: UUID,
     datos: ItemPlanTratamientoUpdate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("TRATAMIENTOS_UPDATE")),
     db: Session = Depends(get_db)
 ):
     item = db.query(ItemPlanTratamiento).filter(ItemPlanTratamiento.id == id).first()
@@ -253,7 +309,7 @@ def actualizar_item_plan(
 @router.delete("/items/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def eliminar_item_plan(
     id: UUID,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("TRATAMIENTOS_UPDATE")),
     db: Session = Depends(get_db)
 ):
     item = db.query(ItemPlanTratamiento).filter(ItemPlanTratamiento.id == id).first()

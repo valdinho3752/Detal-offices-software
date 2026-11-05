@@ -9,7 +9,8 @@ from app.models import (
     CajaSesion, Pago, EgresoCaja, EstadoCajaEnum, MetodoPagoEnum,
     Usuario, RolCodigoEnum, AuditoriaLog, AuditoriaAccionEnum
 )
-from app.core.dependencies import get_current_user, require_role
+from app.core.dependencies import get_current_user, require_permission, tiene_permiso
+from app.services.saldos import validar_monto_cobro
 from app.schemas.caja import (
     CajaAperturaRequest, CajaCierreRequest, CajaSesionResponse,
     PagoCreate, PagoResponse, EgresoCajaCreate, EgresoCajaResponse
@@ -63,6 +64,20 @@ def obtener_estado_caja_actual(
     else:
         mensaje = "Caja del día abierta y operativa."
 
+    # La barrera de apertura aplica a todos, pero los montos solo a quien puede ver la caja
+    if not tiene_permiso(current_user, "CAJA_READ", db):
+        return {
+            "caja_abierta": True,
+            "abierta": True,
+            "es_del_dia": es_del_dia,
+            "requiere_apertura": False,
+            "requiere_cierre_anterior": not es_del_dia,
+            "tipo_bloqueo": tipo_bloqueo,
+            "fecha_servidor": str(server_today),
+            "fecha_apertura_str": caja.fecha_apertura.strftime("%d/%m/%Y %H:%M"),
+            "mensaje": mensaje
+        }
+
     return {
         "caja_abierta": True,
         "abierta": True,
@@ -96,7 +111,7 @@ def obtener_estado_caja_actual(
 @router.post("/abrir", response_model=CajaSesionResponse, status_code=status.HTTP_201_CREATED)
 def abrir_caja(
     datos: CajaAperturaRequest,
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN, RolCodigoEnum.RECEPCION)),
+    current_user: Usuario = Depends(require_permission("CAJA_APERTURA")),
     db: Session = Depends(get_db)
 ):
     # Verificar si ya existe una caja abierta
@@ -143,7 +158,7 @@ def abrir_caja(
 @router.post("/cerrar", response_model=CajaSesionResponse)
 def cerrar_caja(
     datos: CajaCierreRequest,
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN, RolCodigoEnum.RECEPCION)),
+    current_user: Usuario = Depends(require_permission("CAJA_CIERRE")),
     db: Session = Depends(get_db)
 ):
     caja = db.query(CajaSesion).filter(CajaSesion.estado == EstadoCajaEnum.ABIERTA).first()
@@ -184,7 +199,7 @@ def cerrar_caja(
 @router.post("/pagos", response_model=PagoResponse, status_code=status.HTTP_201_CREATED)
 def registrar_pago_paciente(
     datos: PagoCreate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("CAJA_PAGOS")),
     db: Session = Depends(get_db)
 ):
     caja = db.query(CajaSesion).filter(CajaSesion.estado == EstadoCajaEnum.ABIERTA).first()
@@ -193,6 +208,7 @@ def registrar_pago_paciente(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No se puede registrar un cobro en efectivo si no hay una caja abierta"
         )
+    validar_monto_cobro(datos.paciente_id, datos.plan_id, datos.monto, db)
 
     nuevo_pago = Pago(
         **datos.model_dump(),
@@ -223,7 +239,7 @@ def registrar_pago_paciente(
 @router.post("/egresos", response_model=EgresoCajaResponse, status_code=status.HTTP_201_CREATED)
 def registrar_egreso_caja(
     datos: EgresoCajaCreate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("CAJA_EGRESOS")),
     db: Session = Depends(get_db)
 ):
     """

@@ -100,6 +100,10 @@ export const api = {
 
   // ==================== PLANES DE TRATAMIENTO (HU-04, HU-07) ====================
   getCatalogoTratamientos: () => request('/tratamientos/catalogo'),
+  getCatalogoCompleto: () => request('/tratamientos/catalogo?activo_solo=false'),
+  createTratamiento: (data) => request('/tratamientos/catalogo', { method: 'POST', body: JSON.stringify(data) }),
+  updateTratamiento: (id, data) => request(`/tratamientos/catalogo/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteTratamiento: (id) => request(`/tratamientos/catalogo/${id}`, { method: 'DELETE' }),
   getPlanes: (pacienteId) => request(`/tratamientos/planes?paciente_id=${pacienteId}`),
   createPlan: (data) => request('/tratamientos/planes', { method: 'POST', body: JSON.stringify(data) }),
   updatePlan: (id, data) => request(`/tratamientos/planes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),

@@ -237,6 +237,10 @@ def test_saldo_presupuesto():
 
 def test_caja():
     paciente_id = _crear_paciente()
+    plan = client.post(f"{API}/tratamientos/planes", json={
+        "paciente_id": paciente_id, "titulo": "Plan con saldo", "items": [],
+    }, headers=H).json()
+    client.put(f"{API}/tratamientos/planes/{plan['id']}", json={"estado": "APROBADO", "costo_total": 1000}, headers=H)
     _asegurar_caja(abierta=False)
 
     pago = {"paciente_id": paciente_id, "monto": 50}

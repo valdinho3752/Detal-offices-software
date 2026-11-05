@@ -17,8 +17,7 @@ import {
 } from 'lucide-react';
 
 export default function CajaBloqueoBarrier({ cajaEstado, onCajaUpdated }) {
-  const { user, isAdmin, isRecepcion } = useAuth();
-  const puedeOperarCaja = isAdmin || isRecepcion;
+  const { user, tienePermiso } = useAuth();
 
   // Estados locales para formularios de apertura / cierre
   const [montoApertura, setMontoApertura] = useState('100.00');
@@ -39,6 +38,7 @@ export default function CajaBloqueoBarrier({ cajaEstado, onCajaUpdated }) {
 
   const isAperturaRequerida = cajaEstado.tipo_bloqueo === 'APERTURA_REQUERIDA';
   const isCierrePendiente = cajaEstado.tipo_bloqueo === 'CIERRE_PENDIENTE_ANTERIOR';
+  const puedeOperarCaja = tienePermiso(isAperturaRequerida ? 'CAJA_APERTURA' : 'CAJA_CIERRE');
 
   // Fecha legible para hoy
   const hoyStr = new Date().toLocaleDateString('es-ES', {

@@ -12,7 +12,7 @@ from app.models import (
     Cita, EstadoCitaEnum, Doctor, Usuario, RolCodigoEnum,
     Pago, EgresoCaja, MetodoPagoEnum, CategoriaEgresoCajaEnum
 )
-from app.core.dependencies import require_role
+from app.core.dependencies import require_permission
 from app.schemas.reporte import (
     ReporteTratamientosDemandaResponse, TratamientoDemandaItem,
     ReporteProductividadDoctoresResponse, ProductividadDoctorItem,
@@ -26,7 +26,7 @@ def reporte_tratamientos_mayor_demanda(
     fecha_desde: Optional[datetime] = None,
     fecha_hasta: Optional[datetime] = None,
     limit: int = 15,
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    current_user: Usuario = Depends(require_permission("REPORTES_READ")),
     db: Session = Depends(get_db)
 ):
     """
@@ -85,7 +85,7 @@ def reporte_productividad_sillon_doctores(
     doctor_id: Optional[UUID] = None,
     fecha_desde: Optional[datetime] = None,
     fecha_hasta: Optional[datetime] = None,
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    current_user: Usuario = Depends(require_permission("REPORTES_READ")),
     db: Session = Depends(get_db)
 ):
     """
@@ -145,7 +145,7 @@ def reporte_productividad_sillon_doctores(
 def reporte_resumen_financiero_global(
     fecha_desde: Optional[datetime] = None,
     fecha_hasta: Optional[datetime] = None,
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    current_user: Usuario = Depends(require_permission("REPORTES_READ")),
     db: Session = Depends(get_db)
 ):
     """

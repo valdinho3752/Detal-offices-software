@@ -7,7 +7,7 @@ from app.models import (
     VisitaEvolucion, ObservacionEvolucion, ItemPlanTratamiento, EstadoItemPlanEnum,
     Usuario, AuditoriaLog, AuditoriaAccionEnum, Doctor, RolCodigoEnum
 )
-from app.core.dependencies import get_current_user, require_role
+from app.core.dependencies import doctor_solicitado, require_permission
 from app.services.tratamiento_clinico import registrar_tratamiento_realizado
 from app.schemas.visita import (
     VisitaEvolucionCreate, VisitaEvolucionUpdate, VisitaEvolucionResponse,
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/visitas", tags=["Historia Clínica y Evoluciones Dia
 def listar_visitas(
     paciente_id: Optional[UUID] = None,
     doctor_id: Optional[UUID] = None,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("HISTORIA_CLINICA_READ")),
     db: Session = Depends(get_db)
 ):
     query = db.query(VisitaEvolucion)
@@ -33,7 +33,7 @@ def listar_visitas(
 @router.post("/", response_model=VisitaEvolucionResponse, status_code=status.HTTP_201_CREATED)
 def registrar_visita_evolucion(
     datos: VisitaEvolucionCreate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("HISTORIA_CLINICA_CREATE")),
     db: Session = Depends(get_db)
 ):
     """
@@ -73,12 +73,7 @@ def registrar_visita_evolucion(
             db.add(doctor)
             db.flush()
     else:
-        if not current_user.doctor_perfil:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acceso denegado: solo personal médico o administradores pueden registrar visitas de evolución"
-            )
-        doctor = current_user.doctor_perfil
+        doctor = current_user.doctor_perfil or doctor_solicitado(visita_dict.get("doctor_id"), db)
 
     visita_dict["doctor_id"] = doctor.id
     visita = VisitaEvolucion(**visita_dict)
@@ -117,7 +112,7 @@ def registrar_visita_evolucion(
 def obtener_visita(
     id: UUID,
     request: Request,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("HISTORIA_CLINICA_READ")),
     db: Session = Depends(get_db)
 ):
     visita = db.query(VisitaEvolucion).filter(VisitaEvolucion.id == id).first()
@@ -145,7 +140,7 @@ def obtener_visita(
 def agregar_observacion(
     id: UUID,
     datos: ObservacionEvolucionCreate,
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.DOCTOR, RolCodigoEnum.ASISTENTE)),
+    current_user: Usuario = Depends(require_permission("HISTORIA_CLINICA_OBSERVAR")),
     db: Session = Depends(get_db)
 ):
     """Agrega una observación del doctor o asistente. Las observaciones no se editan ni eliminan."""
@@ -177,7 +172,7 @@ def agregar_observacion(
 def actualizar_visita(
     id: UUID,
     datos: VisitaEvolucionUpdate,
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("HISTORIA_CLINICA_UPDATE")),
     db: Session = Depends(get_db)
 ):
     visita = db.query(VisitaEvolucion).filter(VisitaEvolucion.id == id).first()

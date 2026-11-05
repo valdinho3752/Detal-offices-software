@@ -1,11 +1,13 @@
+import re
+import unicodedata
 from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Usuario, Rol, Permiso, RolPermiso, Doctor, Asistente, RolCodigoEnum
+from app.models import Usuario, Rol, Permiso, RolPermiso, Doctor, Asistente
 from app.core.security import hash_password
-from app.core.dependencies import get_current_user, require_role
+from app.core.dependencies import es_admin, get_current_user, permisos_efectivos, require_permission
 from app.schemas.usuario import (
     UsuarioCreate, UsuarioUpdate, UsuarioDetailResponse,
     RolCreate, RolResponse, PermisoResponse,
@@ -19,29 +21,64 @@ router = APIRouter(prefix="/usuarios", tags=["Usuarios, Doctores y Roles"])
 
 @router.get("/roles", response_model=List[RolResponse])
 def listar_roles(
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_permission("USUARIOS_MANAGE", "ROLES_MANAGE")),
     db: Session = Depends(get_db)
 ):
     return db.query(Rol).all()
 
+def _codigo_desde_nombre(nombre: str) -> str:
+    sin_acentos = "".join(c for c in unicodedata.normalize("NFKD", nombre) if not unicodedata.combining(c))
+    return re.sub(r"[^A-Z0-9]+", "_", sin_acentos.upper()).strip("_")
+
+def _permisos_validos(permiso_ids: List[UUID], current_user: Usuario, db: Session) -> None:
+    """Quien no es administrador no puede otorgar un permiso que él mismo no tiene."""
+    encontrados = db.query(Permiso).filter(Permiso.id.in_(permiso_ids)).all() if permiso_ids else []
+    if len(encontrados) != len(set(permiso_ids)):
+        raise HTTPException(status_code=400, detail="Alguno de los permisos indicados no existe")
+    if es_admin(current_user):
+        return
+    propios = permisos_efectivos(current_user, db)
+    ajenos = sorted(p.codigo_permiso for p in encontrados if p.codigo_permiso not in propios)
+    if ajenos:
+        raise HTTPException(status_code=403, detail=f"No puedes otorgar permisos que no tienes: {', '.join(ajenos)}")
+
+def _validar_edicion_de_rol(rol_codigo: str, rol_id: UUID, current_user: Usuario) -> None:
+    if es_admin(current_user):
+        return
+    if rol_codigo.upper() == "ADMIN" or rol_id == current_user.rol_id:
+        raise HTTPException(status_code=403, detail="No puedes modificar el rol de administrador ni tu propio rol")
+
+def _validar_rol_asignable(rol_id: UUID, current_user: Usuario, db: Session) -> None:
+    rol = db.query(Rol).filter(Rol.id == rol_id).first()
+    if not rol:
+        raise HTTPException(status_code=404, detail="Rol no encontrado")
+    if str(rol.codigo).upper() == "ADMIN" and not es_admin(current_user):
+        raise HTTPException(status_code=403, detail="Solo un administrador puede asignar el rol de administrador")
+
 @router.post("/roles", response_model=RolResponse, status_code=status.HTTP_201_CREATED)
 def crear_rol(
     datos: RolCreate,
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    current_user: Usuario = Depends(require_permission("ROLES_MANAGE")),
     db: Session = Depends(get_db)
 ):
-    existe = db.query(Rol).filter(Rol.codigo == datos.codigo).first()
-    if existe:
-        raise HTTPException(status_code=400, detail="El código de rol ya existe")
-    rol = Rol(**datos.model_dump())
+    codigo = _codigo_desde_nombre(datos.codigo or datos.nombre)
+    if not codigo:
+        raise HTTPException(status_code=400, detail="El nombre del rol debe contener letras o números")
+    if db.query(Rol).filter(Rol.codigo == codigo).first():
+        raise HTTPException(status_code=400, detail=f"Ya existe un rol con el código {codigo}")
+    _permisos_validos(datos.permiso_ids, current_user, db)
+
+    rol = Rol(codigo=codigo, nombre=datos.nombre, descripcion=datos.descripcion, es_sistema=False)
     db.add(rol)
+    db.flush()
+    db.add_all([RolPermiso(rol_id=rol.id, permiso_id=pid) for pid in set(datos.permiso_ids)])
     db.commit()
     db.refresh(rol)
     return rol
 
 @router.get("/permisos", response_model=List[PermisoResponse])
 def listar_permisos(
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    current_user: Usuario = Depends(require_permission("USUARIOS_MANAGE", "ROLES_MANAGE")),
     db: Session = Depends(get_db)
 ):
     return db.query(Permiso).all()
@@ -50,7 +87,7 @@ def listar_permisos(
 def asignar_permisos_a_rol(
     rol_id: UUID,
     permiso_ids: List[UUID],
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    current_user: Usuario = Depends(require_permission("ROLES_MANAGE")),
     db: Session = Depends(get_db)
 ):
     """
@@ -59,12 +96,14 @@ def asignar_permisos_a_rol(
     rol = db.query(Rol).filter(Rol.id == rol_id).first()
     if not rol:
         raise HTTPException(status_code=404, detail="Rol no encontrado")
+    _validar_edicion_de_rol(str(rol.codigo), rol.id, current_user)
+    _permisos_validos(permiso_ids, current_user, db)
 
     # Eliminar asignaciones previas
     db.query(RolPermiso).filter(RolPermiso.rol_id == rol_id).delete()
 
     # Agregar nuevas asignaciones
-    nuevas_relaciones = [RolPermiso(rol_id=rol_id, permiso_id=pid) for pid in permiso_ids]
+    nuevas_relaciones = [RolPermiso(rol_id=rol_id, permiso_id=pid) for pid in set(permiso_ids)]
     db.add_all(nuevas_relaciones)
     db.commit()
 
@@ -80,7 +119,7 @@ def asignar_permisos_a_rol(
 @router.get("/roles/{rol_id}/permisos", response_model=List[PermisoResponse])
 def obtener_permisos_de_rol(
     rol_id: UUID,
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    current_user: Usuario = Depends(require_permission("ROLES_MANAGE")),
     db: Session = Depends(get_db)
 ):
     rol = db.query(Rol).filter(Rol.id == rol_id).first()
@@ -97,7 +136,7 @@ def obtener_permisos_de_rol(
 
 @router.get("/", response_model=List[UsuarioDetailResponse])
 def listar_usuarios(
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    current_user: Usuario = Depends(require_permission("USUARIOS_MANAGE")),
     db: Session = Depends(get_db)
 ):
     return db.query(Usuario).all()
@@ -105,13 +144,14 @@ def listar_usuarios(
 @router.post("/", response_model=UsuarioDetailResponse, status_code=status.HTTP_201_CREATED)
 def crear_usuario(
     datos: UsuarioCreate,
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    current_user: Usuario = Depends(require_permission("USUARIOS_MANAGE")),
     db: Session = Depends(get_db)
 ):
     if db.query(Usuario).filter(Usuario.username == datos.username).first():
         raise HTTPException(status_code=400, detail="El nombre de usuario ya está en uso")
     if db.query(Usuario).filter(Usuario.email == datos.email).first():
         raise HTTPException(status_code=400, detail="El correo electrónico ya está registrado")
+    _validar_rol_asignable(datos.rol_id, current_user, db)
 
     user_dict = datos.model_dump(exclude={"password", "doctor_perfil", "asistente_perfil"})
     user_dict["password_hash"] = hash_password(datos.password)
@@ -138,7 +178,7 @@ def crear_usuario(
 @router.get("/{id}", response_model=UsuarioDetailResponse)
 def obtener_usuario(
     id: UUID,
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    current_user: Usuario = Depends(require_permission("USUARIOS_MANAGE")),
     db: Session = Depends(get_db)
 ):
     usuario = db.query(Usuario).filter(Usuario.id == id).first()
@@ -150,14 +190,18 @@ def obtener_usuario(
 def actualizar_usuario(
     id: UUID,
     datos: UsuarioUpdate,
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    current_user: Usuario = Depends(require_permission("USUARIOS_MANAGE")),
     db: Session = Depends(get_db)
 ):
     usuario = db.query(Usuario).filter(Usuario.id == id).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    if not es_admin(current_user) and (es_admin(usuario) or usuario.id == current_user.id):
+        raise HTTPException(status_code=403, detail="No puedes modificar a un administrador ni tu propia cuenta")
 
     update_dict = datos.model_dump(exclude_unset=True)
+    if update_dict.get("rol_id"):
+        _validar_rol_asignable(update_dict["rol_id"], current_user, db)
     doc_update = update_dict.pop("doctor_perfil", None)
     asist_update = update_dict.pop("asistente_perfil", None)
 
@@ -193,7 +237,7 @@ def listar_doctores(
 @router.post("/doctores/perfil", response_model=DoctorResponse, status_code=status.HTTP_201_CREATED)
 def crear_perfil_doctor(
     datos: DoctorCreate,
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    current_user: Usuario = Depends(require_permission("USUARIOS_MANAGE")),
     db: Session = Depends(get_db)
 ):
     if db.query(Doctor).filter(Doctor.usuario_id == datos.usuario_id).first():
@@ -208,7 +252,7 @@ def crear_perfil_doctor(
 def actualizar_doctor(
     id: UUID,
     datos: DoctorUpdate,
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    current_user: Usuario = Depends(require_permission("USUARIOS_MANAGE")),
     db: Session = Depends(get_db)
 ):
     doctor = db.query(Doctor).filter(Doctor.id == id).first()
@@ -232,7 +276,7 @@ def listar_asistentes(
 @router.post("/asistentes/perfil", response_model=AsistenteResponse, status_code=status.HTTP_201_CREATED)
 def crear_perfil_asistente(
     datos: AsistenteCreate,
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    current_user: Usuario = Depends(require_permission("USUARIOS_MANAGE")),
     db: Session = Depends(get_db)
 ):
     if db.query(Asistente).filter(Asistente.usuario_id == datos.usuario_id).first():

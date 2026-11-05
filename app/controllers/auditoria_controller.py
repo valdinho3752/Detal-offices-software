@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import AuditoriaLog, Usuario, RolCodigoEnum, AuditoriaAccionEnum
-from app.core.dependencies import require_role
+from app.core.dependencies import require_permission
 from app.schemas.auditoria import AuditoriaLogResponse
 
 router = APIRouter(prefix="/auditoria", tags=["Auditoría de Acciones y Vistas (Logs)"])
@@ -18,7 +18,7 @@ def consultar_auditoria(
     fecha_desde: Optional[datetime] = None,
     fecha_hasta: Optional[datetime] = None,
     limit: int = 100,
-    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    current_user: Usuario = Depends(require_permission("AUDITORIA_READ")),
     db: Session = Depends(get_db)
 ):
     query = db.query(AuditoriaLog)

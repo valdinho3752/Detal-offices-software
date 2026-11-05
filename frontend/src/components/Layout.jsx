@@ -27,11 +27,15 @@ import {
   Bell,
   Sun,
   Moon,
+  BookOpen,
 } from 'lucide-react';
+import { puedeAcceder } from '../config/accesos';
 import CajaBloqueoBarrier from './CajaBloqueoBarrier';
 
 export default function Layout({ children }) {
-  const { user, logout, isAdmin } = useAuth();
+  const auth = useAuth();
+  const { user, logout, tienePermiso } = auth;
+  const puedeFichar = tienePermiso('ASISTENCIA_FICHAR');
   const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -71,7 +75,7 @@ export default function Layout({ children }) {
     }
   };
 
-  const menuItems = [
+  const todasLasOpciones = [
     { path: '/', label: 'Panel Principal', icon: Activity, badge: null },
     { path: '/pacientes', label: 'Pacientes & Ficha', icon: Users, badge: 'HU-03' },
     { path: '/odontograma', label: 'Odontograma FDI & Planes', icon: Sparkles, badge: 'HU-04' },
@@ -85,8 +89,10 @@ export default function Layout({ children }) {
     { path: '/nomina', label: 'Nómina & Comisiones', icon: FileText, badge: 'HU-12' },
     { path: '/auditoria', label: 'Auditoría Forense', icon: ShieldCheck, badge: 'HU-13' },
     { path: '/reportes', label: 'Inteligencia de Negocio', icon: BarChart3, badge: 'HU-14' },
+    { path: '/tratamientos', label: 'Catálogo de Tratamientos', icon: BookOpen, badge: 'Admin' },
     { path: '/usuarios', label: 'Usuarios & Roles RBAC', icon: UserCog, badge: 'HU-01/02' },
   ];
+  const menuItems = todasLasOpciones.filter((item) => puedeAcceder(item.path, auth));
 
   return (
     <div className="flex h-screen bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden font-sans">
@@ -135,11 +141,12 @@ export default function Layout({ children }) {
             <div className="min-w-0">
               <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{user?.nombre_completo || user?.username}</p>
               <span className="inline-block px-1.5 py-0.2 rounded text-[9px] font-bold bg-primary-500/20 text-primary-700 dark:text-primary-300 uppercase">
-                {user?.rol?.nombre || 'Administrador'}
+                {user?.rol_nombre || user?.rol_str}
               </span>
             </div>
           </div>
           <button
+            hidden={!puedeFichar}
             onClick={() => setFichajeModal(true)}
             title="Registrar Fichaje Laboral (HU-06)"
             className="p-1.5 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-300 border border-teal-500/30 hover:bg-teal-500/20 transition-colors"
@@ -260,15 +267,18 @@ export default function Layout({ children }) {
                 {cajaEstado?.tipo_bloqueo === 'CIERRE_PENDIENTE_ANTERIOR'
                   ? 'Caja Anterior sin Cerrar'
                   : cajaEstado?.caja_abierta && cajaEstado?.es_del_dia
-                  ? `Gaveta: $${Number(cajaEstado.saldo_en_gaveta || cajaEstado.efectivo_actual_en_gaveta || 0).toFixed(2)}`
+                  ? cajaEstado.saldo_en_gaveta === undefined
+                    ? 'Caja Abierta'
+                    : `Gaveta: $${Number(cajaEstado.saldo_en_gaveta).toFixed(2)}`
                   : 'Caja de Hoy sin Abrir'}
               </span>
             </Link>
 
             {/* Quick clock button */}
             <button
+              hidden={!puedeFichar}
               onClick={() => setFichajeModal(true)}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold transition"
+              className={`${puedeFichar ? 'flex' : 'hidden'} items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold transition`}
             >
               <Clock className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
               <span className="hidden sm:inline">Fichar Turno</span>

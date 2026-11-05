@@ -38,9 +38,11 @@ def test_hu01_completo():
     print(f"✔ [Escenario 1] Roles del sistema listados: {codigos_roles}")
 
     # 3. Escenario 2: Creación de un rol personalizado
-    # Buscamos o creamos el rol DOCTOR para comprobar asignación de permisos
-    doctor_rol = next(r for r in roles if r["codigo"] == "DOCTOR")
-    doctor_rol_id = doctor_rol["id"]
+    # Se usa un rol propio: cambiar los permisos del rol DOCTOR afectaría a los doctores reales
+    from uuid import uuid4
+    res_rol = client.post("/api/v1/usuarios/roles", json={"nombre": f"Rol prueba {uuid4().hex[:8]}"}, headers=admin_headers)
+    assert res_rol.status_code == 201, res_rol.text
+    doctor_rol_id = res_rol.json()["id"]
 
     # 4. Escenario 3: Asignar permisos específicos a un rol
     # Seleccionamos 3 permisos específicos de prueba

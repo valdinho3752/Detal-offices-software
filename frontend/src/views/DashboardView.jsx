@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { puedeAcceder } from '../config/accesos';
 import {
   Users,
   Calendar,
@@ -22,7 +23,12 @@ import {
 } from 'lucide-react';
 
 export default function DashboardView() {
-  const { user } = useAuth();
+  const auth = useAuth();
+  const { user, tienePermiso } = auth;
+  const accesible = (ruta) => puedeAcceder(ruta, auth);
+  const verCaja = tienePermiso('CAJA_READ');
+  const verFinanzas = tienePermiso('REPORTES_READ');
+  const verCitas = tienePermiso('CITAS_READ');
   const [caja, setCaja] = useState(null);
   const [citasHoy, setCitasHoy] = useState([]);
   const [resumenFinanzas, setResumenFinanzas] = useState(null);
@@ -36,9 +42,9 @@ export default function DashboardView() {
     try {
       const [cajaRes, citasRes, finanzasRes, pacientesRes] = await Promise.allSettled([
         api.getEstadoCaja(),
-        api.getCitas(`?fecha_inicio=${hoyStr}&fecha_fin=${hoyStr}`),
-        api.getReporteFinanciero(),
-        api.getPacientes('', 0, 1),
+        verCitas ? api.getCitas(`?fecha_inicio=${hoyStr}&fecha_fin=${hoyStr}`) : [],
+        verFinanzas ? api.getReporteFinanciero() : null,
+        tienePermiso('PACIENTES_READ') ? api.getPacientes('', 0, 1) : [],
       ]);
 
       if (cajaRes.status === 'fulfilled') setCaja(cajaRes.value);
@@ -92,12 +98,13 @@ export default function DashboardView() {
           <h1 className="text-2xl font-bold text-white tracking-tight">Panel Principal</h1>
           <p className="text-slate-400 text-sm">
             Bienvenido, <span className="text-primary-400 font-semibold">{user?.nombre_completo || user?.username}</span> · Rol:{' '}
-            <span className="capitalize text-slate-300 font-medium">{user?.rol?.nombre || 'Administrador'}</span>
+            <span className="capitalize text-slate-300 font-medium">{user?.rol_nombre || user?.rol_str}</span>
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link
             to="/citas"
+            style={tienePermiso('CITAS_CREATE') ? undefined : { display: 'none' }}
             className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-primary-600/20 transition flex items-center gap-1.5"
           >
             <Calendar className="w-4 h-4" />
@@ -105,6 +112,7 @@ export default function DashboardView() {
           </Link>
           <Link
             to="/pacientes"
+            style={tienePermiso('PACIENTES_CREATE') ? undefined : { display: 'none' }}
             className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-1.5"
           >
             <Users className="w-4 h-4" />
@@ -116,7 +124,7 @@ export default function DashboardView() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Caja Gaveta */}
-        <div className="bg-slate-800/70 border border-slate-700/60 rounded-2xl p-4 flex items-center gap-4">
+        {verCaja && <div className="bg-slate-800/70 border border-slate-700/60 rounded-2xl p-4 flex items-center gap-4">
           <div className={`p-3 rounded-xl ${caja?.abierta ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
             <DollarSign className="w-6 h-6" />
           </div>
@@ -133,10 +141,10 @@ export default function DashboardView() {
               )}
             </div>
           </div>
-        </div>
+        </div>}
 
         {/* Citas de Hoy */}
-        <div className="bg-slate-800/70 border border-slate-700/60 rounded-2xl p-4 flex items-center gap-4">
+        {verCitas && <div className="bg-slate-800/70 border border-slate-700/60 rounded-2xl p-4 flex items-center gap-4">
           <div className="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl">
             <Calendar className="w-6 h-6" />
           </div>
@@ -147,10 +155,10 @@ export default function DashboardView() {
               {citasHoy.filter((c) => c.estado === 'EN_SILLON').length} actualmente en sillón
             </div>
           </div>
-        </div>
+        </div>}
 
         {/* Ingresos del Mes */}
-        <div className="bg-slate-800/70 border border-slate-700/60 rounded-2xl p-4 flex items-center gap-4">
+        {verFinanzas && <div className="bg-slate-800/70 border border-slate-700/60 rounded-2xl p-4 flex items-center gap-4">
           <div className="p-3 bg-sky-500/10 text-sky-400 rounded-xl">
             <TrendingUp className="w-6 h-6" />
           </div>
@@ -160,13 +168,13 @@ export default function DashboardView() {
               ${Number(resumenFinanzas?.total_ingresos || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
             </div>
             <div className="text-[11px] text-emerald-400 mt-0.5">
-              Margen: ${Number(resumenFinanzas?.margen_neto || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+              Margen: ${Number(resumenFinanzas?.balance_neto_operativo || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
             </div>
           </div>
-        </div>
+        </div>}
 
         {/* Egresos Operativos */}
-        <div className="bg-slate-800/70 border border-slate-700/60 rounded-2xl p-4 flex items-center gap-4">
+        {verFinanzas && <div className="bg-slate-800/70 border border-slate-700/60 rounded-2xl p-4 flex items-center gap-4">
           <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
             <Clock className="w-6 h-6" />
           </div>
@@ -177,7 +185,7 @@ export default function DashboardView() {
             </div>
             <div className="text-[11px] text-slate-400 mt-0.5">Insumos, laboratorio y anticipos</div>
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Grid: Citas de Hoy y Estado de Sillón + Módulos */}
@@ -289,6 +297,7 @@ export default function DashboardView() {
           <div className="space-y-3">
             <Link
               to="/caja"
+              style={accesible('/caja') ? undefined : { display: 'none' }}
               className="block p-3.5 bg-slate-900/60 border border-slate-700/40 rounded-xl hover:border-primary-500/40 transition group"
             >
               <div className="flex items-center justify-between text-xs font-semibold text-slate-300 group-hover:text-primary-400">
@@ -302,6 +311,7 @@ export default function DashboardView() {
 
             <Link
               to="/protesis"
+              style={accesible('/protesis') ? undefined : { display: 'none' }}
               className="block p-3.5 bg-slate-900/60 border border-slate-700/40 rounded-xl hover:border-primary-500/40 transition group"
             >
               <div className="flex items-center justify-between text-xs font-semibold text-slate-300 group-hover:text-primary-400">
@@ -315,6 +325,7 @@ export default function DashboardView() {
 
             <Link
               to="/auditoria"
+              style={accesible('/auditoria') ? undefined : { display: 'none' }}
               className="block p-3.5 bg-slate-900/60 border border-slate-700/40 rounded-xl hover:border-primary-500/40 transition group"
             >
               <div className="flex items-center justify-between text-xs font-semibold text-slate-300 group-hover:text-primary-400">
@@ -333,7 +344,7 @@ export default function DashboardView() {
       <div>
         <h2 className="text-lg font-bold text-white mb-4">Módulos del Sistema (HU-01 a HU-14)</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {modulos.map((m, idx) => {
+          {modulos.filter((m) => accesible(m.href)).map((m, idx) => {
             const Icon = m.icon;
             return (
               <Link
