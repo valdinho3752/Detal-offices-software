@@ -3,7 +3,7 @@ import ErrorModal from '../components/ErrorModal';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
-  DollarSign,
+  Banknote,
   TrendingDown,
   TrendingUp,
   Lock,
@@ -17,8 +17,10 @@ import {
   Layers,
   AlertCircle,
 } from 'lucide-react';
+import { useMoneda } from '../context/MonedaContext';
 
 export default function CajaOperativaView() {
+  const { moneda, simbolo } = useMoneda();
   const { user } = useAuth();
   const [caja, setCaja] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -202,11 +204,11 @@ export default function CajaOperativaView() {
               Efectivo en Gaveta
             </span>
             <div className={`p-2 rounded-xl ${caja?.abierta ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
-              <DollarSign className="w-5 h-5" />
+              <Banknote className="w-5 h-5" />
             </div>
           </div>
           <div className="text-2xl font-bold text-white">
-            ${saldoTeorico.toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+            {moneda(saldoTeorico)}
           </div>
           <div className="text-[11px] font-medium flex items-center gap-1.5">
             {caja?.abierta ? (
@@ -228,7 +230,7 @@ export default function CajaOperativaView() {
             </div>
           </div>
           <div className="text-2xl font-bold text-white">
-            ${Number(caja?.monto_apertura || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+            {moneda(caja?.monto_apertura || 0)}
           </div>
           <div className="text-[11px] text-slate-400">
             Fondo base para cambio / vueltos
@@ -246,7 +248,7 @@ export default function CajaOperativaView() {
             </div>
           </div>
           <div className="text-2xl font-bold text-emerald-400">
-            +${Number(caja?.total_ingresos || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+            +{moneda(caja?.total_ingresos || 0)}
           </div>
           <div className="text-[11px] text-slate-400">
             Cobros de tratamientos en efectivo
@@ -264,7 +266,7 @@ export default function CajaOperativaView() {
             </div>
           </div>
           <div className="text-2xl font-bold text-amber-400">
-            -${Number(caja?.total_egresos || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+            -{moneda(caja?.total_egresos || 0)}
           </div>
           <div className="text-[11px] text-slate-400">
             Gastos menores y retiros
@@ -321,7 +323,7 @@ export default function CajaOperativaView() {
                         m.tipo === 'INGRESO' ? 'text-emerald-400' : 'text-amber-400'
                       }`}
                     >
-                      {m.tipo === 'INGRESO' ? '+' : '-'}${Number(m.monto).toFixed(2)}
+                      {m.tipo === 'INGRESO' ? '+' : '-'}{moneda(m.monto)}
                     </td>
                   </tr>
                 ))}
@@ -343,7 +345,7 @@ export default function CajaOperativaView() {
             <form onSubmit={handleAbrirCaja} className="space-y-4">
               <ErrorModal mensaje={error} />
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Fondo Inicial ($) *</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Fondo Inicial ({simbolo}) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -414,7 +416,7 @@ export default function CajaOperativaView() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Monto ($) *</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Monto ({simbolo}) *</label>
                   <input
                     type="number"
                     step="0.01"
@@ -471,13 +473,13 @@ export default function CajaOperativaView() {
               <div className="p-3.5 bg-slate-800/80 rounded-xl border border-slate-700 flex justify-between items-center text-xs">
                 <span className="text-slate-400">Saldo Teórico del Sistema:</span>
                 <span className="font-mono font-bold text-white text-sm">
-                  ${saldoTeorico.toFixed(2)}
+                  {moneda(saldoTeorico)}
                 </span>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Efectivo Físico Real Contado ($) *
+                  Efectivo Físico Real Contado ({simbolo}) *
                 </label>
                 <input
                   type="number"
@@ -506,7 +508,7 @@ export default function CajaOperativaView() {
                     ? '▲ Sobrante de Caja'
                     : '▼ Faltante de Caja'}
                 </span>
-                <span>${diferenciaCalculada.toFixed(2)}</span>
+                <span>{moneda(diferenciaCalculada)}</span>
               </div>
 
               {Math.abs(diferenciaCalculada) > 0.001 && (

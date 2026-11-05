@@ -3,7 +3,7 @@ import ErrorModal from '../components/ErrorModal';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import {
-  DollarSign,
+  Banknote,
   CreditCard,
   User,
   Plus,
@@ -18,9 +18,11 @@ import {
 import PacienteSearchInput from '../components/PacienteSearchInput';
 import CobrosCitaPanel from '../components/CobrosCitaPanel';
 import { useAuth } from '../context/AuthContext';
+import { useMoneda } from '../context/MonedaContext';
 
 
 export default function CobranzasView() {
+  const { moneda, simbolo } = useMoneda();
   const [searchParams] = useSearchParams();
   const pacienteIdParam = searchParams.get('paciente_id');
   const cobroIdParam = searchParams.get('cobro');
@@ -247,7 +249,7 @@ export default function CobranzasView() {
           <div className="p-4 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/50 rounded-xl">
             <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Total Presupuestado en Tratamientos</span>
             <div className="text-xl font-bold text-slate-900 dark:text-white font-mono">
-              ${Number(saldoInfo?.total_tratamientos ?? saldoInfo?.total_presupuestado ?? 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+              {moneda(saldoInfo?.total_tratamientos ?? saldoInfo?.total_presupuestado ?? 0)}
             </div>
             <div className="text-[11px] text-slate-500 mt-1">Planes activos y completados</div>
           </div>
@@ -255,11 +257,11 @@ export default function CobranzasView() {
           <div className="p-4 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/50 rounded-xl">
             <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Total Abonado a Planes</span>
             <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-              ${Number(saldoInfo?.total_pagado || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+              {moneda(saldoInfo?.total_pagado || 0)}
             </div>
             <div className="text-[11px] text-emerald-600 dark:text-emerald-500 mt-1">
               {cobrosDirectos > 0
-                ? `Además, $${cobrosDirectos.toFixed(2)} en consultas directas`
+                ? `Además, ${moneda(cobrosDirectos)} en consultas directas`
                 : 'Ingresado al flujo de caja'}
             </div>
           </div>
@@ -267,7 +269,7 @@ export default function CobranzasView() {
           <div className={`p-4 rounded-xl border ${deuda > 0 ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30' : 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30'}`}>
             <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Saldo Pendiente por Cobrar</span>
             <div className={`text-2xl font-bold font-mono ${deuda > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-              ${deuda.toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+              {moneda(deuda)}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
               {deuda > 0 ? 'Deuda activa por liquidar' : 'Sin saldos pendientes'}
@@ -351,7 +353,7 @@ export default function CobranzasView() {
                       {pago.anulado && <span className="block not-italic text-rose-700 dark:text-rose-300">Motivo de anulación: {pago.motivo_anulacion}</span>}
                     </td>
                     <td className={`py-3 px-4 text-right font-mono font-bold ${pago.anulado ? 'line-through text-slate-500 dark:text-slate-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                      ${Number(pago.monto).toFixed(2)}
+                      {moneda(pago.monto)}
                     </td>
                     {puedeAnular && (
                       <td className="py-3 px-4 text-right">
@@ -381,7 +383,7 @@ export default function CobranzasView() {
       {pagoAnular && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Anular pago de ${Number(pagoAnular.monto).toFixed(2)}</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Anular pago de {moneda(pagoAnular.monto)}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
               {pagoAnular.cobro_cita_id
                 ? 'Este pago salió de la cuenta de una cita: se anulan todos los pagos de esa cuenta y vuelve a quedar pendiente.'
@@ -443,8 +445,8 @@ export default function CobranzasView() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Monto a Cobrar ($) *{' '}
-                  {!esDirecto && <span className="font-normal text-slate-500 dark:text-slate-400">· máximo ${deuda.toFixed(2)}</span>}
+                  Monto a Cobrar ({simbolo}) *{' '}
+                  {!esDirecto && <span className="font-normal text-slate-500 dark:text-slate-400">· máximo {moneda(deuda)}</span>}
                 </label>
                 <input
                   type="number"

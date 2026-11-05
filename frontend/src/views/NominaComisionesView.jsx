@@ -3,9 +3,8 @@ import ErrorModal from '../components/ErrorModal';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { Award, Plus, User, AlertCircle, CheckCircle2, Receipt, Pencil } from 'lucide-react';
+import { useMoneda } from '../context/MonedaContext';
 
-const moneda = (valor) => `$${Number(valor || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}`;
-const descuento = (valor) => (Number(valor) > 0 ? `-${moneda(valor)}` : moneda(0));
 const ENTRADA = 'w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-primary-500';
 const ETIQUETA = 'block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1';
 const OPCION = 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white';
@@ -41,7 +40,9 @@ function Metrica({ titulo, valor, nota, resaltar = false }) {
 }
 
 export default function NominaComisionesView() {
+  const { moneda, simbolo } = useMoneda();
   const { isAdmin, tienePermiso } = useAuth();
+  const descuento = (valor) => (Number(valor) > 0 ? `-${moneda(valor)}` : moneda(0));
   const [personal, setPersonal] = useState([]);
   const [selectedId, setSelectedId] = useState('');
   const [liquidacion, setLiquidacion] = useState(null);
@@ -335,11 +336,11 @@ export default function NominaComisionesView() {
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label htmlFor="monto-base" className={ETIQUETA}>Sueldo ($) *</label>
+                      <label htmlFor="monto-base" className={ETIQUETA}>Sueldo ({simbolo}) *</label>
                       <input id="monto-base" type="number" step="0.01" min="0" required value={formPago.base} onChange={(e) => setFormPago({ ...formPago, base: e.target.value })} className={ENTRADA} />
                     </div>
                     <div>
-                      <label htmlFor="descuento" className={ETIQUETA}>Descontar adelantos ($)</label>
+                      <label htmlFor="descuento" className={ETIQUETA}>Descontar adelantos ({simbolo})</label>
                       <input id="descuento" type="number" step="0.01" min="0" max={adelantosPendientes} value={formPago.descuento} onChange={(e) => setFormPago({ ...formPago, descuento: e.target.value })} className={ENTRADA} />
                     </div>
                   </div>
@@ -351,7 +352,7 @@ export default function NominaComisionesView() {
                 </div>
               ) : (
                 <div>
-                  <label htmlFor="monto-pago" className={ETIQUETA}>Monto a pagar ($) *</label>
+                  <label htmlFor="monto-pago" className={ETIQUETA}>Monto a pagar ({simbolo}) *</label>
                   <input id="monto-pago" type="number" step="0.01" min="0.01" required value={formPago.monto} onChange={(e) => setFormPago({ ...formPago, monto: e.target.value })} className={ENTRADA} />
                   {formPago.tipo_pago === 'COMISION_TRATAMIENTOS' && (
                     <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Saldo disponible: {moneda(Math.max(saldoComision, 0))}</div>

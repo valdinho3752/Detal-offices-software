@@ -25,8 +25,10 @@ import {
   Filter,
 } from 'lucide-react';
 import PacienteSearchInput from '../components/PacienteSearchInput';
+import { useMoneda } from '../context/MonedaContext';
 
 export default function EvolucionClinicaView() {
+  const { moneda } = useMoneda();
   const { user, tienePermiso } = useAuth();
   const puedeObservar = tienePermiso('HISTORIA_CLINICA_OBSERVAR');
   const [observacionesNuevas, setObservacionesNuevas] = useState({});
@@ -367,7 +369,7 @@ export default function EvolucionClinicaView() {
                       {item.tratamiento?.nombre || 'Tratamiento Dental'}
                     </h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Costo: ${Number(item.precio_unitario || 0).toFixed(2)}
+                      Costo: {moneda(item.precio_unitario || 0)}
                     </p>
                   </div>
 

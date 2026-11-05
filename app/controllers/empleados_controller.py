@@ -12,6 +12,7 @@ from app.models import (
 from app.core.dependencies import get_current_user, require_permission, tiene_permiso
 from app.schemas.pago_empleado import PagoEmpleadoCreate, PagoEmpleadoResponse
 from app.services.gaveta import exigir_efectivo
+from app.services.moneda import texto_moneda
 from app.services.nomina import TIPOS_SUELDO, Liquidacion, calcular_liquidacion
 
 router = APIRouter(prefix="/empleados", tags=["Nómina, Sueldos y Comisiones de Empleados"])
@@ -48,16 +49,16 @@ def _resumen_liquidacion(liquidacion: Liquidacion) -> dict:
         "saldo_comision_por_pagar": float(liquidacion.saldo_comision),
     }
 
-def _validar_montos_con_saldo(datos: PagoEmpleadoCreate, liquidacion: Liquidacion) -> None:
+def _validar_montos_con_saldo(datos: PagoEmpleadoCreate, liquidacion: Liquidacion, db: Session) -> None:
     if datos.tipo_pago == TipoPagoEmpleadoEnum.COMISION_TRATAMIENTOS and datos.monto_neto_pagado > liquidacion.saldo_comision:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"La comisión no puede superar el saldo por pagar de ${max(liquidacion.saldo_comision, Decimal('0')):.2f}"
+            detail=f"La comisión no puede superar el saldo por pagar de {texto_moneda(max(liquidacion.saldo_comision, Decimal('0')), db)}"
         )
     if datos.deducciones_descuentos > liquidacion.adelantos_pendientes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"No se puede descontar más que los adelantos pendientes de ${liquidacion.adelantos_pendientes:.2f}"
+            detail=f"No se puede descontar más que los adelantos pendientes de {texto_moneda(liquidacion.adelantos_pendientes, db)}"
         )
 
 @router.get("/personal")
@@ -125,7 +126,7 @@ def registrar_pago_empleado(
             )
         exigir_efectivo(caja, datos.monto_neto_pagado, "pagar")
 
-    _validar_montos_con_saldo(datos, calcular_liquidacion(empleado, db))
+    _validar_montos_con_saldo(datos, calcular_liquidacion(empleado, db), db)
 
     valores = datos.model_dump()
     if datos.tipo_pago == TipoPagoEmpleadoEnum.COMISION_TRATAMIENTOS:

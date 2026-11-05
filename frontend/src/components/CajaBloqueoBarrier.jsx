@@ -6,7 +6,7 @@ import {
   Unlock,
   AlertTriangle,
   Calendar,
-  DollarSign,
+  Banknote,
   Clock,
   Sparkles,
   ShieldAlert,
@@ -15,8 +15,10 @@ import {
   AlertCircle,
   RefreshCw,
 } from 'lucide-react';
+import { useMoneda } from '../context/MonedaContext';
 
 export default function CajaBloqueoBarrier({ cajaEstado, onCajaUpdated }) {
+  const { moneda, simbolo } = useMoneda();
   const { user, tienePermiso } = useAuth();
 
   // Estados locales para formularios de apertura / cierre
@@ -167,10 +169,10 @@ export default function CajaBloqueoBarrier({ cajaEstado, onCajaUpdated }) {
                 <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/60 space-y-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Fondo Inicial de Efectivo en Gaveta ($ / Bs) *
+                      Fondo Inicial de Efectivo en Gaveta ({simbolo}) *
                     </label>
                     <div className="relative">
-                      <DollarSign className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <Banknote className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         type="number"
                         step="0.01"
@@ -223,7 +225,7 @@ export default function CajaBloqueoBarrier({ cajaEstado, onCajaUpdated }) {
                   <div className="flex items-center justify-between text-xs text-amber-800 dark:text-amber-300 border-t border-amber-200/60 dark:border-amber-700/40 pt-2">
                     <span className="font-semibold">Saldo Teórico Esperado en Gaveta:</span>
                     <span className="font-mono font-black text-sm">
-                      ${Number(cajaEstado.saldo_en_gaveta || cajaEstado.efectivo_actual_en_gaveta || 0).toFixed(2)}
+                      {moneda(cajaEstado.saldo_en_gaveta || cajaEstado.efectivo_actual_en_gaveta || 0)}
                     </span>
                   </div>
                 </div>
@@ -231,10 +233,10 @@ export default function CajaBloqueoBarrier({ cajaEstado, onCajaUpdated }) {
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Total Efectivo Físico Contado ($ / Bs) *
+                      Total Efectivo Físico Contado ({simbolo}) *
                     </label>
                     <div className="relative">
-                      <DollarSign className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <Banknote className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         type="number"
                         step="0.01"

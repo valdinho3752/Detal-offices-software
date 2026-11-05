@@ -11,7 +11,7 @@ import {
   Clock,
   AlertCircle,
   Calendar,
-  DollarSign,
+  Banknote,
   Filter,
   User,
   Sparkles,
@@ -19,6 +19,7 @@ import {
   Stethoscope,
 } from 'lucide-react';
 import PacienteSearchInput from '../components/PacienteSearchInput';
+import { useMoneda } from '../context/MonedaContext';
 
 const COLORES_VITA = [
   'A1', 'A2', 'A3', 'A3.5', 'A4',
@@ -29,6 +30,7 @@ const COLORES_VITA = [
 ];
 
 export default function ProtesisLaboratorioView() {
+  const { moneda, simbolo } = useMoneda();
   const { user } = useAuth();
   const [protesis, setProtesis] = useState([]);
   const [pacientes, setPacientes] = useState([]);
@@ -246,7 +248,7 @@ export default function ProtesisLaboratorioView() {
                         {p.fecha_prometida_entrega ? p.fecha_prometida_entrega.slice(0, 10) : 'Pendiente'}
                       </td>
                       <td className="py-3 px-4 text-right font-mono text-slate-300">
-                        ${Number(p.costo_laboratorio).toFixed(2)}
+                        {moneda(p.costo_laboratorio)}
                       </td>
                       <td className="py-3 px-4 text-center">
                         <span
@@ -401,7 +403,7 @@ export default function ProtesisLaboratorioView() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Costo Laboratorio ($) *</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Costo Laboratorio ({simbolo}) *</label>
                   <input
                     type="number"
                     step="0.01"

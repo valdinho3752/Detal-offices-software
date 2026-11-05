@@ -8,6 +8,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models import EstadoPlanEnum, Paciente, Pago, PlanTratamiento
+from app.services.moneda import texto_moneda
 
 # Solo generan deuda los planes aceptados: un presupuesto PROPUESTO aún no es un compromiso de pago
 ESTADOS_PLAN_CON_DEUDA = (EstadoPlanEnum.APROBADO, EstadoPlanEnum.EN_CURSO, EstadoPlanEnum.COMPLETADO)
@@ -37,11 +38,11 @@ def calcular_saldo_paciente(paciente_id: UUID, db: Session) -> SaldoPaciente:
     return SaldoPaciente(Decimal(presupuestado), Decimal(pagado))
 
 
-def _rechazar(monto: Decimal, disponible: Decimal, contexto: str):
+def _rechazar(monto: Decimal, disponible: Decimal, contexto: str, db: Session):
     if disponible <= 0:
         detalle = f"No se puede registrar el cobro: {contexto} no tiene saldo pendiente"
     else:
-        detalle = f"El cobro de ${monto:.2f} supera el saldo pendiente de ${disponible:.2f} de {contexto}"
+        detalle = f"El cobro de {texto_moneda(monto, db)} supera el saldo pendiente de {texto_moneda(disponible, db)} de {contexto}"
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detalle)
 
 
@@ -84,8 +85,8 @@ def validar_monto_cobro(paciente_id: UUID, plan_id, monto: Decimal, db: Session)
         ).scalar()
         disponible_plan = Decimal(plan.costo_total) - Decimal(pagado_plan)
         if monto > disponible_plan:
-            _rechazar(monto, disponible_plan, "este plan")
+            _rechazar(monto, disponible_plan, "este plan", db)
 
     disponible = calcular_saldo_paciente(paciente_id, db).pendiente
     if monto > disponible:
-        _rechazar(monto, disponible, "este paciente")
+        _rechazar(monto, disponible, "este paciente", db)

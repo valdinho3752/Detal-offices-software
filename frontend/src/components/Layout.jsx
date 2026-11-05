@@ -11,7 +11,7 @@ import {
   ClipboardList,
   Image,
   ShieldCheck,
-  DollarSign,
+  Banknote,
   Wallet,
   FileText,
   BarChart3,
@@ -29,11 +29,17 @@ import {
   Moon,
   BookOpen,
   Armchair,
+  Settings,
 } from 'lucide-react';
 import { puedeAcceder } from '../config/accesos';
 import CajaBloqueoBarrier from './CajaBloqueoBarrier';
+import { useMoneda } from '../context/MonedaContext';
+
+// Estas pantallas aprovechan todo el ancho disponible
+const PANTALLAS_ANCHAS = ['/odontograma', '/citas'];
 
 export default function Layout({ children }) {
+  const { moneda } = useMoneda();
   const auth = useAuth();
   const { user, logout, tienePermiso } = auth;
   const puedeFichar = tienePermiso('ASISTENCIA_FICHAR');
@@ -86,12 +92,13 @@ export default function Layout({ children }) {
     { path: '/radiografias', label: 'Visor Radiográfico', icon: Image, badge: 'HU-08' },
     { path: '/protesis', label: 'Prótesis & Laboratorio', icon: Stethoscope, badge: 'HU-09' },
     { path: '/caja', label: 'Caja Operativa Diaria', icon: Wallet, badge: 'HU-10' },
-    { path: '/cobranzas', label: 'Cobranzas & Pagos', icon: DollarSign, badge: 'HU-11' },
+    { path: '/cobranzas', label: 'Cobranzas & Pagos', icon: Banknote, badge: 'HU-11' },
     { path: '/nomina', label: 'Nómina & Comisiones', icon: FileText, badge: 'HU-12' },
     { path: '/auditoria', label: 'Auditoría Forense', icon: ShieldCheck, badge: 'HU-13' },
     { path: '/reportes', label: 'Inteligencia de Negocio', icon: BarChart3, badge: 'HU-14' },
     { path: '/tratamientos', label: 'Catálogo de Tratamientos', icon: BookOpen, badge: 'Admin' },
     { path: '/sillones', label: 'Sillones', icon: Armchair, badge: 'Admin' },
+    { path: '/configuracion', label: 'Configuración', icon: Settings, badge: 'Admin' },
     { path: '/usuarios', label: 'Usuarios & Roles RBAC', icon: UserCog, badge: 'HU-01/02' },
   ];
   const menuItems = todasLasOpciones.filter((item) => puedeAcceder(item.path, auth));
@@ -271,7 +278,7 @@ export default function Layout({ children }) {
                   : cajaEstado?.caja_abierta && cajaEstado?.es_del_dia
                   ? cajaEstado.saldo_en_gaveta === undefined
                     ? 'Caja Abierta'
-                    : `Gaveta: $${Number(cajaEstado.saldo_en_gaveta).toFixed(2)}`
+                    : `Gaveta: ${moneda(cajaEstado.saldo_en_gaveta)}`
                   : 'Caja de Hoy sin Abrir'}
               </span>
             </Link>
@@ -290,7 +297,7 @@ export default function Layout({ children }) {
 
         {/* View Content */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50/70 dark:bg-slate-900/50">
-          <div className="max-w-7xl mx-auto">{children || <Outlet />}</div>
+          <div className={PANTALLAS_ANCHAS.includes(location.pathname) ? 'w-full' : 'max-w-7xl mx-auto'}>{children || <Outlet />}</div>
         </main>
       </div>
 

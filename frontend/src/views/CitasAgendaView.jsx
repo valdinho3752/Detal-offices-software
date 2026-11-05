@@ -33,6 +33,7 @@ import {
   ListChecks,
 } from 'lucide-react';
 import PacienteSearchInput from '../components/PacienteSearchInput';
+import { useMoneda } from '../context/MonedaContext';
 
 const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const MESES = [
@@ -142,6 +143,7 @@ const ESTADOS_SIN_RESERVA = ['CANCELADA', 'NO_ASISTIO'];
 const COLORES_SILLON = ['bg-teal-500', 'bg-cyan-500', 'bg-indigo-500', 'bg-amber-500', 'bg-fuchsia-500', 'bg-emerald-500'];
 
 export default function CitasAgendaView() {
+  const { moneda } = useMoneda();
   const { user, isRecepcion, tienePermiso } = useAuth();
   const [searchParams] = useSearchParams();
   const queryPacienteId = searchParams.get('paciente_id');
@@ -1104,14 +1106,14 @@ export default function CitasAgendaView() {
 
           {/* TABLA MATRIZ SINCRONIZADA CON ESPACIOS AMPLIADOS */}
           <div className="max-h-[750px] overflow-auto">
-            <table className="w-full border-collapse text-left">
+            <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: `${112 + sillonesVisibles.length * 260}px` }}>
               <thead className="sticky top-0 z-20 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-b border-slate-300 dark:border-slate-700 shadow-sm">
                 <tr>
                   <th className="w-28 px-3 py-3.5 text-center text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 border-r border-slate-300 dark:border-slate-700 sticky left-0 z-30 bg-slate-100 dark:bg-slate-800">
                     Hora
                   </th>
                   {sillonesVisibles.map((sillon, indice) => (
-                    <th key={sillon.numero} className="min-w-[260px] px-4 py-3.5 border-r border-slate-300 dark:border-slate-700">
+                    <th key={sillon.numero} className="px-4 py-3.5 border-r border-slate-300 dark:border-slate-700">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
                           <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${COLORES_SILLON[indice % COLORES_SILLON.length]}`} />
@@ -1718,7 +1720,7 @@ export default function CitasAgendaView() {
                                       <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2">
                                         <span>⏱ {it.duracion_estimada_min} min</span>
                                         <span>•</span>
-                                        <span className="font-mono font-bold text-slate-700 dark:text-slate-300">Bs. {Number(it.costo_base).toFixed(2)}</span>
+                                        <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{moneda(it.costo_base)}</span>
                                         {it.es_proxima_sesion && (
                                           <span className="text-amber-500 font-bold">★ Próxima sesión</span>
                                         )}
@@ -1815,7 +1817,7 @@ export default function CitasAgendaView() {
                         <optgroup key={catKey} label={catKey.replace(/_/g, ' ')}>
                           {list.map((t) => (
                             <option key={t.id} value={t.id}>
-                              {t.codigo} · {t.nombre} ({t.duracion_estimada_min} min — Bs. {t.costo_base})
+                              {t.codigo} · {t.nombre} ({t.duracion_estimada_min} min — {moneda(t.costo_base)})
                             </option>
                           ))}
                         </optgroup>

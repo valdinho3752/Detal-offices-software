@@ -164,6 +164,10 @@ export const api = {
   cerrarCobroCitaSinPago: (id, motivo) =>
     request(`/cobros-cita/${id}/cerrar-sin-pago`, { method: 'POST', body: JSON.stringify({ motivo }) }),
 
+  // ==================== CONFIGURACIÓN ====================
+  getConfiguracion: () => request('/configuracion/'),
+  updateConfiguracion: (data) => request('/configuracion/', { method: 'PUT', body: JSON.stringify(data) }),
+
   // ==================== NÓMINA & COMISIONES (HU-12) ====================
   getContratos: () => request('/personal/contratos'),
   crearContrato: (data) => request('/personal/contratos', { method: 'POST', body: JSON.stringify(data) }),

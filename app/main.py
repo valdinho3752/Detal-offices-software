@@ -20,6 +20,7 @@ from app.controllers.protesis_controller import router as protesis_router
 from app.controllers.caja_controller import router as caja_router
 from app.controllers.cobros_cita_controller import router as cobros_cita_router
 from app.controllers.sillones_controller import router as sillones_router
+from app.controllers.configuracion_controller import router as configuracion_router
 from app.controllers.empleados_controller import router as empleados_router
 from app.controllers.auditoria_controller import router as auditoria_router
 from app.controllers.reportes_controller import router as reportes_router
@@ -74,6 +75,7 @@ app.include_router(protesis_router, prefix=api_prefix)
 app.include_router(caja_router, prefix=api_prefix)
 app.include_router(cobros_cita_router, prefix=api_prefix)
 app.include_router(sillones_router, prefix=api_prefix)
+app.include_router(configuracion_router, prefix=api_prefix)
 app.include_router(empleados_router, prefix=api_prefix)
 app.include_router(auditoria_router, prefix=api_prefix)
 app.include_router(reportes_router, prefix=api_prefix)

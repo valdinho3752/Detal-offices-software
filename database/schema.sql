@@ -444,6 +444,13 @@ CREATE TABLE planes_tratamiento (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE configuracion_clinica (
+    id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1), -- Siempre una sola fila
+    moneda_simbolo VARCHAR(8) NOT NULL DEFAULT '$',
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+INSERT INTO configuracion_clinica (id) VALUES (1);
+
 CREATE TABLE items_plan_tratamiento (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     plan_id UUID NOT NULL REFERENCES planes_tratamiento(id) ON DELETE CASCADE,

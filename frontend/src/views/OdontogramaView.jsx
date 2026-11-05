@@ -28,6 +28,7 @@ import {
   Layers,
   FileSpreadsheet,
 } from 'lucide-react';
+import { useMoneda } from '../context/MonedaContext';
 
 // Cuadrantes FDI Dentición Adulta (Permanente)
 // Pantalla Izquierda: LADO DERECHO DEL PACIENTE
@@ -195,6 +196,7 @@ const getToothName = (fdi) => {
 };
 
 export default function OdontogramaView() {
+  const { moneda, simbolo } = useMoneda();
   const { user } = useAuth();
   const { isDark } = useTheme();
   const [searchParams] = useSearchParams();
@@ -990,9 +992,9 @@ export default function OdontogramaView() {
       <div
         key={fdi}
         onClick={() => handleSelectTooth(fdi)}
-        className={`flex flex-col items-center p-1.5 rounded-2xl cursor-pointer transition select-none ${
+        className={`min-w-0 flex flex-col items-center p-1 rounded-2xl cursor-pointer transition select-none ${
           isSelected
-            ? 'bg-dental-50 dark:bg-primary-600/25 border-2 border-dental-500 dark:border-primary-500 shadow-md scale-105'
+            ? 'bg-dental-50 dark:bg-primary-600/25 border-2 border-dental-500 dark:border-primary-500 shadow-md'
             : 'bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/60 hover:border-slate-400 dark:hover:border-slate-500'
         } ${isInexistente ? 'opacity-70 saturate-50' : ''}`}
         title={`#${fdi} - ${getToothName(fdi)}${isInexistente ? ' (Inexistente)' : ''}`}
@@ -1009,7 +1011,7 @@ export default function OdontogramaView() {
         </span>
 
         {/* SVG Anatómico con Raíces (viewBox: 0 0 70 110) */}
-        <svg viewBox="0 0 70 110" className="w-12 h-20 sm:w-14 sm:h-24 drop-shadow-sm">
+        <svg viewBox="0 0 70 110" className="w-full h-auto max-h-44 drop-shadow-sm">
           {/* ==================== DIENTE SUPERIOR (Raíces hacia ARRIBA) ==================== */}
           {isUpper ? (
             <g>
@@ -1325,6 +1327,24 @@ export default function OdontogramaView() {
     );
   };
 
+  // Cada mitad reparte el ancho entre sus dientes, con la línea media entre ambas
+  const renderArcada = (izquierda, derecha, etiquetaMedial) => (
+    <div
+      className="grid items-stretch gap-1"
+      style={{ gridTemplateColumns: `repeat(${izquierda.length}, minmax(0, 1fr)) auto repeat(${derecha.length}, minmax(0, 1fr))` }}
+    >
+      {izquierda.map((fdi) => renderTooth(fdi))}
+      <div className="relative w-0.5 mx-1.5 sm:mx-3 bg-dental-500/40 dark:bg-primary-500/40">
+        {etiquetaMedial && (
+          <span className={`absolute left-1/2 -translate-x-1/2 ${etiquetaMedial === 'arriba' ? '-top-3' : '-bottom-3'} text-[9px] font-bold font-mono text-dental-600 dark:text-primary-400 bg-white dark:bg-slate-800 px-1 rounded`}>
+            MEDIAL
+          </span>
+        )}
+      </div>
+      {derecha.map((fdi) => renderTooth(fdi))}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header Principal con Selectores de Paciente y Doctor */}
@@ -1342,12 +1362,12 @@ export default function OdontogramaView() {
         {/* Selectores de Paciente y Doctor */}
         <div className="flex items-center gap-3 flex-wrap">
           {/* Selector de Paciente */}
-          <div className="flex items-center gap-2 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl shadow-sm">
+          <div className="flex items-center gap-2 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl shadow-sm min-w-0 max-w-full">
             <User className="w-4 h-4 text-dental-600 dark:text-primary-400" />
             <select
               value={selectedPacienteId}
               onChange={(e) => setSelectedPacienteId(e.target.value)}
-              className="bg-transparent text-slate-800 dark:text-white text-xs font-semibold focus:outline-none cursor-pointer"
+              className="min-w-0 max-w-full bg-transparent text-slate-800 dark:text-white text-xs font-semibold focus:outline-none cursor-pointer"
             >
               {pacientes.map((p) => (
                 <option key={p.id} value={p.id} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
@@ -1358,9 +1378,9 @@ export default function OdontogramaView() {
           </div>
 
           {/* Selector de Doctor Asignado */}
-          <div className="flex items-center gap-2 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl shadow-sm">
+          <div className="flex items-center gap-2 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl shadow-sm min-w-0 max-w-full">
             <Shield className={`w-4 h-4 ${user?.puedeElegirDoctor ? 'text-emerald-500' : 'text-slate-400'}`} />
-            <div className="flex flex-col">
+            <div className="flex flex-col min-w-0">
               <span className="text-[10px] text-slate-500 dark:text-slate-400 leading-none">
                 {user?.puedeElegirDoctor ? 'Doctor Tratante (Elegir)' : 'Doctor Tratante'}
               </span>
@@ -1368,7 +1388,7 @@ export default function OdontogramaView() {
                 <select
                   value={selectedDoctorId}
                   onChange={(e) => handleDoctorChange(e.target.value)}
-                  className="bg-transparent text-slate-800 dark:text-white text-xs font-semibold focus:outline-none cursor-pointer"
+                  className="min-w-0 max-w-full bg-transparent text-slate-800 dark:text-white text-xs font-semibold focus:outline-none cursor-pointer"
                 >
                   {doctores.map((doc) => (
                     <option key={doc.id} value={doc.id} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
@@ -1470,7 +1490,8 @@ export default function OdontogramaView() {
 
         {/* Tablero Gráfico de Dientes */}
         {denticion === 'ADULTA' ? (
-          <div className="space-y-6 overflow-x-auto pb-2">
+          <div className="overflow-x-auto pb-2">
+          <div className="space-y-6 min-w-[820px] pt-1">
             {/* Indicadores de Cuadrante Superior */}
             <div className="grid grid-cols-2 text-center text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 pb-1 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center justify-center gap-1.5 text-dental-600 dark:text-primary-400">
@@ -1483,40 +1504,18 @@ export default function OdontogramaView() {
 
             {/* Arcada Superior (Maxilar) - Raíces hacia arriba */}
             <div>
-              <div className="text-[11px] font-bold text-slate-400 text-center uppercase tracking-widest mb-2">
+              <div className="text-[11px] font-bold text-slate-400 text-center uppercase tracking-widest mb-4">
                 Arcada Superior (Maxilar)
               </div>
-              <div className="flex justify-center items-center gap-3 sm:gap-6">
-                {/* Cuadrante 1 (Derecho del paciente) */}
-                <div className="flex items-center gap-1 sm:gap-1.5">{CUADRANTE_1.map((fdi) => renderTooth(fdi))}</div>
-                {/* Línea Media Facial */}
-                <div className="w-0.5 h-28 bg-dental-500/40 dark:bg-primary-500/40 flex flex-col items-center justify-center relative">
-                  <span className="absolute -top-3 text-[9px] font-bold font-mono text-dental-600 dark:text-primary-400 bg-white dark:bg-slate-800 px-1 rounded shadow-xs">
-                    MEDIAL
-                  </span>
-                </div>
-                {/* Cuadrante 2 (Izquierdo del paciente) */}
-                <div className="flex items-center gap-1 sm:gap-1.5">{CUADRANTE_2.map((fdi) => renderTooth(fdi))}</div>
-              </div>
+              {renderArcada(CUADRANTE_1, CUADRANTE_2, 'arriba')}
             </div>
 
             <div className="border-t border-slate-200 dark:border-slate-700/60 my-2" />
 
             {/* Arcada Inferior (Mandíbula) - Raíces hacia abajo */}
             <div>
-              <div className="flex justify-center items-center gap-3 sm:gap-6">
-                {/* Cuadrante 4 (Derecho del paciente) */}
-                <div className="flex items-center gap-1 sm:gap-1.5">{CUADRANTE_4.map((fdi) => renderTooth(fdi))}</div>
-                {/* Línea Media Facial */}
-                <div className="w-0.5 h-28 bg-dental-500/40 dark:bg-primary-500/40 flex flex-col items-center justify-center relative">
-                  <span className="absolute -bottom-3 text-[9px] font-bold font-mono text-dental-600 dark:text-primary-400 bg-white dark:bg-slate-800 px-1 rounded shadow-xs">
-                    MEDIAL
-                  </span>
-                </div>
-                {/* Cuadrante 3 (Izquierdo del paciente) */}
-                <div className="flex items-center gap-1 sm:gap-1.5">{CUADRANTE_3.map((fdi) => renderTooth(fdi))}</div>
-              </div>
-              <div className="text-[11px] font-bold text-slate-400 text-center uppercase tracking-widest mt-2">
+              {renderArcada(CUADRANTE_4, CUADRANTE_3, 'abajo')}
+              <div className="text-[11px] font-bold text-slate-400 text-center uppercase tracking-widest mt-4">
                 Arcada Inferior (Mandíbula)
               </div>
             </div>
@@ -1531,34 +1530,25 @@ export default function OdontogramaView() {
               </div>
             </div>
           </div>
+          </div>
         ) : (
           /* Dentición Temporal */
-          <div className="space-y-6 overflow-x-auto pb-2">
+          <div className="overflow-x-auto pb-2">
+          <div className="space-y-6 min-w-[520px] pt-1">
             <div className="grid grid-cols-2 text-center text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 pb-1 border-b border-slate-200 dark:border-slate-800">
               <span>DERECHA DEL PACIENTE (Temporal Sup. 55-51)</span>
               <span>IZQUIERDA DEL PACIENTE (Temporal Sup. 61-65)</span>
             </div>
 
-            <div>
-              <div className="flex justify-center items-center gap-3 sm:gap-6">
-                <div className="flex items-center gap-2">{TEMP_1.map((fdi) => renderTooth(fdi))}</div>
-                <div className="w-0.5 h-28 bg-dental-500/40 dark:bg-primary-500/40" />
-                <div className="flex items-center gap-2">{TEMP_2.map((fdi) => renderTooth(fdi))}</div>
-              </div>
-            </div>
+            {renderArcada(TEMP_1, TEMP_2)}
             <div className="border-t border-slate-200 dark:border-slate-700/60 my-2" />
-            <div>
-              <div className="flex justify-center items-center gap-3 sm:gap-6">
-                <div className="flex items-center gap-2">{TEMP_4.map((fdi) => renderTooth(fdi))}</div>
-                <div className="w-0.5 h-28 bg-dental-500/40 dark:bg-primary-500/40" />
-                <div className="flex items-center gap-2">{TEMP_3.map((fdi) => renderTooth(fdi))}</div>
-              </div>
-            </div>
+            {renderArcada(TEMP_4, TEMP_3)}
 
             <div className="grid grid-cols-2 text-center text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200 dark:border-slate-800">
               <span>DERECHA DEL PACIENTE (Temporal Inf. 85-81)</span>
               <span>IZQUIERDA DEL PACIENTE (Temporal Inf. 71-75)</span>
             </div>
+          </div>
           </div>
         )}
 
@@ -1791,7 +1781,7 @@ export default function OdontogramaView() {
                           </div>
                           <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400">
                             <span className="font-mono text-dental-600 dark:text-primary-400 font-bold">
-                              Bs. {Number(cat.costo_base ?? cat.precio_base ?? 0).toFixed(2)}
+                              {moneda(cat.costo_base ?? cat.precio_base ?? 0)}
                             </span>
                             <span>•</span>
                             <span className="truncate">{cat.categoria}</span>
@@ -2033,9 +2023,9 @@ export default function OdontogramaView() {
                     <th className="py-2.5 px-3">Pieza FDI</th>
                     <th className="py-2.5 px-3">Cara / Superficie</th>
                     <th className="py-2.5 px-3">Tratamiento Asignado</th>
-                    <th className="py-2.5 px-3 text-right">Precio Unit. (Bs.)</th>
-                    <th className="py-2.5 px-3 text-right">Descuento (Bs.)</th>
-                    <th className="py-2.5 px-3 text-right">Subtotal (Bs.)</th>
+                    <th className="py-2.5 px-3 text-right">Precio Unit. ({simbolo})</th>
+                    <th className="py-2.5 px-3 text-right">Descuento ({simbolo})</th>
+                    <th className="py-2.5 px-3 text-right">Subtotal ({simbolo})</th>
                     <th className="py-2.5 px-3 text-center">Alta Médica</th>
                     <th className="py-2.5 px-3 text-center">Acciones</th>
                   </tr>
@@ -2061,7 +2051,7 @@ export default function OdontogramaView() {
                           <div className="text-[10px] text-slate-500 dark:text-slate-400">{item.categoria}</div>
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono">
-                          Bs. {pUnit.toFixed(2)}
+                          {moneda(pUnit)}
                         </td>
                         <td className="py-2.5 px-3 text-right">
                           <input
@@ -2074,7 +2064,7 @@ export default function OdontogramaView() {
                           />
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900 dark:text-white">
-                          Bs. {total.toFixed(2)}
+                          {moneda(total)}
                         </td>
                         <td className="py-2.5 px-3 text-center">
                           <button
@@ -2124,14 +2114,14 @@ export default function OdontogramaView() {
                 <div>
                   <span className="text-slate-500 dark:text-slate-400">Subtotal Bruto: </span>
                   <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">
-                    Bs. {totalesCalculados.subtotal.toFixed(2)}
+                    {moneda(totalesCalculados.subtotal)}
                   </span>
                 </div>
                 <div className="w-px h-4 bg-slate-300 dark:bg-slate-700" />
                 <div>
                   <span className="text-slate-500 dark:text-slate-400">Descuentos Totales: </span>
                   <span className="font-bold text-amber-600 dark:text-amber-400 font-mono">
-                    -Bs. {totalesCalculados.totalDescuentos.toFixed(2)}
+                    -{moneda(totalesCalculados.totalDescuentos)}
                   </span>
                 </div>
               </div>
@@ -2149,7 +2139,7 @@ export default function OdontogramaView() {
                     </span>
                   </div>
                   <div className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                    Bs. {totalesCalculados.totalPresupuesto.toFixed(2)}
+                    {moneda(totalesCalculados.totalPresupuesto)}
                   </div>
                 </div>
 

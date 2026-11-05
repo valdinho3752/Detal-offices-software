@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { CalendarCheck, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
 import ErrorModal from './ErrorModal';
+import { useMoneda } from '../context/MonedaContext';
 
 const CAMPO_BASE =
   'px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500';
@@ -23,6 +24,7 @@ const lineasDe = (cobro) =>
 const fechaCorta = (valor) => (valor ? new Date(valor).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Sin fecha');
 
 export default function CobrosCitaPanel({ cobroInicialId, recarga, doctores, onCobroCerrado, onAviso }) {
+  const { moneda } = useMoneda();
   const [pendientes, setPendientes] = useState([]);
   const [cobro, setCobro] = useState(null);
   const [lineas, setLineas] = useState([]);
@@ -105,7 +107,7 @@ export default function CobrosCitaPanel({ cobroInicialId, recarga, doctores, onC
           doctor_comision_id: pago.doctor_comision_id || null,
           observaciones: pago.observaciones || null,
         }),
-      `Pago de $${total.toFixed(2)} confirmado`
+      `Pago de ${moneda(total)} confirmado`
     );
   };
 
@@ -142,7 +144,7 @@ export default function CobrosCitaPanel({ cobroInicialId, recarga, doctores, onC
                     </span>
                   </span>
                   <span className="flex items-center gap-2 flex-shrink-0">
-                    <span className="font-mono font-bold text-slate-900 dark:text-white">${Number(c.total).toFixed(2)}</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">{moneda(c.total)}</span>
                     <ChevronRight className="w-4 h-4 text-slate-400" />
                   </span>
                 </button>
@@ -202,7 +204,7 @@ export default function CobrosCitaPanel({ cobroInicialId, recarga, doctores, onC
                       </div>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400">
                         {linea.aplica_a_plan ? `Abona al plan «${linea.plan_titulo}»` : 'Cobro directo: no afecta el saldo de los planes'}
-                        {cubierto && ` · Costo $${Number(linea.costo_referencia).toFixed(2)}; la diferencia ya fue abonada o sigue en el saldo del plan`}
+                        {cubierto && ` · Costo ${moneda(linea.costo_referencia)}; la diferencia ya fue abonada o sigue en el saldo del plan`}
                       </p>
                     </div>
                   );
@@ -218,7 +220,7 @@ export default function CobrosCitaPanel({ cobroInicialId, recarga, doctores, onC
 
               <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30">
                 <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Total a cobrar</span>
-                <span className="text-xl font-bold font-mono text-emerald-700 dark:text-emerald-400">${total.toFixed(2)}</span>
+                <span className="text-xl font-bold font-mono text-emerald-700 dark:text-emerald-400">{moneda(total)}</span>
               </div>
 
               {total > 0 && (
@@ -285,7 +287,7 @@ export default function CobrosCitaPanel({ cobroInicialId, recarga, doctores, onC
                   </button>
                   {total > 0 && (
                     <button type="submit" disabled={procesando} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition shadow-lg shadow-emerald-600/20 disabled:opacity-50">
-                      Confirmar pago de ${total.toFixed(2)}
+                      Confirmar pago de {moneda(total)}
                     </button>
                   )}
                 </div>

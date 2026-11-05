@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Activity, AlertTriangle, BarChart3, DollarSign, TrendingUp, Users } from 'lucide-react';
+import { Activity, AlertTriangle, BarChart3, Banknote, TrendingUp, Users } from 'lucide-react';
 import { api } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import { aFechaLocal, aPeriodoApi, inicioDelDia } from '../utils/fechas';
+import { useMoneda } from '../context/MonedaContext';
 
-const moneda = (valor) => `$${Number(valor || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}`;
 const TARJETA = 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-5 space-y-4 shadow-sm';
 const CELDA = 'py-2 px-3';
 const ACTUALIZANDO = 'transition-opacity opacity-50';
@@ -135,6 +135,7 @@ function GraficoServidor({ nombre, descripcion, tema, periodo }) {
 }
 
 export default function ReportesBIView() {
+  const { moneda } = useMoneda();
   const { isDark } = useTheme();
   const tema = isDark ? 'oscuro' : 'claro';
   const [filtro, setFiltro] = useState(() => rangoDePeriodo('mes'));
@@ -190,7 +191,7 @@ export default function ReportesBIView() {
 
   const metricas = [
     { titulo: 'Ingresos Facturados', valor: finanzas?.total_ingresos, nota: 'Cobros en todos los medios, sin pagos anulados', Icono: TrendingUp },
-    { titulo: 'Egresos & Costos', valor: finanzas?.total_egresos, nota: 'Laboratorio, insumos, sueldos y gastos menores', Icono: DollarSign },
+    { titulo: 'Egresos & Costos', valor: finanzas?.total_egresos, nota: 'Laboratorio, insumos, sueldos y gastos menores', Icono: Banknote },
     { titulo: 'Margen Neto Operativo', valor: margen, nota: 'Ingresos menos egresos', Icono: Activity },
   ];
 

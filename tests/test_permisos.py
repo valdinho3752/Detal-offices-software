@@ -107,6 +107,8 @@ PROTECCION = {
     ("GET", "/empleados/pagos"): SESION,  # Sin EMPLEADOS_READ devuelve solo lo propio
     ("POST", "/empleados/pagos"): "EMPLEADOS_PAGOS",
     ("GET", "/empleados/comisiones-doctor/{doctor_id}"): SESION,  # Solo las propias sin EMPLEADOS_READ
+    ("GET", "/configuracion/"): SESION,
+    ("PUT", "/configuracion/"): ADMIN,
     ("GET", "/empleados/personal"): SESION,  # Solo los datos propios sin EMPLEADOS_READ
     ("GET", "/empleados/liquidacion/{usuario_id}"): SESION,  # Solo la propia sin EMPLEADOS_READ
     ("GET", "/auditoria/"): "AUDITORIA_READ",
@@ -368,7 +370,7 @@ def test_limite_de_cobros():
     # Con plan aprobado se puede adelantar hasta el saldo, nunca más
     plan_id = _plan(paciente_id, 500)
     res = cobrar(paciente_id, "500.01")
-    assert res.status_code == 400 and "500.00" in res.json()["detail"], res.text
+    assert res.status_code == 400 and "500,00" in res.json()["detail"], res.text
     assert cobrar(paciente_id, 200).status_code == 201
     assert saldo(paciente_id) == 300.0
     assert cobrar(paciente_id, 301).status_code == 400

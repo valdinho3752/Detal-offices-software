@@ -2,8 +2,10 @@
 from decimal import Decimal
 
 from fastapi import HTTPException, status
+from sqlalchemy.orm import object_session
 
 from app.models import CajaSesion
+from app.services.moneda import texto_moneda
 
 
 def efectivo_en_gaveta(caja: CajaSesion) -> Decimal:
@@ -13,7 +15,8 @@ def efectivo_en_gaveta(caja: CajaSesion) -> Decimal:
 def exigir_efectivo(caja: CajaSesion, monto: Decimal, accion: str) -> None:
     disponible = efectivo_en_gaveta(caja)
     if monto > disponible:
+        db = object_session(caja)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"No hay efectivo suficiente en la gaveta para {accion} ${monto:.2f}: quedan ${disponible:.2f}"
+            detail=f"No hay efectivo suficiente en la gaveta para {accion} {texto_moneda(monto, db)}: quedan {texto_moneda(disponible, db)}"
         )

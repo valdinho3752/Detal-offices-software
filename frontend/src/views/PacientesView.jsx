@@ -8,7 +8,7 @@ import {
   Search,
   Activity,
   FileText,
-  DollarSign,
+  Banknote,
   Camera,
   AlertTriangle,
   Phone,
@@ -21,8 +21,10 @@ import {
   CheckCircle,
   XCircle,
 } from 'lucide-react';
+import { useMoneda } from '../context/MonedaContext';
 
 export default function PacientesView() {
+  const { moneda } = useMoneda();
   const [pacientes, setPacientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -309,7 +311,7 @@ export default function PacientesView() {
                   to={`/cobranzas?paciente_id=${selectedPaciente.id}`}
                   className="p-3 bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/30 rounded-xl text-center group transition"
                 >
-                  <DollarSign className="w-5 h-5 text-indigo-400 mx-auto mb-1 group-hover:scale-110 transition" />
+                  <Banknote className="w-5 h-5 text-indigo-400 mx-auto mb-1 group-hover:scale-110 transition" />
                   <span className="text-xs font-semibold text-indigo-300 block">Cobranza</span>
                   <span className="text-[10px] text-slate-400">HU-11</span>
                 </Link>
@@ -325,7 +327,7 @@ export default function PacientesView() {
                         (saldoPaciente?.saldo_pendiente || 0) > 0 ? 'text-rose-400' : 'text-emerald-400'
                       }`}
                     >
-                      ${Number(saldoPaciente?.saldo_pendiente || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+                      {moneda(saldoPaciente?.saldo_pendiente || 0)}
                     </span>
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] font-bold ${
@@ -339,8 +341,8 @@ export default function PacientesView() {
                   </div>
                 </div>
                 <div className="text-xs text-slate-400 space-y-0.5 text-right">
-                  <div>Presupuesto Total: ${Number(saldoPaciente?.total_tratamientos ?? saldoPaciente?.total_presupuestado ?? 0).toFixed(2)}</div>
-                  <div>Abonado: ${Number(saldoPaciente?.total_pagado || 0).toFixed(2)}</div>
+                  <div>Presupuesto Total: {moneda(saldoPaciente?.total_tratamientos ?? saldoPaciente?.total_presupuestado ?? 0)}</div>
+                  <div>Abonado: {moneda(saldoPaciente?.total_pagado || 0)}</div>
                 </div>
               </div>
 

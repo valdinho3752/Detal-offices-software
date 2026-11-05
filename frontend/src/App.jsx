@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { MonedaProvider } from './context/MonedaContext';
 import Layout from './components/Layout';
 
 // Vistas HU-01 a HU-14
@@ -22,6 +23,7 @@ import AuditoriaForenseView from './views/AuditoriaForenseView';
 import ReportesBIView from './views/ReportesBIView';
 import TratamientosCatalogoView from './views/TratamientosCatalogoView';
 import SillonesView from './views/SillonesView';
+import ConfiguracionView from './views/ConfiguracionView';
 import { puedeAcceder } from './config/accesos';
 
 function ProtectedRoute({ children }) {
@@ -68,12 +70,14 @@ const RUTAS = [
   ['reportes', ReportesBIView],
   ['tratamientos', TratamientosCatalogoView],
   ['sillones', SillonesView],
+  ['configuracion', ConfiguracionView],
 ];
 
 export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <MonedaProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginView />} />
@@ -103,6 +107,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
+        </MonedaProvider>
       </AuthProvider>
     </ThemeProvider>
   );

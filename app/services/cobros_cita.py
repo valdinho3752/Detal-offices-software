@@ -13,6 +13,7 @@ from app.models import (
     EstadoCajaEnum, EstadoCobroCitaEnum, ItemPlanTratamiento, MetodoPagoEnum, Pago,
 )
 from app.models.cobro_cita import ESTADOS_PLAN_CON_DEUDA
+from app.services.moneda import texto_moneda
 from app.services.nomina import porcentaje_vigente
 from app.services.saldos import calcular_saldo_paciente, validar_monto_cobro
 from app.services.tratamiento_clinico import describir_procedimiento
@@ -128,7 +129,7 @@ def confirmar_pago(cobro: CobroCita, datos, usuario_id: UUID, db: Session) -> No
     if cobro.total <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El total es $0.00: cierra el cobro sin pago e indica el motivo"
+            detail=f"El total es {texto_moneda(0, db)}: cierra el cobro sin pago e indica el motivo"
         )
 
     doctor_id = datos.doctor_comision_id

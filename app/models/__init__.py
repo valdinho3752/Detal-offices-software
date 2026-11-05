@@ -11,6 +11,7 @@ from app.models.radiografia import RadiografiaEstudio
 from app.models.caja import CajaSesion, Pago, PagoEmpleado, EgresoCaja
 from app.models.cobro_cita import CobroCita, CobroCitaLinea
 from app.models.sillon import Sillon
+from app.models.configuracion import ConfiguracionClinica
 from app.models.protesis import OrdenLaboratorioProtesis
 
 __all__ = [
@@ -29,6 +30,6 @@ __all__ = [
     "Odontograma", "PiezaDental", "HallazgoSuperficie",
     "CatalogoTratamiento", "PlanTratamiento", "ItemPlanTratamiento",
     "Cita", "VisitaEvolucion", "ObservacionEvolucion", "RadiografiaEstudio",
-    "CajaSesion", "Pago", "PagoEmpleado", "EgresoCaja", "CobroCita", "CobroCitaLinea", "Sillon",
+    "CajaSesion", "Pago", "PagoEmpleado", "EgresoCaja", "CobroCita", "CobroCitaLinea", "Sillon", "ConfiguracionClinica",
     "OrdenLaboratorioProtesis"
 ]

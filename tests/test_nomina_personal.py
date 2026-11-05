@@ -81,7 +81,7 @@ def test_tope_de_comisiones():
     assert _liquidacion(usuario_id)["saldo_comision_por_pagar"] == 400
 
     excedido = _pagar(usuario_id, "COMISION_TRATAMIENTOS", 400.01)
-    assert excedido.status_code == 400 and "$400.00" in excedido.json()["detail"]
+    assert excedido.status_code == 400 and "$400,00" in excedido.json()["detail"]
     _ok(_pagar(usuario_id, "COMISION_TRATAMIENTOS", 150), 201)
     datos = _liquidacion(usuario_id)
     assert datos["comisiones_ya_liquidadas"] == 150, "El monto liquidado no depende de lo que envíe la pantalla"

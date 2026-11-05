@@ -7,7 +7,7 @@ import { puedeAcceder, puedeModificarCita } from '../config/accesos';
 import {
   Users,
   Calendar,
-  DollarSign,
+  Banknote,
   TrendingUp,
   Clock,
   Activity,
@@ -22,8 +22,10 @@ import {
   CheckCircle2,
   XCircle,
 } from 'lucide-react';
+import { useMoneda } from '../context/MonedaContext';
 
 export default function DashboardView() {
+  const { moneda } = useMoneda();
   const auth = useAuth();
   const { user, tienePermiso } = auth;
   const accesible = (ruta) => puedeAcceder(ruta, auth);
@@ -85,8 +87,8 @@ export default function DashboardView() {
     { title: 'Evolución Clínica', desc: 'Notas de visita, recetas y próximos pasos (HU-07)', href: '/evolucion', icon: FileText, color: 'bg-teal-500' },
     { title: 'Visor Radiográfico', desc: 'RX digitales y diagnóstico por pieza dental (HU-08)', href: '/radiografias', icon: Camera, color: 'bg-cyan-500' },
     { title: 'Prótesis & Laboratorio', desc: 'Control de órdenes, color Vita y entregas (HU-09)', href: '/protesis', icon: Layers, color: 'bg-purple-500' },
-    { title: 'Caja Operativa Diaria', desc: 'Apertura, egresos, arqueo físico y cierres (HU-10)', href: '/caja', icon: DollarSign, color: 'bg-emerald-600' },
-    { title: 'Cobranzas & Pagos', desc: 'Cobro de presupuestos, abonos y deudas (HU-11)', href: '/cobranzas', icon: DollarSign, color: 'bg-green-500' },
+    { title: 'Caja Operativa Diaria', desc: 'Apertura, egresos, arqueo físico y cierres (HU-10)', href: '/caja', icon: Banknote, color: 'bg-emerald-600' },
+    { title: 'Cobranzas & Pagos', desc: 'Cobro de presupuestos, abonos y deudas (HU-11)', href: '/cobranzas', icon: Banknote, color: 'bg-green-500' },
     { title: 'Nómina & Comisiones', desc: 'Liquidación médica según porcentaje y adelantos (HU-12)', href: '/nomina', icon: Award, color: 'bg-violet-500' },
     { title: 'Auditoría Forense', desc: 'Trazabilidad de cambios con diff de datos (HU-13)', href: '/auditoria', icon: ShieldAlert, color: 'bg-rose-500' },
     { title: 'Inteligencia de Negocio', desc: 'Métricas de productividad, demanda y margen (HU-14)', href: '/reportes', icon: TrendingUp, color: 'bg-sky-500' },
@@ -128,12 +130,12 @@ export default function DashboardView() {
         {/* Caja Gaveta */}
         {verCaja && <div className="bg-slate-800/70 border border-slate-700/60 rounded-2xl p-4 flex items-center gap-4">
           <div className={`p-3 rounded-xl ${caja?.abierta ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
-            <DollarSign className="w-6 h-6" />
+            <Banknote className="w-6 h-6" />
           </div>
           <div>
             <div className="text-xs font-medium text-slate-400">Caja en Gaveta (HU-10)</div>
             <div className="text-xl font-bold text-white mt-0.5">
-              ${Number(caja?.saldo_en_gaveta || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+              {moneda(caja?.saldo_en_gaveta || 0)}
             </div>
             <div className="text-[11px] mt-0.5 font-medium flex items-center gap-1">
               {caja?.abierta ? (
@@ -167,10 +169,10 @@ export default function DashboardView() {
           <div>
             <div className="text-xs font-medium text-slate-400">Ingresos del Mes (HU-14)</div>
             <div className="text-xl font-bold text-white mt-0.5">
-              ${Number(resumenFinanzas?.total_ingresos || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+              {moneda(resumenFinanzas?.total_ingresos || 0)}
             </div>
             <div className="text-[11px] text-emerald-400 mt-0.5">
-              Margen del mes: ${Number(resumenFinanzas?.balance_neto_operativo || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+              Margen del mes: {moneda(resumenFinanzas?.balance_neto_operativo || 0)}
             </div>
           </div>
         </div>}
@@ -183,7 +185,7 @@ export default function DashboardView() {
           <div>
             <div className="text-xs font-medium text-slate-400">Egresos del Mes (HU-10)</div>
             <div className="text-xl font-bold text-white mt-0.5">
-              ${Number(resumenFinanzas?.total_egresos || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+              {moneda(resumenFinanzas?.total_egresos || 0)}
             </div>
             <div className="text-[11px] text-slate-400 mt-0.5">Insumos, laboratorio y anticipos</div>
           </div>

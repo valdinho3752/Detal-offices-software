@@ -24,7 +24,7 @@ export function puedeModificarCita(cita, user) {
 
 export function puedeAcceder(ruta, { user, isAdmin, tienePermiso }) {
   if (isAdmin) return true;
-  if (ruta === '/tratamientos' || ruta === '/sillones') return false; // Exclusivo del administrador
+  if (['/tratamientos', '/sillones', '/configuracion'].includes(ruta)) return false; // Exclusivo del administrador
   // Cada doctor puede consultar sus propias comisiones
   if (ruta === '/nomina') return Boolean(user?.doctor_id) || tienePermiso('EMPLEADOS_READ');
   const requeridos = PERMISOS_POR_RUTA[ruta];

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import ErrorModal from '../components/ErrorModal';
+import { useMoneda } from '../context/MonedaContext';
 
 const CATEGORIAS = {
   PREVENCION: 'Prevención',
@@ -38,6 +39,7 @@ const CAMPO =
 const ETIQUETA = 'block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1';
 
 export default function TratamientosCatalogoView() {
+  const { moneda, simbolo } = useMoneda();
   const [tratamientos, setTratamientos] = useState([]);
   const [busqueda, setBusqueda] = useState('');
   const [categoria, setCategoria] = useState('');
@@ -252,7 +254,7 @@ export default function TratamientosCatalogoView() {
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap">{CATEGORIAS[t.categoria] || t.categoria}</td>
                     <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                      ${Number(t.costo_base).toFixed(2)}
+                      {moneda(t.costo_base)}
                     </td>
                     <td className="py-3 px-4 text-right whitespace-nowrap">
                       <span className="inline-flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-slate-400" /> {t.duracion_estimada_min} min</span>
@@ -328,7 +330,7 @@ export default function TratamientosCatalogoView() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="trat-precio" className={ETIQUETA}>Precio base ($) *</label>
+                  <label htmlFor="trat-precio" className={ETIQUETA}>Precio base ({simbolo}) *</label>
                   <input id="trat-precio" type="number" required min="0" step="0.01" placeholder="0.00" value={form.costo_base} onChange={(e) => setForm({ ...form, costo_base: e.target.value })} className={`${CAMPO} font-mono`} />
                 </div>
                 <div>
