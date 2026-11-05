@@ -30,12 +30,17 @@ def listar_ordenes_protesis(
 
     return query.order_by(OrdenLaboratorioProtesis.fecha_entrega_esperada).all()
 
+def _validar_fechas(envio, entrega) -> None:
+    if envio and entrega and entrega < envio:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La entrega no puede ser anterior a la fecha de envío")
+
 @router.post("/", response_model=OrdenLaboratorioResponse, status_code=status.HTTP_201_CREATED)
 def crear_orden_protesis(
     datos: OrdenLaboratorioCreate,
     current_user: Usuario = Depends(require_permission("PROTESIS_CREATE")),
     db: Session = Depends(get_db)
 ):
+    _validar_fechas(datos.fecha_envio, datos.fecha_entrega_esperada)
     doctor_obj = None
     if datos.doctor_id:
         doctor_obj = db.query(Doctor).filter(
@@ -109,6 +114,8 @@ def actualizar_orden_protesis(
                     detail="Solo administradores pueden reasignar órdenes de prótesis a otros doctores"
                 )
             update_dict["doctor_id"] = current_user.doctor_perfil.id
+
+    _validar_fechas(orden.fecha_envio, update_dict.get("fecha_entrega_esperada") or orden.fecha_entrega_esperada)
 
     for field, value in update_dict.items():
         setattr(orden, field, value)

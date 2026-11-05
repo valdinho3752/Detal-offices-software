@@ -49,7 +49,7 @@ const TEMP_3 = [71, 72, 73, 74, 75];
 const ESTADOS_CLINICOS = [
   {
     id: 'EXISTENTE_PREVIO',
-    label: 'Diagnostico y evaluacion inicial',
+    label: 'Diagnóstico y evaluación inicial',
     shortLabel: 'Diagnóstico Inicial',
     colorHex: '#10B981', // Verde
     badgeClass: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border-emerald-500/40',
@@ -65,7 +65,7 @@ const ESTADOS_CLINICOS = [
   },
   {
     id: 'REALIZADO_EN_CLINICA',
-    label: 'Alta clinica/Control posterior',
+    label: 'Alta clínica / Control posterior',
     shortLabel: 'Alta / Control',
     colorHex: '#3B82F6', // Azul
     badgeClass: 'bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 border-blue-500/40',

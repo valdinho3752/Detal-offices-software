@@ -27,7 +27,9 @@ export default function CambiarContrasenaModal({ obligatorio = false, onCerrar }
     try {
       const { access_token: token } = await api.cambiarContrasena({ actual, nueva });
       await actualizarSesion(token);
-      onCerrar?.();
+      // Lo que la pantalla no pudo cargar antes del cambio se carga ahora
+      if (obligatorio) window.location.reload();
+      else onCerrar?.();
     } catch (err) {
       setError(err.message || 'No se pudo cambiar la contraseña');
     } finally {

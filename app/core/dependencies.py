@@ -1,6 +1,6 @@
 from typing import Optional, Set
 from uuid import UUID
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 from jwt import PyJWTError
@@ -11,7 +11,11 @@ from app.models import Usuario, Doctor, Permiso
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
+# Lo único disponible hasta cambiar una contraseña que otra persona conoce
+RUTAS_SIN_CAMBIO_DE_CONTRASENA = ("/auth/me", "/auth/cambiar-contrasena", "/configuracion/")
+
 def get_current_user(
+    request: Request,
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
 ) -> Usuario:
@@ -38,6 +42,11 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuario inactivo en el sistema"
+        )
+    if settings.es_produccion and user.debe_cambiar_contrasena and not request.url.path.endswith(RUTAS_SIN_CAMBIO_DE_CONTRASENA):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Debes cambiar tu contraseña antes de continuar"
         )
     return user
 

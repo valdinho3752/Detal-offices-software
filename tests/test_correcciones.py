@@ -412,7 +412,7 @@ def test_evolucion_automatica():
     assert "Caries en pieza 16" in visita["diagnostico"], visita["diagnostico"]
 
     # Guardar otra vez la cita finalizada no duplica la evolución
-    assert client.put(f"{API}/citas/{cita['id']}", json={"estado": "FINALIZADA", "motivo_consulta": "Otro"}, headers=H).status_code == 200
+    assert client.put(f"{API}/citas/{cita['id']}", json={"estado": "FINALIZADA", "motivo_consulta": "Otro"}, headers=H).status_code == 409
     assert len(visitas()) == 1
 
     # El contenido no se edita, y no se crea otra evolución para la misma cita

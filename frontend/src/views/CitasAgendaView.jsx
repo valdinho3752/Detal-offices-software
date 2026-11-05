@@ -35,6 +35,8 @@ import {
 import PacienteSearchInput from '../components/PacienteSearchInput';
 import { useMoneda } from '../context/MonedaContext';
 
+const LIMITE_LISTADO = 5000; // Máximo que devuelve la API en una consulta
+
 const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -951,6 +953,13 @@ export default function CitasAgendaView() {
         <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/30 rounded-xl text-emerald-700 dark:text-emerald-400 text-xs flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
           {success}
+        </div>
+      )}
+
+      {citas.length >= LIMITE_LISTADO && (
+        <div role="status" className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-700 dark:text-amber-300 text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          Se muestran las primeras {LIMITE_LISTADO} citas del período. Filtra por doctor o especialidad para ver el resto.
         </div>
       )}
 

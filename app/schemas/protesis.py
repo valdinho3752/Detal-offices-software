@@ -2,7 +2,7 @@ from typing import Optional, Any
 from uuid import UUID
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, model_validator, Field
 from app.models.enums import TipoTrabajoProtesisEnum, EstadoOrdenProtesisEnum
 
 class OrdenLaboratorioCreate(BaseModel):
@@ -14,7 +14,7 @@ class OrdenLaboratorioCreate(BaseModel):
     piezas_dentales: Optional[str] = None
     color_guia_vita: Optional[str] = None
     instrucciones_tecnicas: Optional[str] = None
-    costo_laboratorio: Decimal = Decimal("0.00")
+    costo_laboratorio: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
     fecha_envio: Optional[date] = None
     fecha_entrega_esperada: Optional[date] = None
     observaciones: Optional[str] = None
@@ -52,7 +52,7 @@ class OrdenLaboratorioUpdate(BaseModel):
     piezas_dentales: Optional[str] = None
     color_guia_vita: Optional[str] = None
     instrucciones_tecnicas: Optional[str] = None
-    costo_laboratorio: Optional[Decimal] = None
+    costo_laboratorio: Optional[Decimal] = Field(default=None, ge=0, max_digits=12, decimal_places=2)
     fecha_entrega_esperada: Optional[date] = None
     fecha_recepcion_real: Optional[date] = None
     estado: Optional[EstadoOrdenProtesisEnum] = None

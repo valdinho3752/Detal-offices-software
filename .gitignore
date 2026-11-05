@@ -27,3 +27,8 @@ Thumbs.db
 # Copias de seguridad: contienen datos de pacientes
 backups/
 *.dump
+
+# QA: entorno, copias y capturas de cada ejecución
+qa/.venv/
+qa/resultados/respaldos/
+qa/resultados/capturas/

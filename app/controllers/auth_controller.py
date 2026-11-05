@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import AuditoriaAccionEnum, AuditoriaLog, Usuario, RegistroAsistencia, Rol
@@ -24,7 +25,8 @@ def login(
     equipo = request.client.host if request.client else "desconocido"
     limite_login.exigir_permitido(form_data.username, equipo)
 
-    user = db.query(Usuario).filter(Usuario.username == form_data.username).first()
+    identificador = form_data.username.strip()
+    user = db.query(Usuario).filter(or_(Usuario.username == identificador, func.lower(Usuario.email) == identificador.lower())).first()
     if not user or not verify_password(form_data.password, user.password_hash):
         limite_login.registrar_fallo(form_data.username, equipo)
         raise HTTPException(

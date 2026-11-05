@@ -2,7 +2,8 @@ from typing import Annotated, Optional, List
 from uuid import UUID
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel, Field, StringConstraints, model_validator
+from pydantic import BaseModel, Field, StringConstraints, model_validator, field_validator
+from app.schemas.validaciones import validar_pieza_fdi
 from app.models.enums import CategoriaTratamientoEnum, EstadoPlanEnum, EstadoItemPlanEnum
 
 class CatalogoTratamientoBase(BaseModel):
@@ -36,7 +37,17 @@ class CatalogoTratamientoResponse(CatalogoTratamientoBase):
     class Config:
         from_attributes = True
 
+def _sin_montos_negativos(modelo):
+    for campo in ("costo_acordado", "precio_unitario", "descuento"):
+        valor = getattr(modelo, campo, None)
+        if valor is not None and valor < 0:
+            raise ValueError("Los montos del tratamiento no pueden ser negativos")
+    return modelo
+
 class ItemPlanTratamientoBase(BaseModel):
+    _validar_pieza = field_validator("pieza_fdi")(validar_pieza_fdi)
+    _validar_montos = model_validator(mode="after")(_sin_montos_negativos)
+
     tratamiento_id: Optional[UUID] = None
     catalogo_tratamiento_id: Optional[UUID] = None
     hallazgo_superficie_id: Optional[UUID] = None
@@ -69,6 +80,9 @@ class ItemPlanTratamientoCreate(ItemPlanTratamientoBase):
     plan_id: UUID
 
 class ItemPlanTratamientoUpdate(BaseModel):
+    _validar_pieza = field_validator("pieza_fdi")(validar_pieza_fdi)
+    _validar_montos = model_validator(mode="after")(_sin_montos_negativos)
+
     tratamiento_id: Optional[UUID] = None
     hallazgo_superficie_id: Optional[UUID] = None
     pieza_fdi: Optional[int] = None
@@ -123,7 +137,7 @@ class PlanTratamientoUpdate(BaseModel):
     titulo: Optional[str] = None
     nombre: Optional[str] = None
     estado: Optional[EstadoPlanEnum] = None
-    costo_total: Optional[Decimal] = None
+    costo_total: Optional[Decimal] = Field(default=None, ge=0)
 
 class PlanTratamientoResponse(PlanTratamientoBase):
     id: UUID

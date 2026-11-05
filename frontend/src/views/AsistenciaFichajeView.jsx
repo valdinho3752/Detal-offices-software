@@ -34,6 +34,7 @@ const NOMBRES_EVENTO = { ENTRADA: 'Entrada', INICIO_DESCANSO: 'Inicio de descans
 
 const CAMPO = 'w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-primary-500';
 const ETIQUETA = 'block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1';
+const LIMITE_LISTADO = 5000; // Máximo que devuelve la API en una consulta
 const CORRECCION_VACIA = { usuario_id: '', tipo_evento: 'SALIDA', fecha: '', hora: '', hora_fin: '', motivo: '' };
 
 function motivoDeBloqueo(tipo, estado) {
@@ -347,7 +348,7 @@ export default function AsistenciaFichajeView() {
       {/* Historial de Marcajes */}
       <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-5 space-y-4">
         <h2 className="text-base font-semibold text-slate-900 dark:text-white flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700/60">
-          <span>Bitácora de Marcajes ({asistencias.length} registros)</span>
+          <span>Bitácora de Marcajes ({asistencias.length >= LIMITE_LISTADO ? `primeros ${LIMITE_LISTADO}` : asistencias.length} registros)</span>
           <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">
             Fecha: {fechaFiltro || 'Todas las fechas'}
           </span>

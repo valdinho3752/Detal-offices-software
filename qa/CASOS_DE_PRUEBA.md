@@ -15,8 +15,6 @@ Plan de pruebas manuales para la instalación **local de una sola sede**. Cada c
 | **Prio** | `P1` bloquea la salida a producción, `P2` importante, `P3` menor |
 | **Estado** | Anota `OK`, `FALLA` o `N/A`, y el número de defecto si falla |
 
-Los casos marcados con **⚠** son posibles defectos detectados al leer el código, todavía sin ejecutar. Pruébalos primero: si el sistema se comporta distinto de lo esperado, repórtalo o decide si el comportamiento actual se acepta.
-
 Los casos marcados con **[API]** se prueban contra la API, porque la pantalla no permite esa acción. Usan `curl` o una herramienta similar, con el token de la sesión.
 
 ### Criterio de salida
@@ -25,6 +23,18 @@ Los casos marcados con **[API]** se prueban contra la API, porque la pantalla no
 - Al menos 95 % de los casos `P2` en `OK`, con los fallos restantes aceptados por escrito.
 - Ningún defecto abierto que afecte dinero, datos clínicos o permisos.
 - Una restauración real de copia de seguridad completada con éxito (`OPE-10` y `OPE-11`).
+
+### Automatización
+
+Las pruebas con Playwright están en `qa/automatizacion/` y escriben aquí la columna Estado. Requieren Docker Desktop y Microsoft Edge:
+
+```powershell
+python -m venv qa\.venv
+qa\.venv\Scripts\pip install -r qa\automatizacion\requirements.txt
+qa\.venv\Scripts\python qa\automatizacion\ejecutar.py
+```
+
+Levanta una instalación aparte, sin tocar tus datos, y deja el resumen en `qa/resultados/RESUMEN.md`. Los casos sin estado se prueban a mano: corte de luz, red física, certificados en cada equipo, volumen de datos y decisiones pendientes.
 
 ### Registro de defectos
 
@@ -116,7 +126,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | ACC-19 | S | Desactivar a un usuario con la sesión abierta | Su siguiente acción se rechaza | P1 | |
 | ACC-20 | F | Abrir la misma cuenta en dos equipos | Ambas sesiones funcionan hasta que se cambie la contraseña | P3 | |
 | ACC-21 | F | Recargar la página con sesión activa | Sigue dentro, en la misma pantalla | P2 | |
-| ACC-22 | N | ⚠ La etiqueta dice «Usuario o Correo»: entrar usando el correo | El código solo busca por usuario. Debe funcionar con correo, o la etiqueta debe decir solo «Usuario» | P2 | |
+| ACC-22 | F | Entrar usando el correo, en mayúsculas o minúsculas | Entra igual que con el usuario | P2 | |
 | ACC-23 | S | Enviar `' OR 1=1 --` como usuario | Se rechaza como credenciales incorrectas | P1 | |
 | ACC-24 | V | Revisar el acceso en modo claro, modo oscuro y celular | Se ve completo, con nombre y logo de la clínica | P3 | |
 
@@ -141,7 +151,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | PWD-15 | N | Administrador asigna una contraseña débil al crear o editar | Se rechaza con mensaje legible, sin texto técnico | P1 | |
 | PWD-16 | O | Ejecutar `scripts/restablecer_admin.py` con el administrador desactivado | Lo reactiva, cambia la contraseña y cierra sus sesiones | P1 | |
 | PWD-17 | N | Ejecutar ese script con un usuario inexistente o una contraseña débil | Falla con un mensaje y no cambia nada | P2 | |
-| PWD-18 | S | ⚠ [API] Con un usuario que debe cambiar su contraseña, operar por API sin cambiarla | El bloqueo está solo en la pantalla: la API responde. Decidir si se acepta | P3 | |
+| PWD-18 | S | [API] Con un usuario que debe cambiar su contraseña, operar por API sin cambiarla | Responde 403 hasta cambiarla; solo permite ver sus datos y cambiarla | P1 | |
 
 ## 5. Usuarios, roles y permisos
 
@@ -201,7 +211,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | PAC-21 | F | Marcar un paciente como inactivo | Decidir el comportamiento: su historia se conserva y su estado se ve claramente | P2 | |
 | PAC-22 | S | [API] Intentar eliminar un paciente | No existe esa acción: responde 405 | P1 | |
 | PAC-23 | F | Listado con más de 100 pacientes | Se puede encontrar a cualquiera; la pantalla responde bien | P2 | |
-| PAC-24 | V | ⚠ El buscador menciona «RUT» | Debe usar el tipo de documento del país de la clínica | P3 | |
+| PAC-24 | V | Revisar buscador y formulario del paciente | Hablan de «documento», sin referencias a otro país; CI es la opción predeterminada | P3 | |
 
 ## 7. Odontograma
 
@@ -241,8 +251,8 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | ODO-32 | V | Seleccionar un diente en cada ancho | No provoca desbordes | P3 | |
 | ODO-33 | V | Abrir en celular | Se desplaza dentro de su recuadro, no la página | P3 | |
 | ODO-34 | V | Revisar los colores en modo claro y oscuro | Los estados se distinguen en ambos | P2 | |
-| ODO-35 | N | ⚠ [API] Registrar `pieza_fdi` inexistente, como 99 | Debe rechazarse; no se vio validación del número de pieza | P2 | |
-| ODO-36 | V | ⚠ Revisar los botones de estado | Hoy dicen «Diagnostico y evaluacion inicial» y «Alta clinica/Control posterior», sin tildes. Deben estar bien escritos | P3 | |
+| ODO-35 | N | [API] Registrar `pieza_fdi` inexistente, como 99 | Se rechaza: solo valen las piezas de la numeración FDI | P2 | |
+| ODO-36 | V | Revisar los botones de estado | Dicen «Diagnóstico y evaluación inicial» y «Alta clínica / Control posterior», con tildes | P3 | |
 
 ## 8. Planes y catálogo de tratamientos
 
@@ -265,9 +275,9 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | TRA-15 | S | Doctor intenta reasignar un plan a otro doctor | Solo los administradores pueden hacerlo | P2 | |
 | TRA-16 | F | Editar un ítem del plan: precio y descuento | El total del plan se recalcula | P1 | |
 | TRA-17 | I | Eliminar un ítem de un plan ya aprobado | El total y el saldo se actualizan | P1 | |
-| TRA-18 | N | ⚠ [API] Ítem con `costo_acordado` negativo | Debe rechazarse; no se vio validación | P1 | |
-| TRA-19 | N | ⚠ Bajar el total de un plan por debajo de lo ya pagado | Debe impedirse o mostrar saldo a favor con claridad, no un saldo incoherente | P1 | |
-| TRA-20 | F | Cancelar un plan | Deja de generar deuda | P2 | |
+| TRA-18 | N | [API] Ítem con costo, precio o descuento negativo | Se rechaza | P1 | |
+| TRA-19 | N | Bajar el total de un plan por debajo de lo pagado, por cualquier vía | Se rechaza e indica cuánto está pagado | P1 | |
+| TRA-20 | F | Cancelar un plan, con y sin pagos | Con pagos se rechaza hasta anularlos; sin pagos deja de generar deuda | P2 | |
 | TRA-21 | I | Marcar un ítem como próxima sesión | Queda identificado para la siguiente cita | P2 | |
 
 ## 9. Agenda: matriz de sillones
@@ -296,7 +306,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | AGE-20 | I | Finalizar una cita | Se crea la evolución y la cuenta de cobro, y se actualiza el odontograma | P1 | |
 | AGE-21 | I | Finalizar con varios tratamientos seleccionados | Todos quedan realizados y en la misma cuenta | P1 | |
 | AGE-22 | I | Finalizar una cita sin plan | La evolución usa el motivo; la cuenta usa el motivo o el tratamiento | P1 | |
-| AGE-23 | F | La misma cita, finalizada dos veces ([API]) | No duplica evolución ni cuenta | P1 | |
+| AGE-23 | N | La misma cita, finalizada dos veces ([API]) | La segunda se rechaza; no duplica evolución ni cuenta | P1 | |
 | AGE-24 | F | Calcular la duración en sillón | Se registran los minutos reales y aparecen en Reportes | P2 | |
 | AGE-25 | F | Navegar: día anterior, día siguiente y Hoy | Muestra el día correcto | P2 | |
 | AGE-26 | F | Filtrar por especialidad y por doctor | Muestra solo lo correspondiente | P2 | |
@@ -307,9 +317,9 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | AGE-31 | I | Agregar un cuarto sillón | La matriz muestra una columna más y el texto indica la cantidad real | P2 | |
 | AGE-32 | V | Medir con los cinco anchos de pantalla | Llena el ancho, con columnas iguales y sin desbordes | P2 | |
 | AGE-33 | V | Con 6 sillones o más | Se desplaza dentro de la tabla, sin romper la página | P3 | |
-| AGE-34 | N | ⚠ [API] Volver de FINALIZADA a PROGRAMADA | No se vio validación de transiciones. Debe impedirse, porque ya hay evolución y cobro | P1 | |
-| AGE-35 | N | ⚠ [API] Reactivar una cita cancelada sobre un horario ya ocupado | Debe rechazarse por solape | P1 | |
-| AGE-36 | N | ⚠ [API] Finalizar directamente una cita PROGRAMADA | Decidir si se permite saltar pasos | P2 | |
+| AGE-34 | N | [API] Cambiar de cualquier modo una cita FINALIZADA | «Esta cita ya fue atendida y no se puede modificar» | P1 | |
+| AGE-35 | N | [API] Reactivar una cita cancelada sobre un horario ya ocupado | Se rechaza por solape | P1 | |
+| AGE-36 | F | [API] Finalizar directamente una cita PROGRAMADA | Se permite. Crea evolución y cuenta, y no afecta el promedio de minutos | P2 | |
 | AGE-37 | F | Cita que cruza la medianoche | Cuenta el día en que empieza, en la agenda y en Reportes | P3 | |
 | AGE-38 | F | Crear una cita en una fecha pasada | Decidir si se permite registrar citas históricas | P3 | |
 
@@ -396,8 +406,8 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | PRO-10 | S | Asistente intenta crear o actualizar | [API] Responde 403 | P1 | |
 | PRO-11 | F | Recepción actualiza el estado | Se permite | P1 | |
 | PRO-12 | S | Recepción intenta crear una orden | [API] Responde 403 | P2 | |
-| PRO-13 | N | ⚠ [API] Costo negativo | Debe rechazarse; no se vio validación | P2 | |
-| PRO-14 | N | ⚠ Fecha de entrega anterior a la de envío | Debe rechazarse; no se vio validación | P3 | |
+| PRO-13 | N | [API] Costo negativo | Se rechaza | P2 | |
+| PRO-14 | N | Fecha de entrega anterior a la de envío | Se rechaza | P3 | |
 | PRO-15 | F | Moneda en costo y etiquetas | Usa el símbolo configurado | P2 | |
 | PRO-16 | I | Pagar al laboratorio como egreso | La caja se descuenta. Decidir si debe quedar vinculado a la orden | P3 | |
 
@@ -533,7 +543,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | NOM-26 | S | Asistente o recepción abre Nómina | No aparece en el menú | P1 | |
 | NOM-27 | S | [API] Otro rol intenta crear o editar un contrato | Responde 403 | P1 | |
 | NOM-28 | V | Valores en cero | No muestra `-$0,00` | P3 | |
-| NOM-29 | N | ⚠ [API] `metodo_pago` con un texto inventado | Debe rechazarse; hoy es texto libre | P2 | |
+| NOM-29 | N | [API] `metodo_pago` con un texto inventado | Se rechaza | P2 | |
 | NOM-30 | F | Empleado desactivado con saldo | Decidir: hoy desaparece de la lista aunque tenga saldo por pagar | P2 | |
 
 ## 17. Control de asistencia
@@ -634,7 +644,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | AUD-06 | S | [API] Intentar modificar o borrar un registro | No existe esa acción | P1 | |
 | AUD-07 | S | Otros roles | No aparece; [API] responde 403 | P1 | |
 | AUD-08 | S | Buscar contraseñas o hashes en los registros | No aparecen | P1 | |
-| AUD-09 | F | ⚠ El filtro de tablas no incluye Configuración, Asistencia ni Evoluciones | Todas las tablas auditadas deben poder filtrarse | P3 | |
+| AUD-09 | F | Revisar y usar el filtro de tablas | Incluye todas las tablas auditadas, y cada opción devuelve sus registros | P2 | |
 | AUD-10 | F | Con muchos registros | La pantalla sigue respondiendo | P2 | |
 
 ## 21. Sillones
@@ -736,6 +746,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | SEG-09 | S | Dejar un equipo sin usar durante horas | Decidir si debe cerrarse la sesión por inactividad: hoy solo vence a las 8 horas | P2 | |
 | SEG-10 | S | Permisos de la carpeta de copias | Solo personal autorizado: contienen datos clínicos sin cifrar | P1 | |
 | SEG-11 | S | Ejecutar `npm audit` y `pip-audit` | Sin vulnerabilidades conocidas | P1 | |
+| SEG-12 | S | Por HTTPS, intentar saltarse el límite de login falsificando `X-Forwarded-For` | El bloqueo se aplica igual | P1 | |
 
 ## 25. Rendimiento y datos en volumen
 
@@ -746,10 +757,10 @@ Carga antes una base de prueba con 5.000 pacientes, 50.000 citas y 100.000 pagos
 | REN-01 | O | Abrir cada pantalla | Carga en menos de 3 segundos | P2 | |
 | REN-02 | O | Buscar pacientes | Responde en menos de 1 segundo | P2 | |
 | REN-03 | O | Reportes con «Todo» | Responde en menos de 5 segundos | P2 | |
-| REN-04 | O | ⚠ Agenda de un mes con muchas citas | Sin cortes: los listados se limitan a 5.000 registros sin avisar | P2 | |
+| REN-04 | O | Agenda de un mes con más de 5.000 citas | Muestra las primeras y avisa que hay más | P2 | |
 | REN-05 | O | Tiempo de la copia y tamaño del archivo | Termina dentro de un margen aceptable | P2 | |
 | REN-06 | O | Memoria del servidor tras una jornada | Sin crecimiento continuo | P2 | |
-| REN-07 | O | ⚠ Nómina y productividad con muchos usuarios | Se calculan por persona: deben seguir respondiendo bien | P3 | |
+| REN-07 | O | Nómina y productividad con muchos usuarios | Responden en menos de 3 segundos | P3 | |
 
 ## 26. Flujos completos de una jornada
 

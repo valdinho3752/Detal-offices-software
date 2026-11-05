@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID
 from datetime import datetime
 from decimal import Decimal
@@ -19,6 +19,7 @@ class PagoEmpleadoCreate(PagoEmpleadoBase):
     # Rechaza campos desconocidos: un nombre mal escrito no debe perderse en silencio
     model_config = ConfigDict(extra="forbid")
 
+    metodo_pago: Literal["EFECTIVO_CAJA", "TRANSFERENCIA", "OTRO"] = "EFECTIVO_CAJA"
     monto_base: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
     monto_comisiones: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
     deducciones_descuentos: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)

@@ -2,10 +2,10 @@ from typing import List, Optional
 from uuid import UUID
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.models import (
-    PagoEmpleado, EgresoCaja, CajaSesion,
+    ContratoRemuneracion, PagoEmpleado, EgresoCaja, CajaSesion,
     Doctor, Usuario, CategoriaEgresoCajaEnum, EstadoCajaEnum,
     TipoPagoEmpleadoEnum, AuditoriaLog, AuditoriaAccionEnum
 )
@@ -17,9 +17,8 @@ from app.services.nomina import TIPOS_SUELDO, Liquidacion, calcular_liquidacion
 
 router = APIRouter(prefix="/empleados", tags=["Nómina, Sueldos y Comisiones de Empleados"])
 
-def _resumen_personal(usuario: Usuario, liquidacion: Liquidacion) -> dict:
+def _resumen_personal(usuario: Usuario, contrato: Optional[ContratoRemuneracion]) -> dict:
     doctor = usuario.doctor_perfil
-    contrato = liquidacion.contrato
     return {
         "usuario_id": str(usuario.id),
         "nombre_completo": f"{usuario.nombre} {usuario.apellido}",
@@ -68,10 +67,20 @@ def listar_personal(
 ):
     """Personal activo y su contrato. Sin permiso de consulta general, solo los datos propios."""
     if tiene_permiso(current_user, "EMPLEADOS_READ", db):
-        usuarios = db.query(Usuario).filter(Usuario.activo.is_(True)).order_by(Usuario.nombre, Usuario.apellido).all()
+        usuarios = (
+            db.query(Usuario)
+            .options(joinedload(Usuario.doctor_perfil), joinedload(Usuario.rol))
+            .filter(Usuario.activo.is_(True))
+            .order_by(Usuario.nombre, Usuario.apellido)
+            .all()
+        )
     else:
         usuarios = [current_user]
-    return [_resumen_personal(u, calcular_liquidacion(u, db)) for u in usuarios]
+    contratos = {
+        c.usuario_id: c
+        for c in db.query(ContratoRemuneracion).filter(ContratoRemuneracion.usuario_id.in_([u.id for u in usuarios]))
+    }
+    return [_resumen_personal(u, contratos.get(u.id)) for u in usuarios]
 
 @router.get("/liquidacion/{usuario_id}")
 def obtener_liquidacion(

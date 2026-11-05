@@ -3,8 +3,8 @@ from uuid import UUID
 from datetime import datetime
 from decimal import Decimal
 from fastapi import APIRouter, Depends, Query, Response
-from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import and_, func
 
 from app.database import get_db
 from app.models import (
@@ -92,48 +92,51 @@ def reporte_productividad_sillon_doctores(
     """
     Métricas de tiempo en sillón, ocupación de gabinete y tasas de inasistencia por profesional.
     """
-    query_doctores = db.query(Doctor)
+    query_doctores = db.query(Doctor).options(joinedload(Doctor.usuario))
     if doctor_id:
         query_doctores = query_doctores.filter(Doctor.id == doctor_id)
     doctores = query_doctores.all()
 
+    # Una sola consulta agrupada: el costo no crece con la cantidad de doctores
+    atendida = Cita.estado == EstadoCitaEnum.FINALIZADA
+    con_duracion = and_(atendida, Cita.duracion_sillon_minutos > 0)
+    consulta = db.query(
+        Cita.doctor_id,
+        func.count(Cita.id).label("total"),
+        func.count(Cita.id).filter(atendida).label("finalizadas"),
+        func.count(Cita.id).filter(Cita.estado == EstadoCitaEnum.NO_ASISTIO).label("no_asistio"),
+        func.count(Cita.id).filter(Cita.estado == EstadoCitaEnum.CANCELADA).label("canceladas"),
+        func.count(Cita.id).filter(con_duracion).label("con_duracion"),
+        func.coalesce(func.sum(Cita.duracion_sillon_minutos).filter(con_duracion), 0).label("minutos"),
+    )
+    if fecha_desde:
+        consulta = consulta.filter(Cita.fecha_inicio_programada >= fecha_desde)
+    if fecha_hasta:
+        # La cita cuenta el día en que empieza, aunque termine después de medianoche
+        consulta = consulta.filter(Cita.fecha_inicio_programada <= fecha_hasta)
+    por_doctor = {fila.doctor_id: fila for fila in consulta.group_by(Cita.doctor_id)}
+
     items = []
     gran_total_citas = 0
-
     for doc in doctores:
-        citas_query = db.query(Cita).filter(Cita.doctor_id == doc.id)
-        if fecha_desde:
-            citas_query = citas_query.filter(Cita.fecha_inicio_programada >= fecha_desde)
-        if fecha_hasta:
-            # La cita cuenta el día en que empieza, aunque termine después de medianoche
-            citas_query = citas_query.filter(Cita.fecha_inicio_programada <= fecha_hasta)
-
-        total_citas = citas_query.count()
-        finalizadas = citas_query.filter(Cita.estado == EstadoCitaEnum.FINALIZADA).count()
-        no_asistio = citas_query.filter(Cita.estado == EstadoCitaEnum.NO_ASISTIO).count()
-        canceladas = citas_query.filter(Cita.estado == EstadoCitaEnum.CANCELADA).count()
-
-        tiempo_total_min = (
-            citas_query.filter(Cita.estado == EstadoCitaEnum.FINALIZADA)
-            .with_entities(func.coalesce(func.sum(Cita.duracion_sillon_minutos), 0))
-            .scalar()
-        )
-
-        promedio_min = round(float(tiempo_total_min) / finalizadas, 1) if finalizadas > 0 else 0.0
-        tasa_ausentismo = round((no_asistio / total_citas) * 100.0, 2) if total_citas > 0 else 0.0
-
+        fila = por_doctor.get(doc.id)
+        total_citas = fila.total if fila else 0
+        minutos = int(fila.minutos) if fila else 0
+        # Una cita finalizada sin pasar por el sillón no tiene duración: no entra en el promedio
+        promedio_min = round(minutos / fila.con_duracion, 1) if fila and fila.con_duracion else 0.0
+        no_asistio = fila.no_asistio if fila else 0
         items.append(
             ProductividadDoctorItem(
                 doctor_id=doc.id,
                 doctor_nombre=f"{doc.usuario.nombre} {doc.usuario.apellido}",
                 especialidad=doc.especialidad,
                 total_citas=total_citas,
-                citas_finalizadas=finalizadas,
+                citas_finalizadas=fila.finalizadas if fila else 0,
                 citas_no_asistio=no_asistio,
-                citas_canceladas=canceladas,
-                tasa_ausentismo_porcentaje=tasa_ausentismo,
-                tiempo_total_sillon_minutos=int(tiempo_total_min),
-                promedio_minutos_por_cita=promedio_min
+                citas_canceladas=fila.canceladas if fila else 0,
+                tasa_ausentismo_porcentaje=round((no_asistio / total_citas) * 100.0, 2) if total_citas else 0.0,
+                tiempo_total_sillon_minutos=minutos,
+                promedio_minutos_por_cita=promedio_min,
             )
         )
         gran_total_citas += total_citas

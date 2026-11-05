@@ -1,7 +1,8 @@
 from typing import Optional, List
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+from app.schemas.validaciones import validar_pieza_fdi
 from app.models.enums import (
     TipoDenticionEnum, TipoOdontogramaEnum, EstadoDienteEnum,
     SuperficieDentalEnum, CondicionDentalEnum, EstadoClinicoHallazgoEnum
@@ -18,6 +19,8 @@ class HallazgoSuperficieCreate(HallazgoSuperficieBase):
     pieza_dental_id: Optional[UUID] = None
     odontograma_id: Optional[UUID] = None
     pieza_fdi: Optional[int] = None
+
+    _validar_pieza = field_validator("pieza_fdi")(validar_pieza_fdi)
 
 class HallazgoSuperficieUpdate(BaseModel):
     superficie: Optional[SuperficieDentalEnum] = None

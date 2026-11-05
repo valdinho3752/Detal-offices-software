@@ -1,7 +1,8 @@
 from typing import Optional
 from uuid import UUID
 from datetime import date, datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+from app.schemas.validaciones import validar_pieza_fdi
 from app.models.enums import TipoEstudioImagenEnum
 
 class RadiografiaBase(BaseModel):
@@ -17,9 +18,11 @@ class RadiografiaBase(BaseModel):
     fecha_toma: Optional[date] = None
 
 class RadiografiaCreate(RadiografiaBase):
-    pass
+    _validar_pieza = field_validator("pieza_fdi")(validar_pieza_fdi)
 
 class RadiografiaUpdate(BaseModel):
+    _validar_pieza = field_validator("pieza_fdi")(validar_pieza_fdi)
+
     pieza_fdi: Optional[int] = None
     tipo_estudio: Optional[TipoEstudioImagenEnum] = None
     titulo: Optional[str] = None

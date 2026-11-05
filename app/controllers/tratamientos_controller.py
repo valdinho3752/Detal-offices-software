@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -8,6 +9,9 @@ from app.models import (
     CatalogoTratamiento, PlanTratamiento, ItemPlanTratamiento,
     Usuario, AuditoriaLog, AuditoriaAccionEnum, Doctor, Cita, RolCodigoEnum
 )
+from app.models.caja import Pago
+from app.services.moneda import texto_moneda
+from app.services.saldos import ESTADOS_PLAN_CON_DEUDA
 from app.core.dependencies import doctor_solicitado, require_permission, require_role
 from app.schemas.tratamiento import (
     CatalogoTratamientoCreate, CatalogoTratamientoUpdate, CatalogoTratamientoResponse,
@@ -123,6 +127,40 @@ def eliminar_tratamiento_catalogo(
 
 # ==================== PLANES DE TRATAMIENTO ====================
 
+def _pagado_del_plan(plan: PlanTratamiento, db: Session) -> Decimal:
+    return Decimal(db.query(func.coalesce(func.sum(Pago.monto), 0)).filter(
+        Pago.plan_id == plan.id, Pago.anulado.is_(False)
+    ).scalar())
+
+
+def _exigir_total_cubre_pagos(plan: PlanTratamiento, nuevo_total: Decimal, db: Session) -> None:
+    pagado = _pagado_del_plan(plan, db)
+    if Decimal(nuevo_total) < pagado:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"El plan ya tiene {texto_moneda(pagado, db)} pagados: su total no puede ser menor. Anula primero los pagos que correspondan."
+        )
+
+
+def _recalcular_total(plan: PlanTratamiento, db: Session) -> None:
+    total = db.query(func.coalesce(func.sum(ItemPlanTratamiento.costo_acordado), 0)).filter(
+        ItemPlanTratamiento.plan_id == plan.id
+    ).scalar()
+    _exigir_total_cubre_pagos(plan, total, db)
+    plan.costo_total = total
+
+
+def _validar_cambio_con_pagos(plan: PlanTratamiento, cambios: dict, db: Session) -> None:
+    if cambios.get("costo_total") is not None:
+        _exigir_total_cubre_pagos(plan, cambios["costo_total"], db)
+    estado = cambios.get("estado")
+    if estado is not None and estado not in ESTADOS_PLAN_CON_DEUDA and _pagado_del_plan(plan, db) > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Este plan tiene pagos registrados: anúlalos antes de cancelarlo o devolverlo a propuesta."
+        )
+
+
 @router.get("/planes", response_model=List[PlanTratamientoResponse])
 def listar_planes(
     paciente_id: Optional[UUID] = None,
@@ -233,6 +271,8 @@ def actualizar_plan_tratamiento(
     else:
         update_data.pop("nombre", None)
 
+    _validar_cambio_con_pagos(plan, update_data, db)
+
     for field, value in update_data.items():
         setattr(plan, field, value)
     db.commit()
@@ -266,9 +306,7 @@ def agregar_item_a_plan(
     db.flush()
 
     # Recalcular costo total del plan
-    plan.costo_total = db.query(func.coalesce(func.sum(ItemPlanTratamiento.costo_acordado), 0)).filter(
-        ItemPlanTratamiento.plan_id == plan.id
-    ).scalar()
+    _recalcular_total(plan, db)
 
     db.commit()
     db.refresh(item)
@@ -300,9 +338,7 @@ def actualizar_item_plan(
 
     db.flush()
     # Recalcular costo total del plan
-    item.plan.costo_total = db.query(func.coalesce(func.sum(ItemPlanTratamiento.costo_acordado), 0)).filter(
-        ItemPlanTratamiento.plan_id == item.plan_id
-    ).scalar()
+    _recalcular_total(item.plan, db)
 
     db.commit()
     db.refresh(item)
@@ -321,9 +357,7 @@ def eliminar_item_plan(
     db.delete(item)
     db.flush()
 
-    plan.costo_total = db.query(func.coalesce(func.sum(ItemPlanTratamiento.costo_acordado), 0)).filter(
-        ItemPlanTratamiento.plan_id == plan.id
-    ).scalar()
+    _recalcular_total(plan, db)
 
     db.commit()
     return None

@@ -78,11 +78,22 @@ export default function AuditoriaForenseView() {
           >
             <option value="">Todas las Tablas</option>
             <option value="pacientes">Pacientes</option>
-            <option value="cajas">Cajas y Arqueos</option>
-            <option value="movimientos_caja">Movimientos de Caja</option>
-            <option value="pagos">Pagos de Pacientes</option>
-            <option value="protesis">Prótesis y Laboratorio</option>
+            <option value="antecedentes_medicos">Antecedentes médicos</option>
+            <option value="citas">Citas</option>
             <option value="odontogramas">Odontogramas</option>
+            <option value="visitas_evolucion">Evoluciones</option>
+            <option value="observaciones_evolucion">Observaciones de evolución</option>
+            <option value="radiografias_estudios">Radiografías</option>
+            <option value="ordenes_laboratorio_protesis">Prótesis y laboratorio</option>
+            <option value="cajas_sesiones">Cajas y arqueos</option>
+            <option value="egresos_caja">Egresos de caja</option>
+            <option value="pagos">Pagos de pacientes</option>
+            <option value="cobros_cita">Cuentas de citas</option>
+            <option value="pagos_empleados">Pagos al personal</option>
+            <option value="registro_asistencia">Marcajes de asistencia</option>
+            <option value="catalogo_tratamientos">Catálogo de tratamientos</option>
+            <option value="sillones">Sillones</option>
+            <option value="configuracion_clinica">Configuración</option>
             <option value="usuarios">Usuarios</option>
           </select>
         </div>

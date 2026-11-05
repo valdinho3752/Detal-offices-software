@@ -116,7 +116,7 @@ def test_se_crea_al_finalizar():
 
     # Crear la cuenta no registra ningún pago, y volver a guardar la cita no la duplica
     assert _saldo(paciente_id)["pagos"] == [] and _saldo(paciente_id)["saldo_pendiente"] == 150
-    _ok(client.put(f"{API}/citas/{cita_id}", json={"estado": "FINALIZADA", "motivo_consulta": "Otra"}, headers=H), 200)
+    _ok(client.put(f"{API}/citas/{cita_id}", json={"estado": "FINALIZADA", "motivo_consulta": "Otra"}, headers=H), 409)
     assert len(_cobros(paciente_id)) == 1
 
     # Sin tratamientos: toma el precio del catálogo, o queda en cero con el motivo

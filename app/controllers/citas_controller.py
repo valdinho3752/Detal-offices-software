@@ -25,6 +25,15 @@ ESTADOS_SIN_RESERVA = (EstadoCitaEnum.CANCELADA, EstadoCitaEnum.NO_ASISTIO)
 
 ROLES_GESTION_AGENDA = ("ADMIN", "RECEPCION", "RECEPCIONISTA", "ASISTENTE")
 
+# Una cita atendida ya tiene evolución y cobro: no cambia. Una descartada solo puede volver a la agenda.
+ESTADOS_DE_REACTIVACION = (EstadoCitaEnum.PROGRAMADA, EstadoCitaEnum.CONFIRMADA)
+
+def _validar_cambio_de_estado(cita: Cita, nuevo_estado) -> None:
+    if cita.estado == EstadoCitaEnum.FINALIZADA:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Esta cita ya fue atendida y no se puede modificar")
+    if nuevo_estado and nuevo_estado != cita.estado and cita.estado in ESTADOS_SIN_RESERVA and nuevo_estado not in ESTADOS_DE_REACTIVACION:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Una cita cancelada o sin asistencia solo puede volver a programarse")
+
 HORA_POR_ESTADO = {
     EstadoCitaEnum.EN_ESPERA: "hora_llegada_recepcion",
     EstadoCitaEnum.EN_SILLON: "hora_inicio_sillon",
@@ -267,6 +276,7 @@ def actualizar_cita(
     if not cita:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada")
     _validar_puede_modificar(cita, current_user)
+    _validar_cambio_de_estado(cita, datos.estado)
 
     _bloquear_agenda(db)
     update_dict = datos.model_dump(exclude_unset=True)
@@ -371,6 +381,7 @@ def controlar_tiempo_sillon(
     if not cita:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada")
     _validar_puede_modificar(cita, current_user)
+    _validar_cambio_de_estado(cita, control.estado)
 
     estado_previo = cita.estado
     for field, value in control.model_dump(exclude_unset=True).items():
