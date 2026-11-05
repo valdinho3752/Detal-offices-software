@@ -1,5 +1,14 @@
 const API_BASE = '/api/v1';
 
+// La API describe los datos rechazados como una lista: se muestra solo el texto para la persona
+function textoDeError(detalle, porDefecto) {
+  if (typeof detalle === 'string') return detalle;
+  if (Array.isArray(detalle)) {
+    return detalle.map((e) => String(e.msg || '').replace(/^Value error, /, '')).filter(Boolean).join('. ') || porDefecto;
+  }
+  return porDefecto;
+}
+
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('token');
   const headers = {
@@ -33,8 +42,7 @@ async function request(endpoint, options = {}) {
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const errorMsg = data?.detail || `Error en la solicitud: ${response.statusText}`;
-    throw new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+    throw new Error(textoDeError(data?.detail, `Error en la solicitud: ${response.statusText}`));
   }
 
   return data;
@@ -53,11 +61,12 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Credenciales inválidas');
+      throw new Error(textoDeError(err.detail, 'Credenciales inválidas'));
     }
     return res.json();
   },
   getMe: () => request('/auth/me'),
+  cambiarContrasena: (data) => request('/auth/cambiar-contrasena', { method: 'POST', body: JSON.stringify(data) }),
   fichar: (tipo_evento, observaciones = '') =>
     request('/auth/fichar', {
       method: 'POST',
@@ -65,6 +74,7 @@ export const api = {
     }),
   getEstadoFichaje: () => request('/auth/fichaje/estado'),
   getJornadasSinSalida: () => request('/personal/asistencia/jornadas-sin-salida'),
+  anularMarcaje: (id, motivo) => request(`/personal/asistencia/${id}/anular`, { method: 'POST', body: JSON.stringify({ motivo }) }),
   corregirMarcaje: (data) => request('/personal/asistencia/correcciones', { method: 'POST', body: JSON.stringify(data) }),
   getAsistencias: (params = '') => request(`/personal/asistencia${params}`),
 

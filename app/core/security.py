@@ -1,7 +1,7 @@
 import bcrypt
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Any
-from jose import jwt
+import jwt
 from app.config import settings
 
 def hash_password(password: str) -> str:
@@ -19,6 +19,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return bcrypt.checkpw(pwd_bytes, hash_bytes)
     except Exception:
         return False
+
+def emitir_token_de(usuario) -> str:
+    rol = usuario.rol.codigo.value if hasattr(usuario.rol.codigo, "value") else str(usuario.rol.codigo)
+    return create_access_token(data={"sub": usuario.username, "rol": rol, "user_id": str(usuario.id), "sv": usuario.version_sesion})
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Genera un token JWT firmado."""

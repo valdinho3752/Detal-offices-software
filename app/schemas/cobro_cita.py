@@ -11,7 +11,7 @@ class LineaCobroEntrada(BaseModel):
 
     id: Optional[UUID] = None  # Sin id es una línea agregada a mano
     concepto: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)]
-    monto: Decimal = Field(ge=0, decimal_places=2)
+    monto: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
 
 
 class CobroActualizar(BaseModel):

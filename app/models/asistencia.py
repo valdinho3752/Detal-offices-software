@@ -34,9 +34,13 @@ class RegistroAsistencia(Base):
     es_correccion = Column(Boolean, default=False, server_default="false", nullable=False)
     motivo_correccion = Column(Text, nullable=True)
     corregido_por_usuario_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    anulado = Column(Boolean, default=False, server_default="false", nullable=False)
+    motivo_anulacion = Column(Text, nullable=True)
+    anulado_por_usuario_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
 
     usuario = relationship("Usuario", back_populates="asistencias", foreign_keys=[usuario_id])
     corregido_por = relationship("Usuario", foreign_keys=[corregido_por_usuario_id])
+    anulado_por = relationship("Usuario", foreign_keys=[anulado_por_usuario_id])
 
     @property
     def empleado_nombre(self):
@@ -49,3 +53,7 @@ class RegistroAsistencia(Base):
     @property
     def corregido_por_nombre(self):
         return f"{self.corregido_por.nombre} {self.corregido_por.apellido}" if self.corregido_por else None
+
+    @property
+    def anulado_por_nombre(self):
+        return f"{self.anulado_por.nombre} {self.anulado_por.apellido}" if self.anulado_por else None

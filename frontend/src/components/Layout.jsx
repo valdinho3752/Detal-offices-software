@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useClinica } from '../context/ClinicaContext';
 import LogoClinica from './LogoClinica';
+import CambiarContrasenaModal from './CambiarContrasenaModal';
 import { api } from '../services/api';
 import {
   Activity,
@@ -32,6 +33,7 @@ import {
   BookOpen,
   Armchair,
   Settings,
+  KeyRound,
 } from 'lucide-react';
 import { puedeAcceder } from '../config/accesos';
 import CajaBloqueoBarrier from './CajaBloqueoBarrier';
@@ -57,6 +59,7 @@ export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cajaEstado, setCajaEstado] = useState(null);
   const [fichajeModal, setFichajeModal] = useState(false);
+  const [cambiandoClave, setCambiandoClave] = useState(false);
   const [fichajeTipo, setFichajeTipo] = useState('ENTRADA');
   const [fichajeObs, setFichajeObs] = useState('');
   const [fichajeSuccess, setFichajeSuccess] = useState('');
@@ -181,11 +184,19 @@ export default function Layout({ children }) {
             </div>
             <div className="min-w-0">
               <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{user?.nombre_completo || user?.username}</p>
-              <span className="inline-block px-1.5 py-0.2 rounded text-[9px] font-bold bg-primary-500/20 text-primary-700 dark:text-primary-300 uppercase">
+              <span title={user?.rol_nombre || user?.rol_str} className="block max-w-full truncate w-fit px-1.5 py-0.2 rounded text-[9px] font-bold bg-primary-500/20 text-primary-700 dark:text-primary-300 uppercase">
                 {user?.rol_nombre || user?.rol_str}
               </span>
             </div>
           </div>
+          <button
+            onClick={() => setCambiandoClave(true)}
+            title="Cambiar mi contraseña"
+            aria-label="Cambiar mi contraseña"
+            className="p-1.5 mr-1 rounded-lg bg-slate-500/10 text-slate-600 dark:text-slate-300 border border-slate-500/30 hover:bg-slate-500/20 transition-colors flex-shrink-0"
+          >
+            <KeyRound className="w-4 h-4" />
+          </button>
           <button
             hidden={!puedeFichar}
             onClick={abrirFichaje}
@@ -331,6 +342,10 @@ export default function Layout({ children }) {
           <div className={PANTALLAS_ANCHAS.includes(location.pathname) ? 'w-full' : 'max-w-7xl mx-auto'}>{children || <Outlet />}</div>
         </main>
       </div>
+
+      {(user?.debe_cambiar_contrasena || cambiandoClave) && (
+        <CambiarContrasenaModal obligatorio={Boolean(user?.debe_cambiar_contrasena)} onCerrar={() => setCambiandoClave(false)} />
+      )}
 
       {/* Fichaje Modal */}
       {fichajeModal && (

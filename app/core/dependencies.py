@@ -2,7 +2,8 @@ from typing import Optional, Set
 from uuid import UUID
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+import jwt
+from jwt import PyJWTError
 from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
@@ -24,11 +25,14 @@ def get_current_user(
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-    except JWTError:
+    except PyJWTError:
         raise credentials_exception
 
     user = db.query(Usuario).filter(Usuario.username == username).first()
     if user is None:
+        raise credentials_exception
+    # Tras cambiar la contraseña, las sesiones emitidas antes dejan de servir
+    if payload.get("sv", 0) != user.version_sesion:
         raise credentials_exception
     if not user.activo:
         raise HTTPException(

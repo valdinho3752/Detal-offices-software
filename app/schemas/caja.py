@@ -6,13 +6,13 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 from app.models.enums import EstadoCajaEnum, MetodoPagoEnum, CategoriaEgresoCajaEnum
 
 class CajaAperturaRequest(BaseModel):
-    monto_inicial_fondo: Optional[Decimal] = Field(default=Decimal("0.00"), ge=0)
-    monto_apertura: Optional[Decimal] = Field(default=None, ge=0)
+    monto_inicial_fondo: Optional[Decimal] = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
+    monto_apertura: Optional[Decimal] = Field(default=None, ge=0, max_digits=12, decimal_places=2)
     observaciones: Optional[str] = None
 
 class CajaCierreRequest(BaseModel):
-    total_efectivo_contado: Optional[Decimal] = Field(default=None, ge=0)
-    monto_cierre_real: Optional[Decimal] = Field(default=None, ge=0)
+    total_efectivo_contado: Optional[Decimal] = Field(default=None, ge=0, max_digits=12, decimal_places=2)
+    monto_cierre_real: Optional[Decimal] = Field(default=None, ge=0, max_digits=12, decimal_places=2)
     observaciones: Optional[str] = None
 
 class CajaSesionResponse(BaseModel):
@@ -41,7 +41,7 @@ class PagoCreate(BaseModel):
     plan_id: Optional[UUID] = None
     visita_id: Optional[UUID] = None
     doctor_comision_id: Optional[UUID] = None
-    monto: Decimal = Field(gt=0)
+    monto: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
     metodo_pago: MetodoPagoEnum = MetodoPagoEnum.EFECTIVO
     referencia_comprobante: Optional[str] = None
     es_cobro_directo: bool = False
@@ -70,7 +70,7 @@ class EgresoCajaCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     categoria: CategoriaEgresoCajaEnum
-    monto: Decimal = Field(gt=0)
+    monto: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
     concepto_motivo: str
     numero_recibo_comprobante: Optional[str] = None
     usuario_beneficiario_id: Optional[UUID] = None

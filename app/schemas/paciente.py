@@ -1,8 +1,13 @@
 from typing import Optional
 from uuid import UUID
 from datetime import date, datetime
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from app.models.enums import GeneroEnum, EstadoRegistroEnum
+
+def _no_futura(valor):
+    if valor and valor > date.today():
+        raise ValueError("La fecha de nacimiento no puede ser futura")
+    return valor
 
 class AntecedenteMedicoUpdate(BaseModel):
     enfermedades_sistemicas: Optional[str] = None
@@ -44,9 +49,13 @@ class PacienteBase(BaseModel):
     estado: Optional[EstadoRegistroEnum] = EstadoRegistroEnum.ACTIVO
 
 class PacienteCreate(PacienteBase):
+    _validar_nacimiento = field_validator("fecha_nacimiento")(_no_futura)
+
     antecedentes: Optional[AntecedenteMedicoUpdate] = None
 
 class PacienteUpdate(BaseModel):
+    _validar_nacimiento = field_validator("fecha_nacimiento")(_no_futura)
+
     nombres: Optional[str] = None
     apellidos: Optional[str] = None
     tipo_documento: Optional[str] = None

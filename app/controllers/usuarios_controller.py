@@ -134,6 +134,21 @@ def obtener_permisos_de_rol(
 
 # ==================== USUARIOS ====================
 
+def _validar_no_deja_sin_administrador(usuario: Usuario, cambios: dict, current_user: Usuario, db: Session) -> None:
+    """Sin administrador activo nadie podría entrar a corregirlo desde el sistema."""
+    if not es_admin(usuario):
+        return
+    se_desactiva = cambios.get("activo") is False
+    rol_nuevo = cambios.get("rol_id")
+    pierde_rol = bool(rol_nuevo) and rol_nuevo != usuario.rol_id
+    if not se_desactiva and not pierde_rol:
+        return
+    if usuario.id == current_user.id:
+        raise HTTPException(status_code=400, detail="No puedes desactivar tu propia cuenta ni quitarte el rol de administrador")
+    otros = db.query(Usuario.id).filter(Usuario.rol_id == usuario.rol_id, Usuario.activo.is_(True), Usuario.id != usuario.id).first()
+    if not otros:
+        raise HTTPException(status_code=400, detail="Debe quedar al menos un administrador activo")
+
 @router.get("/", response_model=List[UsuarioDetailResponse])
 def listar_usuarios(
     current_user: Usuario = Depends(require_permission("USUARIOS_MANAGE")),
@@ -155,6 +170,8 @@ def crear_usuario(
 
     user_dict = datos.model_dump(exclude={"password", "doctor_perfil", "asistente_perfil"})
     user_dict["password_hash"] = hash_password(datos.password)
+    # La contraseña inicial la conoce quien crea la cuenta: se cambia al primer ingreso
+    user_dict["debe_cambiar_contrasena"] = True
 
     nuevo_usuario = Usuario(**user_dict)
     db.add(nuevo_usuario)
@@ -202,11 +219,15 @@ def actualizar_usuario(
     update_dict = datos.model_dump(exclude_unset=True)
     if update_dict.get("rol_id"):
         _validar_rol_asignable(update_dict["rol_id"], current_user, db)
+    _validar_no_deja_sin_administrador(usuario, update_dict, current_user, db)
     doc_update = update_dict.pop("doctor_perfil", None)
     asist_update = update_dict.pop("asistente_perfil", None)
 
     if "password" in update_dict and update_dict["password"]:
         update_dict["password_hash"] = hash_password(update_dict.pop("password"))
+        # Quien la restablece la conoce: se cierran las sesiones y debe cambiarla al entrar
+        update_dict["version_sesion"] = usuario.version_sesion + 1
+        update_dict["debe_cambiar_contrasena"] = usuario.id != current_user.id
     elif "password" in update_dict:
         update_dict.pop("password")
 

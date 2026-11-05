@@ -86,7 +86,15 @@ Compara las filas que muestra con lo esperado y revisa la base. La restauración
 
 **Para recuperarte de un problema real:** detén el backend, restaura en una base nueva, cambia `DB_NAME` y `DATABASE_URL` en `.env`, e inícialo de nuevo.
 
-## 7. Actualizar a una versión nueva
+## 7. Recuperar el acceso del administrador
+
+```powershell
+.\venv\Scripts\python scripts\restablecer_admin.py
+```
+
+Pide la contraseña nueva, reactiva la cuenta y cierra sus sesiones anteriores.
+
+## 8. Actualizar a una versión nueva
 
 ```powershell
 .\venv\Scripts\python scripts\respaldar.py

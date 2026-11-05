@@ -19,10 +19,10 @@ class PagoEmpleadoCreate(PagoEmpleadoBase):
     # Rechaza campos desconocidos: un nombre mal escrito no debe perderse en silencio
     model_config = ConfigDict(extra="forbid")
 
-    monto_base: Decimal = Field(default=Decimal("0.00"), ge=0)
-    monto_comisiones: Decimal = Field(default=Decimal("0.00"), ge=0)
-    deducciones_descuentos: Decimal = Field(default=Decimal("0.00"), ge=0)
-    monto_neto_pagado: Decimal = Field(ge=0)
+    monto_base: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
+    monto_comisiones: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
+    deducciones_descuentos: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
+    monto_neto_pagado: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
 
     @model_validator(mode="after")
     def validar_montos(self):

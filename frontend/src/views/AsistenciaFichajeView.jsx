@@ -34,7 +34,7 @@ const NOMBRES_EVENTO = { ENTRADA: 'Entrada', INICIO_DESCANSO: 'Inicio de descans
 
 const CAMPO = 'w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-primary-500';
 const ETIQUETA = 'block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1';
-const CORRECCION_VACIA = { usuario_id: '', tipo_evento: 'SALIDA', fecha: '', hora: '', motivo: '' };
+const CORRECCION_VACIA = { usuario_id: '', tipo_evento: 'SALIDA', fecha: '', hora: '', hora_fin: '', motivo: '' };
 
 function motivoDeBloqueo(tipo, estado) {
   if (tipo === 'ENTRADA') return estado === 'EN_DESCANSO' ? 'Estás en descanso' : 'Ya tienes un turno abierto';
@@ -49,6 +49,8 @@ export default function AsistenciaFichajeView() {
   const [correccion, setCorreccion] = useState(null);
   const [errorCorreccion, setErrorCorreccion] = useState('');
   const [guardandoCorreccion, setGuardandoCorreccion] = useState(false);
+  const [anulacion, setAnulacion] = useState(null);
+  const [errorAnulacion, setErrorAnulacion] = useState('');
   const puedeFichar = tienePermiso('ASISTENCIA_FICHAR');
   const [turno, setTurno] = useState(null);
   const [asistencias, setAsistencias] = useState([]);
@@ -112,6 +114,9 @@ export default function AsistenciaFichajeView() {
         tipo_evento: correccion.tipo_evento,
         fecha_hora: new Date(`${correccion.fecha}T${correccion.hora}:00`).toISOString(),
         motivo: correccion.motivo,
+        ...(correccion.tipo_evento === 'INICIO_DESCANSO' && correccion.hora_fin
+          ? { fecha_hora_fin: new Date(`${correccion.fecha}T${correccion.hora_fin}:00`).toISOString() }
+          : {}),
       });
       const { fecha } = correccion;
       setCorreccion(null);
@@ -126,6 +131,22 @@ export default function AsistenciaFichajeView() {
       setErrorCorreccion(err.message || 'No se pudo registrar la corrección');
     } finally {
       setGuardandoCorreccion(false);
+    }
+  };
+
+  const guardarAnulacion = async (e) => {
+    e.preventDefault();
+    setErrorAnulacion('');
+    try {
+      await api.anularMarcaje(anulacion.registro.id, anulacion.motivo);
+      setAnulacion(null);
+      setSuccess('Marcaje anulado');
+      setTimeout(() => setSuccess(''), 3000);
+      loadData();
+      cargarJornadas();
+      cargarTurno();
+    } catch (err) {
+      setErrorAnulacion(err.message || 'No se pudo anular el marcaje');
     }
   };
 
@@ -349,6 +370,7 @@ export default function AsistenciaFichajeView() {
                   <th className="py-3 px-4 text-center">Tipo Evento</th>
                   <th className="py-3 px-4">IP / Origen</th>
                   <th className="py-3 px-4">Observaciones</th>
+                  {isAdmin && <th className="py-3 px-4"><span className="sr-only">Acciones</span></th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-700/40 text-slate-700 dark:text-slate-300">
@@ -364,8 +386,8 @@ export default function AsistenciaFichajeView() {
                       : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400';
 
                   return (
-                    <tr key={a.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition">
-                      <td className="py-3 px-4 font-mono font-bold text-primary-600 dark:text-primary-400">{horaStr}</td>
+                    <tr key={a.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/20 transition ${a.anulado ? 'opacity-60' : ''}`}>
+                      <td className={`py-3 px-4 font-mono font-bold text-primary-600 dark:text-primary-400 ${a.anulado ? 'line-through' : ''}`}>{horaStr}</td>
                       <td className="py-3 px-4 font-medium text-slate-900 dark:text-white">{empNombre}</td>
                       <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{a.empleado_rol || '-'}</td>
                       <td className="py-3 px-4 text-center">
@@ -375,11 +397,32 @@ export default function AsistenciaFichajeView() {
                         {a.es_correccion && (
                           <span className="block mt-1 text-[10px] font-bold text-amber-700 dark:text-amber-400">Corregido</span>
                         )}
+                        {a.anulado && (
+                          <span className="block mt-1 text-[10px] font-bold text-rose-700 dark:text-rose-400">Anulado</span>
+                        )}
                       </td>
                       <td className="py-3 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400">{a.ip_registro || '-'}</td>
                       <td className="py-3 px-4 text-slate-500 dark:text-slate-400 italic">
                         {a.es_correccion ? `${a.motivo_correccion} (registró ${a.corregido_por_nombre || 'administrador'})` : a.observaciones || '-'}
+                        {a.anulado && (
+                          <span className="block not-italic text-rose-700 dark:text-rose-400">
+                            Anulado: {a.motivo_anulacion} ({a.anulado_por_nombre || 'administrador'})
+                          </span>
+                        )}
                       </td>
+                      {isAdmin && (
+                        <td className="py-3 px-4 text-right">
+                          {!a.anulado && (
+                            <button
+                              type="button"
+                              onClick={() => { setErrorAnulacion(''); setAnulacion({ registro: a, motivo: '' }); }}
+                              className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline"
+                            >
+                              Anular
+                            </button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -423,6 +466,13 @@ export default function AsistenciaFichajeView() {
                   <input id="cor-hora" type="time" required value={correccion.hora} onChange={(e) => setCorreccion({ ...correccion, hora: e.target.value })} className={CAMPO} />
                 </div>
               </div>
+              {correccion.tipo_evento === 'INICIO_DESCANSO' && (
+                <div>
+                  <label htmlFor="cor-hora-fin" className={ETIQUETA}>Hora de fin del descanso</label>
+                  <input id="cor-hora-fin" type="time" value={correccion.hora_fin} onChange={(e) => setCorreccion({ ...correccion, hora_fin: e.target.value })} className={CAMPO} />
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Indícala si el turno ya continuó después del descanso.</p>
+                </div>
+              )}
               <div>
                 <label htmlFor="cor-motivo" className={ETIQUETA}>Motivo *</label>
                 <textarea id="cor-motivo" rows="2" required maxLength={500} placeholder="Ej. Olvidó marcar la salida" value={correccion.motivo} onChange={(e) => setCorreccion({ ...correccion, motivo: e.target.value })} className={CAMPO} />
@@ -432,6 +482,29 @@ export default function AsistenciaFichajeView() {
                 <button type="submit" disabled={guardandoCorreccion} className="px-4 py-2 bg-primary-600 hover:bg-primary-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold">
                   {guardandoCorreccion ? 'Guardando...' : 'Guardar Corrección'}
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {anulacion && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div role="dialog" aria-label="Anular marcaje" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Anular Marcaje</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              {NOMBRES_EVENTO[anulacion.registro.tipo_evento]} de {anulacion.registro.empleado_nombre} del {new Date(anulacion.registro.fecha_hora).toLocaleString()}.
+              Dejará de contar, pero seguirá visible en la bitácora. Para corregir una hora, anúlalo y agrega el marcaje correcto.
+            </p>
+            <form onSubmit={guardarAnulacion} className="space-y-4">
+              <ErrorModal mensaje={errorAnulacion} />
+              <div>
+                <label htmlFor="anu-motivo" className={ETIQUETA}>Motivo *</label>
+                <textarea id="anu-motivo" rows="2" required maxLength={500} value={anulacion.motivo} onChange={(e) => setAnulacion({ ...anulacion, motivo: e.target.value })} className={CAMPO} />
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <button type="button" onClick={() => setAnulacion(null)} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs">Cancelar</button>
+                <button type="submit" className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold">Anular Marcaje</button>
               </div>
             </form>
           </div>

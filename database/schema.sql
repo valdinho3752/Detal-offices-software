@@ -261,6 +261,8 @@ CREATE TABLE usuarios (
     rol_id UUID NOT NULL REFERENCES roles(id),
     username VARCHAR(80) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    version_sesion INTEGER NOT NULL DEFAULT 0, -- Al aumentar, las sesiones anteriores dejan de servir
+    debe_cambiar_contrasena BOOLEAN NOT NULL DEFAULT false,
     nombre VARCHAR(100) NOT NULL,
     apellido VARCHAR(100) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
@@ -321,7 +323,10 @@ CREATE TABLE registro_asistencia (
     ip_registro VARCHAR(45),
     es_correccion BOOLEAN NOT NULL DEFAULT false, -- Agregado por el administrador
     motivo_correccion TEXT,
-    corregido_por_usuario_id UUID REFERENCES usuarios(id) ON DELETE SET NULL
+    corregido_por_usuario_id UUID REFERENCES usuarios(id) ON DELETE SET NULL,
+    anulado BOOLEAN NOT NULL DEFAULT false, -- Deja de contar, pero sigue visible
+    motivo_anulacion TEXT,
+    anulado_por_usuario_id UUID REFERENCES usuarios(id) ON DELETE SET NULL
 );
 
 
@@ -771,3 +776,6 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_calcular_duracion_sillon
 BEFORE INSERT OR UPDATE ON citas
 FOR EACH ROW EXECUTE FUNCTION calcular_duracion_sillon();
+
+-- Nunca puede haber dos cajas abiertas a la vez
+CREATE UNIQUE INDEX caja_unica_abierta ON cajas_sesiones ((1)) WHERE estado = 'ABIERTA';

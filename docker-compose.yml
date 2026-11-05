@@ -62,14 +62,51 @@ services:
     build: ./frontend
     image: clinica-dental-web
     restart: unless-stopped
-    # Por HTTP solo se abre en este equipo; exponerlo a la red requiere HTTPS. Consulta docs/DOCKER.md
+    # Por HTTP solo se abre en este equipo. Para otros equipos usa el perfil https: consulta docs/DOCKER.md
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${CLINICA_PUERTO_WEB:-8080}:8080"
     depends_on:
       backend:
         condition: service_healthy
 
-  # Copia de seguridad a ./backups: docker compose run --rm respaldo
+  # HTTPS para abrir el sistema a otros equipos: docker compose --profile https up -d
+  https:
+    image: caddy:2.10-alpine
+    profiles: ["https"]
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    ports:
+      - "${CLINICA_PUERTO_HTTP:-80}:80"
+      - "${CLINICA_PUERTO_HTTPS:-443}:443"
+    volumes:
+      - ./deploy/Caddyfile.docker:/etc/caddy/Caddyfile:ro
+      - caddy_datos:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_started
+
+  # Copia automática diaria. La carpeta se elige con CLINICA_RESPALDOS, y debería estar en otro disco.
+  respaldos:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    environment:
+      PGHOST: db
+      RESPALDO_HORA: "${RESPALDO_HORA:-21}"
+      RESPALDO_CONSERVAR: "${RESPALDO_CONSERVAR:-30}"
+    volumes:
+      - ${CLINICA_RESPALDOS:-./backups}:/backups
+      - ./deploy/respaldo_diario.sh:/respaldo_diario.sh:ro
+    entrypoint: ["sh", "/respaldo_diario.sh"]
+    # Espera a la instalación: una copia de una base aún vacía contaría como la del día
+    depends_on:
+      migraciones:
+        condition: service_completed_successfully
+
+  # Copia de seguridad en el momento: docker compose run --rm respaldo
   respaldo:
     image: postgres:18-alpine
     profiles: ["herramientas"]
@@ -78,7 +115,7 @@ services:
     environment:
       PGHOST: db
     volumes:
-      - ./backups:/backups
+      - ${CLINICA_RESPALDOS:-./backups}:/backups
     entrypoint: ["sh", "-c"]
     command:
       - >-
@@ -93,3 +130,5 @@ services:
 
 volumes:
   datos_postgres:
+  caddy_datos:
+  caddy_config:

@@ -17,6 +17,8 @@ from app.schemas.caja import (
     PagoAnular, PagoCreate, PagoResponse, EgresoCajaCreate, EgresoCajaResponse
 )
 
+from sqlalchemy.exc import IntegrityError
+from app.models import Doctor
 from app.services.gaveta import exigir_efectivo
 from app.services.nomina import porcentaje_vigente
 
@@ -145,7 +147,12 @@ def abrir_caja(
         observaciones=datos.observaciones
     )
     db.add(nueva_caja)
-    db.flush()
+    try:
+        db.flush()
+    except IntegrityError:
+        # Otra persona abrió la caja en este mismo instante: el índice único lo impide
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ya existe una sesión de caja abierta en este momento")
 
     log = AuditoriaLog(
         usuario_id=current_user.id,
@@ -216,6 +223,8 @@ def registrar_pago_paciente(
         validar_cobro_directo(datos.paciente_id, datos.plan_id, datos.observaciones, db)
     else:
         validar_monto_cobro(datos.paciente_id, datos.plan_id, datos.monto, db)
+    if datos.doctor_comision_id and not db.query(Doctor.id).filter(Doctor.id == datos.doctor_comision_id).first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor no encontrado")
 
     nuevo_pago = Pago(
         **datos.model_dump(),

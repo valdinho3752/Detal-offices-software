@@ -1,0 +1,17 @@
+# HTTPS para Docker. Se activa con: docker compose --profile https up -d
+# CLINICA_DIRECCION: dominio público o nombre del servidor en la red interna.
+# CLINICA_TLS: vacío con un dominio público; "tls internal" en una red interna.
+{$CLINICA_DIRECCION:localhost} {
+	{$CLINICA_TLS}
+
+	encode gzip
+	reverse_proxy web:8080
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+}

@@ -3,9 +3,10 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Cita, Sillon, EstadoCitaEnum, Usuario, Doctor, RolCodigoEnum, AuditoriaLog, AuditoriaAccionEnum
+from app.models import Cita, Paciente, Sillon, EstadoCitaEnum, Usuario, Doctor, RolCodigoEnum, AuditoriaLog, AuditoriaAccionEnum
 from app.core.dependencies import require_permission
 from app.schemas.cita import CitaCreate, CitaUpdate, CitaSillonControl, CitaResponse
 from app.services.cobros_cita import crear_cobro_de_cita
@@ -13,6 +14,9 @@ from app.services.sillones import numero_sillon_de_notas
 from app.services.tratamiento_clinico import (
     crear_evolucion_de_cita, describir_diagnostico, registrar_tratamiento_realizado
 )
+
+CERROJO_AGENDA = 7410001  # Identificador del cerrojo de PostgreSQL que protege la agenda
+LIMITE_LISTADO = 5000
 
 router = APIRouter(prefix="/citas", tags=["Agenda y Citas Dentales"])
 
@@ -38,6 +42,8 @@ def listar_citas(
     fecha_inicio: Optional[datetime] = None,
     fecha_fin: Optional[datetime] = None,
     estado: Optional[EstadoCitaEnum] = None,
+    limit: int = Query(default=LIMITE_LISTADO, ge=1, le=LIMITE_LISTADO),
+    skip: int = Query(default=0, ge=0),
     current_user: Usuario = Depends(require_permission("CITAS_READ")),
     db: Session = Depends(get_db)
 ):
@@ -62,7 +68,7 @@ def listar_citas(
     if estado:
         query = query.filter(Cita.estado == estado)
 
-    return query.order_by(Cita.fecha_inicio_programada).all()
+    return query.order_by(Cita.fecha_inicio_programada).offset(skip).limit(limit).all()
 
 @router.post("/", response_model=CitaResponse, status_code=status.HTTP_201_CREATED)
 def agendar_cita(
@@ -75,6 +81,12 @@ def agendar_cita(
         doctor_obj = db.query(Doctor).filter(
             (Doctor.id == datos.doctor_id) | (Doctor.usuario_id == datos.doctor_id)
         ).first()
+
+    # Un doctor indicado que no existe no se reemplaza en silencio por otro
+    if datos.doctor_id and not doctor_obj:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor no encontrado")
+    if not db.query(Paciente.id).filter(Paciente.id == datos.paciente_id).first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado")
 
     resolved_doctor_id = None
     if _gestiona_agenda(current_user):
@@ -130,6 +142,7 @@ def agendar_cita(
         notas_adicionales=datos.notas_adicionales,
         created_by_usuario_id=current_user.id
     )
+    _bloquear_agenda(db)
     db.add(nueva_cita)
     db.flush()
     db.refresh(nueva_cita)
@@ -153,6 +166,10 @@ def _validar_puede_modificar(cita: Cita, usuario: Usuario) -> None:
 
 def _box_de_cita(cita: Cita) -> int:
     return numero_sillon_de_notas(cita.notas_adicionales)
+
+def _bloquear_agenda(db: Session) -> None:
+    """Las citas se atienden de una en una. Debe pedirse antes de escribir: así no hay interbloqueos."""
+    db.execute(select(func.pg_advisory_xact_lock(CERROJO_AGENDA)))
 
 def _validar_horario_cita(cita: Cita, db: Session):
     """Comprueba que el horario sea coherente y que el doctor y el box estén libres en ese rango."""
@@ -251,6 +268,7 @@ def actualizar_cita(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada")
     _validar_puede_modificar(cita, current_user)
 
+    _bloquear_agenda(db)
     update_dict = datos.model_dump(exclude_unset=True)
     if "doctor_id" in update_dict and update_dict["doctor_id"] is not None:
         target_doc = update_dict["doctor_id"]

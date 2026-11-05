@@ -1,6 +1,6 @@
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import (
@@ -20,6 +20,8 @@ router = APIRouter(prefix="/visitas", tags=["Historia Clínica y Evoluciones Dia
 def listar_visitas(
     paciente_id: Optional[UUID] = None,
     doctor_id: Optional[UUID] = None,
+    limit: int = Query(default=5000, ge=1, le=5000),
+    skip: int = Query(default=0, ge=0),
     current_user: Usuario = Depends(require_permission("HISTORIA_CLINICA_READ")),
     db: Session = Depends(get_db)
 ):
@@ -28,7 +30,7 @@ def listar_visitas(
         query = query.filter(VisitaEvolucion.paciente_id == paciente_id)
     if doctor_id:
         query = query.filter(VisitaEvolucion.doctor_id == doctor_id)
-    return query.order_by(VisitaEvolucion.fecha_hora.desc()).all()
+    return query.order_by(VisitaEvolucion.fecha_hora.desc()).offset(skip).limit(limit).all()
 
 @router.post("/", response_model=VisitaEvolucionResponse, status_code=status.HTTP_201_CREATED)
 def registrar_visita_evolucion(

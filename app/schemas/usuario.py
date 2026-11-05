@@ -1,7 +1,8 @@
 from typing import Annotated, Optional, List
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, StringConstraints
+from pydantic import BaseModel, EmailStr, StringConstraints, field_validator
+from app.core.contrasenas import validar_contrasena
 from app.models.enums import RolCodigoEnum
 
 class PermisoResponse(BaseModel):
@@ -89,6 +90,11 @@ class UsuarioCreate(UsuarioBase):
     doctor_perfil: Optional[DoctorBase] = None
     asistente_perfil: Optional[AsistenteBase] = None
 
+    @field_validator("password")
+    @classmethod
+    def validar_password(cls, valor: str) -> str:
+        return validar_contrasena(valor)
+
 class UsuarioUpdate(BaseModel):
     nombre: Optional[str] = None
     apellido: Optional[str] = None
@@ -99,6 +105,11 @@ class UsuarioUpdate(BaseModel):
     password: Optional[str] = None
     doctor_perfil: Optional[DoctorUpdate] = None
     asistente_perfil: Optional[AsistenteUpdate] = None
+
+    @field_validator("password")
+    @classmethod
+    def validar_password(cls, valor: Optional[str]) -> Optional[str]:
+        return validar_contrasena(valor) if valor else valor
 
 class UsuarioDetailResponse(UsuarioBase):
     id: UUID

@@ -1,6 +1,6 @@
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.database import get_db
@@ -127,6 +127,8 @@ def eliminar_tratamiento_catalogo(
 def listar_planes(
     paciente_id: Optional[UUID] = None,
     doctor_id: Optional[UUID] = None,
+    limit: int = Query(default=5000, ge=1, le=5000),
+    skip: int = Query(default=0, ge=0),
     current_user: Usuario = Depends(require_permission("TRATAMIENTOS_READ")),
     db: Session = Depends(get_db)
 ):
@@ -135,7 +137,7 @@ def listar_planes(
         query = query.filter(PlanTratamiento.paciente_id == paciente_id)
     if doctor_id:
         query = query.filter(PlanTratamiento.doctor_id == doctor_id)
-    return query.order_by(PlanTratamiento.fecha_creacion.desc()).all()
+    return query.order_by(PlanTratamiento.fecha_creacion.desc()).offset(skip).limit(limit).all()
 
 @router.post("/planes", response_model=PlanTratamientoResponse, status_code=status.HTTP_201_CREATED)
 def crear_plan_tratamiento(

@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
+from app.core.errores import registrar_manejadores
 from app.core.produccion import exigir_configuracion_segura, exigir_contrasena_admin_propia
 from app.database import SessionLocal
 
@@ -49,6 +50,8 @@ app = FastAPI(
     openapi_url=None if settings.es_produccion else "/openapi.json",
     lifespan=ciclo_de_vida,
 )
+
+registrar_manejadores(app)
 
 # Configuración de CORS para el Frontend
 if settings.origenes_cors:

@@ -37,11 +37,28 @@ Las migraciones pendientes se aplican solas al arrancar.
 
 ## Copias de seguridad
 
+El servicio `respaldos` crea una copia comprobada cada día desde las 21:00, hora de la clínica, y conserva las 30 más recientes en `backups\`. Si el equipo estaba apagado a esa hora, la crea al encender. Para ver si funcionan:
+
+```powershell
+docker compose logs respaldos
+```
+
+Puedes cambiar la carpeta, la hora y la cantidad antes de iniciar el sistema:
+
+```powershell
+$env:CLINICA_RESPALDOS = "D:\RespaldosClinica"
+$env:RESPALDO_HORA = "20"
+$env:RESPALDO_CONSERVAR = "60"
+docker compose up -d
+```
+
+**Importante:** una copia en el mismo disco no protege si este falla. Usa otro disco o una carpeta sincronizada fuera del local. Las copias contienen datos clínicos y no están cifradas.
+
+Para crear una copia en cualquier momento:
+
 ```powershell
 docker compose run --rm respaldo
 ```
-
-Deja en `backups\` un archivo comprobado. Guárdalo fuera de este equipo: contiene datos clínicos y no está cifrado.
 
 Para probar la restauración en una base aparte, cambia `ARCHIVO`:
 
@@ -55,6 +72,31 @@ Solo crea la base `prueba_restauracion`; la base en uso no cambia. Para volver a
 docker compose exec db sh -c 'dropdb -U $POSTGRES_USER prueba_restauracion'
 ```
 
+## Abrir el sistema a otros equipos con HTTPS
+
+Edita `.env.docker` e inicia con el perfil `https`:
+
+- **Dominio público:** `CLINICA_DIRECCION=clinica.tudominio.com` y `CLINICA_TLS=` vacío. Apunta el dominio al servidor y abre los puertos 80 y 443. El certificado se obtiene solo.
+- **Red interna:** `CLINICA_DIRECCION=clinica.local` y `CLINICA_TLS=tls internal`. Cada equipo debe poder resolver ese nombre. Para que el navegador no muestre una advertencia, instala en cada uno el certificado raíz:
+
+```powershell
+docker compose cp https:/data/caddy/pki/authorities/local/root.crt certificado-clinica.crt
+```
+
+```powershell
+docker compose --profile https up -d
+```
+
+## Recuperar el acceso del administrador
+
+Si se pierde la contraseña de `admin`:
+
+```powershell
+docker compose run --rm -it migraciones python scripts/restablecer_admin.py
+```
+
+Pide la contraseña nueva, reactiva la cuenta y cierra sus sesiones anteriores.
+
 ## Cambiar la zona horaria
 
 Edita `CLINICA_TIMEZONE` en `.env.docker` y ejecuta `docker compose up -d`.
@@ -62,5 +104,6 @@ Edita `CLINICA_TIMEZONE` en `.env.docker` y ejecuta `docker compose up -d`.
 ## Advertencias
 
 - **`docker compose down -v` borra la base de datos.** Sin `-v`, los datos se conservan.
-- **Solo este equipo:** la web escucha en `127.0.0.1:8080` y va por HTTP. Antes de abrirla a otros equipos hay que ponerle HTTPS.
+- **Sin el perfil `https`:** la web solo escucha en `127.0.0.1:8080`, por HTTP.
+- **Primer ingreso:** quien recibe una cuenta nueva o una contraseña restablecida debe cambiarla al entrar.
 - **Los datos no se comparten** con la base de desarrollo ni con `npm run dev`.

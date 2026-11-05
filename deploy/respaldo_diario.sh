@@ -1,0 +1,37 @@
+#!/bin/sh
+# Crea una copia de seguridad comprobada al día y conserva las más recientes.
+# Se ejecuta dentro del contenedor "respaldos" de docker-compose.yml.
+set -u
+
+HORA="${RESPALDO_HORA:-21}"
+CONSERVAR="${RESPALDO_CONSERVAR:-30}"
+CARPETA=/backups
+export TZ="${CLINICA_TIMEZONE:-UTC}"
+export PGPASSWORD="$POSTGRES_PASSWORD"
+
+crear_copia() {
+  archivo="$CARPETA/clinica_auto_$(date +%Y%m%d_%H%M%S).dump"
+  if pg_dump -U "$POSTGRES_USER" --format=custom --file="$archivo.parcial" "$POSTGRES_DB" \
+    && pg_restore --list "$archivo.parcial" > /dev/null \
+    && mv "$archivo.parcial" "$archivo"; then
+    echo "$(date '+%F %T') Copia creada y comprobada: $archivo"
+    return 0
+  fi
+  rm -f "$archivo.parcial"
+  echo "$(date '+%F %T') ERROR: la copia de seguridad falló; se reintentará en unos minutos" >&2
+  return 1
+}
+
+depurar() {
+  ls -1t "$CARPETA"/clinica_auto_*.dump 2>/dev/null | tail -n +"$((CONSERVAR + 1))" | xargs -r rm -f
+}
+
+echo "Copias automáticas activas: cada día desde las $HORA:00 ($TZ), se conservan $CONSERVAR"
+while true; do
+  hoy="$(date +%Y%m%d)"
+  hora_actual="$(date +%H | sed 's/^0//')"
+  if [ "${hora_actual:-0}" -ge "$HORA" ] && ! ls "$CARPETA"/clinica_auto_"$hoy"_*.dump > /dev/null 2>&1; then
+    crear_copia && depurar
+  fi
+  sleep 300
+done

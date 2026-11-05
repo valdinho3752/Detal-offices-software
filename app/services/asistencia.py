@@ -62,7 +62,7 @@ class EstadoTurno:
 def consultar_estado(usuario_id: UUID, db: Session) -> EstadoTurno:
     ultimo = (
         db.query(RegistroAsistencia)
-        .filter(RegistroAsistencia.usuario_id == usuario_id)
+        .filter(RegistroAsistencia.usuario_id == usuario_id, RegistroAsistencia.anulado.is_(False))
         .order_by(RegistroAsistencia.fecha_hora.desc())
         .first()
     )
@@ -73,16 +73,27 @@ def consultar_estado(usuario_id: UUID, db: Session) -> EstadoTurno:
     return EstadoTurno(ESTADOS[ultimo.tipo_evento], SIGUIENTES[ultimo.tipo_evento], ultimo.fecha_hora, None)
 
 
-def validar_correccion(usuario_id: UUID, tipo: AsistenciaTipoEnum, fecha_hora: datetime, db: Session) -> None:
-    """Se comprueba contra los marcajes vecinos del mismo día: el resultado debe ser una jornada posible."""
-    if fecha_hora > datetime.now(timezone.utc):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No se puede registrar un marcaje en el futuro")
-
+def _marcajes_del_dia(usuario_id: UUID, fecha_hora: datetime, db: Session):
     dia = db.execute(select(func.date(literal(fecha_hora, DateTime(timezone=True))))).scalar()
-    del_dia = db.query(RegistroAsistencia).filter(
+    return db.query(RegistroAsistencia).filter(
         RegistroAsistencia.usuario_id == usuario_id,
+        RegistroAsistencia.anulado.is_(False),
         func.date(RegistroAsistencia.fecha_hora) == dia,
     )
+
+
+def validar_correccion(
+    usuario_id: UUID, tipo: AsistenciaTipoEnum, fecha_hora: datetime, db: Session, fin_descanso: Optional[datetime] = None
+) -> None:
+    """
+    Se comprueba contra los marcajes vecinos del mismo día: el resultado debe ser una jornada posible.
+    Con fin_descanso se agrega el descanso completo, como un solo paso.
+    """
+    ultimo_momento = fin_descanso or fecha_hora
+    if ultimo_momento > datetime.now(timezone.utc):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No se puede registrar un marcaje en el futuro")
+
+    del_dia = _marcajes_del_dia(usuario_id, fecha_hora, db)
     anterior = (
         del_dia.filter(RegistroAsistencia.fecha_hora <= fecha_hora)
         .order_by(RegistroAsistencia.fecha_hora.desc()).first()
@@ -96,10 +107,37 @@ def validar_correccion(usuario_id: UUID, tipo: AsistenciaTipoEnum, fecha_hora: d
     if tipo not in SIGUIENTES[previo]:
         contexto = f"después de {NOMBRES[previo]}" if previo else "como primer marcaje del día"
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"No puede haber {NOMBRES[tipo]} {contexto}")
-    if siguiente and siguiente.tipo_evento not in SIGUIENTES[tipo]:
+
+    ultimo_tipo = tipo
+    if fin_descanso:
+        if siguiente and siguiente.fecha_hora <= fin_descanso:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"El descanso no puede abarcar {NOMBRES[siguiente.tipo_evento]}")
+        ultimo_tipo = FIN_DESCANSO
+    if siguiente and siguiente.tipo_evento not in SIGUIENTES[ultimo_tipo]:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"No puede haber {NOMBRES[tipo]} antes de {NOMBRES[siguiente.tipo_evento]}",
+            detail=f"No puede haber {NOMBRES[ultimo_tipo]} antes de {NOMBRES[siguiente.tipo_evento]}",
+        )
+
+
+def validar_anulacion(registro: RegistroAsistencia, db: Session) -> None:
+    """Sin este marcaje, la jornada debe seguir siendo posible."""
+    if registro.anulado:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Este marcaje ya está anulado")
+    del_dia = _marcajes_del_dia(registro.usuario_id, registro.fecha_hora, db).filter(RegistroAsistencia.id != registro.id)
+    anterior = (
+        del_dia.filter(RegistroAsistencia.fecha_hora <= registro.fecha_hora)
+        .order_by(RegistroAsistencia.fecha_hora.desc()).first()
+    )
+    siguiente = (
+        del_dia.filter(RegistroAsistencia.fecha_hora > registro.fecha_hora)
+        .order_by(RegistroAsistencia.fecha_hora).first()
+    )
+    previo = anterior.tipo_evento if anterior else None
+    if siguiente and siguiente.tipo_evento not in SIGUIENTES[previo]:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"No se puede anular: quedaría {NOMBRES[siguiente.tipo_evento]} sin el marcaje que le corresponde antes. Anula primero los marcajes posteriores.",
         )
 
 
@@ -110,7 +148,7 @@ def jornadas_sin_salida(db: Session) -> List[RegistroAsistencia]:
         partition_by=(RegistroAsistencia.usuario_id, dia),
         order_by=RegistroAsistencia.fecha_hora.desc(),
     ).label("orden")
-    ultimos = select(RegistroAsistencia.id, orden).subquery()
+    ultimos = select(RegistroAsistencia.id, orden).where(RegistroAsistencia.anulado.is_(False)).subquery()
     return (
         db.query(RegistroAsistencia)
         .join(ultimos, ultimos.c.id == RegistroAsistencia.id)

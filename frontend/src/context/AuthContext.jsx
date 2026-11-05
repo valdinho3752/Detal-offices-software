@@ -53,6 +53,15 @@ export function AuthProvider({ children }) {
     return formatted;
   };
 
+  // Tras cambiar la contraseña, las sesiones anteriores dejan de servir: esta sigue con el token nuevo
+  const actualizarSesion = async (nuevoToken) => {
+    localStorage.setItem('token', nuevoToken);
+    const formatted = formatUser(await api.getMe());
+    setUser(formatted);
+    localStorage.setItem('user', JSON.stringify(formatted));
+    setToken(nuevoToken);
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -72,6 +81,7 @@ export function AuthProvider({ children }) {
     loading,
     login,
     logout,
+    actualizarSesion,
     isAuthenticated: !!token,
     isAdmin: rol === 'ADMIN',
     isDoctor: rol === 'DOCTOR',
