@@ -16,11 +16,13 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import PacienteSearchInput from '../components/PacienteSearchInput';
+import CobrosCitaPanel from '../components/CobrosCitaPanel';
 
 
 export default function CobranzasView() {
   const [searchParams] = useSearchParams();
   const pacienteIdParam = searchParams.get('paciente_id');
+  const cobroIdParam = searchParams.get('cobro');
 
   const [pacientes, setPacientes] = useState([]);
   const [doctores, setDoctores] = useState([]);
@@ -97,6 +99,24 @@ export default function CobranzasView() {
       loadSaldo();
     } catch (err) {
       setError(err.message || 'Error al procesar cobro');
+    }
+  };
+
+  const avisarCobro = (mensaje, esError = false) => {
+    if (esError) {
+      setError(mensaje);
+      return;
+    }
+    setSuccess(mensaje);
+    setTimeout(() => setSuccess(''), 4000);
+  };
+
+  const alCerrarCobroCita = (pacienteId, mensaje) => {
+    avisarCobro(mensaje);
+    if (pacienteId === selectedPacienteId) {
+      loadSaldo();
+    } else {
+      setSelectedPacienteId(pacienteId);
     }
   };
 
@@ -233,6 +253,13 @@ export default function CobranzasView() {
           </div>
         </div>
       </div>
+
+      <CobrosCitaPanel
+        cobroInicialId={cobroIdParam}
+        doctores={doctores}
+        onCobroCerrado={alCerrarCobroCita}
+        onAviso={avisarCobro}
+      />
 
       {/* Historial de Pagos y Recibos Emitidos */}
       <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-5 space-y-4 shadow-sm">

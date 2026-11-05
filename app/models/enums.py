@@ -168,3 +168,8 @@ class TipoPagoEmpleadoEnum(str, enum.Enum):
 class EstadoCajaEnum(str, enum.Enum):
     ABIERTA = "ABIERTA"
     CERRADA = "CERRADA"
+
+class EstadoCobroCitaEnum(str, enum.Enum):
+    PENDIENTE = "PENDIENTE"
+    PAGADO = "PAGADO"
+    ANULADO = "ANULADO"

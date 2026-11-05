@@ -8,6 +8,7 @@ from app.database import get_db
 from app.models import Cita, EstadoCitaEnum, Usuario, Doctor, RolCodigoEnum, AuditoriaLog, AuditoriaAccionEnum
 from app.core.dependencies import require_permission
 from app.schemas.cita import CitaCreate, CitaUpdate, CitaSillonControl, CitaResponse
+from app.services.cobros_cita import crear_cobro_de_cita
 from app.services.tratamiento_clinico import (
     crear_evolucion_de_cita, describir_diagnostico, registrar_tratamiento_realizado
 )
@@ -199,7 +200,7 @@ def _finalizar_tratamientos_cita(cita: Cita, usuario_id: UUID, db: Session):
     """
     Se ejecuta una sola vez, cuando la cita pasa a FINALIZADA: marca los ítems asignados
     (cita.item_plan_id y los incluidos en notas_adicionales) como COMPLETADO, los registra
-    en el odontograma de evolución y crea la evolución clínica de la cita.
+    en el odontograma de evolución y crea la evolución clínica y la cuenta de cobro de la cita.
     """
     from app.models.tratamiento import ItemPlanTratamiento
     from app.models.enums import EstadoItemPlanEnum
@@ -229,6 +230,8 @@ def _finalizar_tratamientos_cita(cita: Cita, usuario_id: UUID, db: Session):
             registrar_tratamiento_realizado(cita.paciente_id, cita.doctor_id, item, db)
 
     crear_evolucion_de_cita(cita, items, diagnosticos, usuario_id, db)
+    db.flush()
+    crear_cobro_de_cita(cita, items, usuario_id, db)
     db.flush()
 
 @router.put("/{id}", response_model=CitaResponse)

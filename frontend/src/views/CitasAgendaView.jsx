@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import ErrorModal from '../components/ErrorModal';
 import { puedeModificarCita } from '../config/accesos';
+import { EnlaceCobroCita } from '../components/CobrosCitaPanel';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -1271,7 +1272,7 @@ export default function CitasAgendaView() {
                                 <div
                                   onClick={(e) => e.stopPropagation()}
                                   style={puedeAvanzarCita(citaIniciando) || citaIniciando.estado === 'FINALIZADA' ? undefined : { display: 'none' }}
-                                  className="pt-2 mt-2 border-t border-slate-200/80 dark:border-slate-700/60 flex items-center gap-1.5"
+                                  className="pt-2 mt-2 border-t border-slate-200/80 dark:border-slate-700/60 flex flex-wrap items-center gap-1.5"
                                 >
                                   {(citaIniciando.estado === 'PROGRAMADA' || citaIniciando.estado === 'CONFIRMADA') && (
                                     <button
@@ -1301,6 +1302,9 @@ export default function CitasAgendaView() {
                                     <div className="w-full text-center text-xs font-semibold text-emerald-700 dark:text-emerald-400 flex items-center justify-center gap-1 py-0.5">
                                       <CheckCircle2 className="w-3.5 h-3.5" /> Atención Concluida
                                     </div>
+                                  )}
+                                  {citaIniciando.estado === 'FINALIZADA' && tienePermiso('CAJA_PAGOS') && (
+                                    <EnlaceCobroCita cita={citaIniciando} />
                                   )}
                                 </div>
                               </div>

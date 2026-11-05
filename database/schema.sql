@@ -219,6 +219,13 @@ CREATE TYPE estado_caja_enum AS ENUM (
     'CERRADA'
 );
 
+-- Estado de la cuenta de cobro de una cita
+CREATE TYPE estado_cobro_cita_enum AS ENUM (
+    'PENDIENTE',
+    'PAGADO',
+    'ANULADO'
+);
+
 
 -- ==============================================================================
 -- 2. CONTROL DE ACCESO (RBAC) Y USUARIOS
@@ -553,6 +560,28 @@ CREATE TABLE cajas_sesiones (
     observaciones TEXT
 );
 
+-- Cuenta que se crea al finalizar una cita y se puede editar hasta confirmar el pago
+CREATE TABLE cobros_cita (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    cita_id UUID UNIQUE REFERENCES citas(id) ON DELETE SET NULL,
+    paciente_id UUID NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
+    doctor_id UUID NOT NULL REFERENCES doctores(id),
+    estado estado_cobro_cita_enum NOT NULL DEFAULT 'PENDIENTE',
+    motivo_cierre TEXT,
+    cerrado_por_usuario_id UUID REFERENCES usuarios(id) ON DELETE SET NULL,
+    fecha_cierre TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE TABLE cobros_cita_lineas (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    cobro_id UUID NOT NULL REFERENCES cobros_cita(id) ON DELETE CASCADE,
+    item_plan_id UUID REFERENCES items_plan_tratamiento(id) ON DELETE SET NULL,
+    concepto VARCHAR(255) NOT NULL,
+    monto NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+    costo_referencia NUMERIC(12, 2)
+);
+
 CREATE TABLE pagos (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     paciente_id UUID NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
@@ -565,6 +594,7 @@ CREATE TABLE pagos (
     metodo_pago metodo_pago_enum NOT NULL DEFAULT 'EFECTIVO',
     referencia_comprobante VARCHAR(150),
     es_cobro_directo BOOLEAN NOT NULL DEFAULT false, -- Consulta cobrada sin plan: no afecta el saldo de los planes
+    cobro_cita_id UUID REFERENCES cobros_cita(id) ON DELETE SET NULL,
     fecha_hora TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     observaciones TEXT
 );
@@ -649,6 +679,9 @@ CREATE INDEX idx_pagos_paciente ON pagos(paciente_id);
 CREATE INDEX idx_pagos_caja_sesion ON pagos(caja_sesion_id);
 CREATE INDEX idx_pagos_doctor_comision ON pagos(doctor_comision_id);
 CREATE INDEX idx_egresos_caja_sesion ON egresos_caja(caja_sesion_id);
+CREATE INDEX idx_cobros_cita_estado ON cobros_cita(estado);
+CREATE INDEX idx_cobros_cita_paciente ON cobros_cita(paciente_id);
+CREATE INDEX idx_cobros_cita_lineas_cobro ON cobros_cita_lineas(cobro_id);
 
 -- Órdenes de prótesis
 CREATE INDEX idx_ordenes_protesis_paciente ON ordenes_laboratorio_protesis(paciente_id);

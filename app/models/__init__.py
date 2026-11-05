@@ -9,6 +9,7 @@ from app.models.cita import Cita
 from app.models.visita import VisitaEvolucion, ObservacionEvolucion
 from app.models.radiografia import RadiografiaEstudio
 from app.models.caja import CajaSesion, Pago, PagoEmpleado, EgresoCaja
+from app.models.cobro_cita import CobroCita, CobroCitaLinea
 from app.models.protesis import OrdenLaboratorioProtesis
 
 __all__ = [
@@ -19,7 +20,7 @@ __all__ = [
     "CategoriaTratamientoEnum", "EstadoPlanEnum", "EstadoItemPlanEnum", "EstadoCitaEnum",
     "TipoEstudioImagenEnum", "TipoTrabajoProtesisEnum", "EstadoOrdenProtesisEnum",
     "MetodoPagoEnum", "TipoRemuneracionEnum", "CategoriaEgresoCajaEnum",
-    "TipoPagoEmpleadoEnum", "EstadoCajaEnum",
+    "TipoPagoEmpleadoEnum", "EstadoCajaEnum", "EstadoCobroCitaEnum",
     # Modelos
     "Rol", "Permiso", "RolPermiso", "Usuario", "UsuarioPermisoEspecial", "Doctor", "Asistente",
     "ContratoRemuneracion", "RegistroAsistencia", "AuditoriaLog",
@@ -27,6 +28,6 @@ __all__ = [
     "Odontograma", "PiezaDental", "HallazgoSuperficie",
     "CatalogoTratamiento", "PlanTratamiento", "ItemPlanTratamiento",
     "Cita", "VisitaEvolucion", "ObservacionEvolucion", "RadiografiaEstudio",
-    "CajaSesion", "Pago", "PagoEmpleado", "EgresoCaja",
+    "CajaSesion", "Pago", "PagoEmpleado", "EgresoCaja", "CobroCita", "CobroCitaLinea",
     "OrdenLaboratorioProtesis"
 ]

@@ -149,6 +149,14 @@ export const api = {
   registrarPago: (data) => request('/caja/pagos', { method: 'POST', body: JSON.stringify(data) }),
   registrarEgreso: (data) => request('/caja/egresos', { method: 'POST', body: JSON.stringify(data) }),
 
+  // ==================== COBROS DE CITAS ====================
+  getCobrosCita: (params = '') => request(`/cobros-cita/${params}`),
+  getCobroCita: (id) => request(`/cobros-cita/${id}`),
+  updateCobroCita: (id, data) => request(`/cobros-cita/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  confirmarCobroCita: (id, data) => request(`/cobros-cita/${id}/confirmar`, { method: 'POST', body: JSON.stringify(data) }),
+  cerrarCobroCitaSinPago: (id, motivo) =>
+    request(`/cobros-cita/${id}/cerrar-sin-pago`, { method: 'POST', body: JSON.stringify({ motivo }) }),
+
   // ==================== NÓMINA & COMISIONES (HU-12) ====================
   getContratos: () => request('/personal/contratos'),
   getComisionesDoctor: (doctorId) => request(`/empleados/comisiones-doctor/${doctorId}`),

@@ -32,3 +32,12 @@ class Cita(Base):
     item_plan = relationship("ItemPlanTratamiento", back_populates="citas")
     tratamiento = relationship("CatalogoTratamiento", backref="citas")
     visita = relationship("VisitaEvolucion", back_populates="cita", uselist=False)
+    cobro = relationship("CobroCita", back_populates="cita", uselist=False)
+
+    @property
+    def cobro_id(self):
+        return self.cobro.id if self.cobro else None
+
+    @property
+    def cobro_estado(self):
+        return self.cobro.estado if self.cobro else None

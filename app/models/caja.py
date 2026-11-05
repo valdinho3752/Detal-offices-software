@@ -43,6 +43,7 @@ class Pago(Base):
     metodo_pago = Column(ENUM(MetodoPagoEnum, name="metodo_pago_enum", create_type=False), default=MetodoPagoEnum.EFECTIVO, nullable=False)
     referencia_comprobante = Column(String(150), nullable=True)
     es_cobro_directo = Column(Boolean, default=False, nullable=False)
+    cobro_cita_id = Column(UUID(as_uuid=True), ForeignKey("cobros_cita.id", ondelete="SET NULL"), nullable=True)
     fecha_hora = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     observaciones = Column(Text, nullable=True)
 
@@ -52,6 +53,7 @@ class Pago(Base):
     caja_sesion = relationship("CajaSesion", back_populates="pagos")
     doctor_comision = relationship("Doctor")
     registrado_por = relationship("Usuario", foreign_keys=[registrado_por_usuario_id])
+    cobro_cita = relationship("CobroCita", back_populates="pagos")
 
 class PagoEmpleado(Base):
     __tablename__ = "pagos_empleados"

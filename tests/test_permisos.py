@@ -92,6 +92,11 @@ PROTECCION = {
     ("POST", "/caja/cerrar"): "CAJA_CIERRE",
     ("POST", "/caja/pagos"): "CAJA_PAGOS",
     ("POST", "/caja/egresos"): "CAJA_EGRESOS",
+    ("GET", "/cobros-cita/"): "CAJA_PAGOS",
+    ("GET", "/cobros-cita/{id}"): "CAJA_PAGOS",
+    ("PUT", "/cobros-cita/{id}"): "CAJA_PAGOS",
+    ("POST", "/cobros-cita/{id}/confirmar"): "CAJA_PAGOS",
+    ("POST", "/cobros-cita/{id}/cerrar-sin-pago"): "CAJA_PAGOS",
     ("GET", "/empleados/pagos"): SESION,  # Sin EMPLEADOS_READ devuelve solo lo propio
     ("POST", "/empleados/pagos"): "EMPLEADOS_PAGOS",
     ("GET", "/empleados/comisiones-doctor/{doctor_id}"): SESION,  # Solo las propias sin EMPLEADOS_READ

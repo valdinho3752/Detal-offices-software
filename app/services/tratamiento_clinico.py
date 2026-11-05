@@ -184,6 +184,15 @@ def describir_diagnostico(paciente_id: UUID, item: ItemPlanTratamiento, db: Sess
     return "; ".join(descripciones) or None
 
 
+def describir_procedimiento(item: ItemPlanTratamiento) -> str:
+    nombre = item.tratamiento.nombre if item.tratamiento else "Tratamiento"
+    superficie = normalizar_superficie(item.superficie)
+    detalle = f" - Pieza {item.pieza_fdi}" if item.pieza_fdi else ""
+    if item.pieza_fdi and superficie != SuperficieDentalEnum.GENERAL:
+        detalle += f" ({_texto_enum(superficie)})"
+    return f"{nombre}{detalle}"
+
+
 def crear_evolucion_de_cita(
     cita: Cita,
     items: List[ItemPlanTratamiento],
@@ -199,14 +208,7 @@ def crear_evolucion_de_cita(
     if db.query(VisitaEvolucion).filter(VisitaEvolucion.cita_id == cita.id).first():
         return None
 
-    procedimientos = []
-    for item in items:
-        nombre = item.tratamiento.nombre if item.tratamiento else "Tratamiento"
-        superficie = normalizar_superficie(item.superficie)
-        detalle = f" - Pieza {item.pieza_fdi}" if item.pieza_fdi else ""
-        if item.pieza_fdi and superficie != SuperficieDentalEnum.GENERAL:
-            detalle += f" ({_texto_enum(superficie)})"
-        procedimientos.append(f"{nombre}{detalle}")
+    procedimientos = [describir_procedimiento(item) for item in items]
 
     visita = VisitaEvolucion(
         paciente_id=cita.paciente_id,

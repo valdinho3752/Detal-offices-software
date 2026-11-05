@@ -2,7 +2,7 @@ from typing import Optional
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, model_validator
-from app.models.enums import EstadoCitaEnum
+from app.models.enums import EstadoCitaEnum, EstadoCobroCitaEnum
 from app.schemas.tratamiento import CatalogoTratamientoResponse
 
 class CitaBase(BaseModel):
@@ -146,6 +146,8 @@ class CitaResponse(CitaBase):
     duracion_sillon_minutos: Optional[int] = None
     estado: EstadoCitaEnum
     tratamiento: Optional[CatalogoTratamientoResponse] = None
+    cobro_id: Optional[UUID] = None
+    cobro_estado: Optional[EstadoCobroCitaEnum] = None
     created_at: datetime
     updated_at: datetime
 
