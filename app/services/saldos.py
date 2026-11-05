@@ -32,6 +32,7 @@ def calcular_saldo_paciente(paciente_id: UUID, db: Session) -> SaldoPaciente:
     pagado = db.query(func.coalesce(func.sum(Pago.monto), 0)).filter(
         Pago.paciente_id == paciente_id,
         Pago.es_cobro_directo.is_(False),
+        Pago.anulado.is_(False),
     ).scalar()
     return SaldoPaciente(Decimal(presupuestado), Decimal(pagado))
 
@@ -78,7 +79,9 @@ def validar_monto_cobro(paciente_id: UUID, plan_id, monto: Decimal, db: Session)
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Solo se puede cobrar sobre un plan de tratamiento aprobado"
             )
-        pagado_plan = db.query(func.coalesce(func.sum(Pago.monto), 0)).filter(Pago.plan_id == plan_id).scalar()
+        pagado_plan = db.query(func.coalesce(func.sum(Pago.monto), 0)).filter(
+            Pago.plan_id == plan_id, Pago.anulado.is_(False)
+        ).scalar()
         disponible_plan = Decimal(plan.costo_total) - Decimal(pagado_plan)
         if monto > disponible_plan:
             _rechazar(monto, disponible_plan, "este plan")

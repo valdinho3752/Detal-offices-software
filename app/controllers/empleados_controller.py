@@ -112,7 +112,8 @@ def calcular_comisiones_doctor(
 
     # Total recaudado por tratamientos asignados a este doctor
     total_cobrado = db.query(func.coalesce(func.sum(Pago.monto), 0)).filter(
-        Pago.doctor_comision_id == doctor.id
+        Pago.doctor_comision_id == doctor.id,
+        Pago.anulado.is_(False),
     ).scalar()
 
     comision_generada = float(total_cobrado) * (porcentaje / 100.0)

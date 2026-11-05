@@ -230,7 +230,7 @@ export default function DashboardView() {
                       <div>
                         <div className="text-sm font-semibold text-white">{pacienteNombre}</div>
                         <div className="text-xs text-slate-400">
-                          {cita.motivo || 'Consulta odontológica'} · Box: {cita.box_numero || '1'}
+                          {cita.motivo_consulta || 'Consulta odontológica'} · Box {(cita.notas_adicionales || '').match(/Box\s*(\d+)/)?.[1] || '1'}
                         </div>
                       </div>
                     </div>

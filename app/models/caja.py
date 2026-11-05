@@ -44,6 +44,10 @@ class Pago(Base):
     referencia_comprobante = Column(String(150), nullable=True)
     es_cobro_directo = Column(Boolean, default=False, nullable=False)
     cobro_cita_id = Column(UUID(as_uuid=True), ForeignKey("cobros_cita.id", ondelete="SET NULL"), nullable=True)
+    anulado = Column(Boolean, default=False, nullable=False)
+    motivo_anulacion = Column(Text, nullable=True)
+    fecha_anulacion = Column(DateTime(timezone=True), nullable=True)
+    anulado_por_usuario_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
     fecha_hora = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     observaciones = Column(Text, nullable=True)
 
@@ -85,6 +89,7 @@ class EgresoCaja(Base):
     usuario_autoriza_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id"), nullable=False)
     usuario_beneficiario_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
     pago_empleado_id = Column(UUID(as_uuid=True), ForeignKey("pagos_empleados.id", ondelete="SET NULL"), nullable=True)
+    pago_anulado_id = Column(UUID(as_uuid=True), ForeignKey("pagos.id", ondelete="SET NULL"), nullable=True)
     categoria = Column(ENUM(CategoriaEgresoCajaEnum, name="categoria_egreso_caja_enum", create_type=False), nullable=False)
     monto = Column(Numeric(12, 2), nullable=False)
     concepto_motivo = Column(String(255), nullable=False)

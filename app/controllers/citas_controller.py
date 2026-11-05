@@ -5,10 +5,11 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Cita, EstadoCitaEnum, Usuario, Doctor, RolCodigoEnum, AuditoriaLog, AuditoriaAccionEnum
+from app.models import Cita, Sillon, EstadoCitaEnum, Usuario, Doctor, RolCodigoEnum, AuditoriaLog, AuditoriaAccionEnum
 from app.core.dependencies import require_permission
 from app.schemas.cita import CitaCreate, CitaUpdate, CitaSillonControl, CitaResponse
 from app.services.cobros_cita import crear_cobro_de_cita
+from app.services.sillones import numero_sillon_de_notas
 from app.services.tratamiento_clinico import (
     crear_evolucion_de_cita, describir_diagnostico, registrar_tratamiento_realizado
 )
@@ -151,9 +152,7 @@ def _validar_puede_modificar(cita: Cita, usuario: Usuario) -> None:
         )
 
 def _box_de_cita(cita: Cita) -> int:
-    """El box se guarda en las notas; sin indicación, la agenda la muestra en el Box 1."""
-    coincidencia = re.search(r"Box\s*(\d+)", cita.notas_adicionales or "")
-    return int(coincidencia.group(1)) if coincidencia else 1
+    return numero_sillon_de_notas(cita.notas_adicionales)
 
 def _validar_horario_cita(cita: Cita, db: Session):
     """Comprueba que el horario sea coherente y que el doctor y el box estén libres en ese rango."""
@@ -161,6 +160,11 @@ def _validar_horario_cita(cita: Cita, db: Session):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="La hora de fin de la cita debe ser posterior a la hora de inicio"
+        )
+    if not db.query(Sillon.id).filter(Sillon.numero == _box_de_cita(cita), Sillon.activo.is_(True)).first():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"El Box {_box_de_cita(cita)} no existe o está desactivado. Elige otro sillón."
         )
 
     # El bloqueo evita que dos peticiones simultáneas reserven el mismo horario.

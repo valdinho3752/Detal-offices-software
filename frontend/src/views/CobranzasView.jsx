@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import PacienteSearchInput from '../components/PacienteSearchInput';
 import CobrosCitaPanel from '../components/CobrosCitaPanel';
+import { useAuth } from '../context/AuthContext';
 
 
 export default function CobranzasView() {
@@ -34,6 +35,12 @@ export default function CobranzasView() {
 
   // Modal registrar pago
   const [showModal, setShowModal] = useState(false);
+  const { tienePermiso } = useAuth();
+  const puedeAnular = tienePermiso('CAJA_ANULAR_PAGOS');
+  const [pagoAnular, setPagoAnular] = useState(null);
+  const [motivoAnulacion, setMotivoAnulacion] = useState('');
+  const [errorAnulacion, setErrorAnulacion] = useState('');
+  const [recargaCobros, setRecargaCobros] = useState(0);
   const [formPago, setFormPago] = useState({
     monto: '',
     medio_pago: 'EFECTIVO',
@@ -120,11 +127,26 @@ export default function CobranzasView() {
     }
   };
 
+  const confirmarAnulacion = async (e) => {
+    e.preventDefault();
+    setErrorAnulacion('');
+    try {
+      await api.anularPago(pagoAnular.id, motivoAnulacion.trim());
+      avisarCobro(pagoAnular.cobro_cita_id ? 'Pagos anulados: la cuenta de la cita volvió a quedar pendiente' : 'Pago anulado');
+      setPagoAnular(null);
+      setMotivoAnulacion('');
+      setRecargaCobros((n) => n + 1);
+      loadSaldo();
+    } catch (err) {
+      setErrorAnulacion(err.message || 'No se pudo anular el pago');
+    }
+  };
+
   const selectedPaciente = pacientes.find((p) => p.id === selectedPacienteId);
   const deuda = Number(saldoInfo?.saldo_pendiente || 0);
   const esDirecto = formPago.tipo_cobro === 'DIRECTO';
   const cobrosDirectos = (saldoInfo?.pagos || [])
-    .filter((p) => p.es_cobro_directo)
+    .filter((p) => p.es_cobro_directo && !p.anulado)
     .reduce((total, p) => total + Number(p.monto), 0);
 
   const abrirCobro = () => {
@@ -256,6 +278,7 @@ export default function CobranzasView() {
 
       <CobrosCitaPanel
         cobroInicialId={cobroIdParam}
+        recarga={recargaCobros}
         doctores={doctores}
         onCobroCerrado={alCerrarCobroCita}
         onAviso={avisarCobro}
@@ -296,11 +319,12 @@ export default function CobranzasView() {
                   <th className="py-3 px-4">Medio de Pago</th>
                   <th className="py-3 px-4">Observaciones</th>
                   <th className="py-3 px-4 text-right">Monto Pagado</th>
+                  {puedeAnular && <th className="py-3 px-4 text-right">Acciones</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-700/40 text-slate-700 dark:text-slate-300">
                 {saldoInfo.pagos.map((pago) => (
-                  <tr key={pago.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition">
+                  <tr key={pago.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/20 transition ${pago.anulado ? 'opacity-70' : ''}`}>
                     <td className="py-3 px-4 font-mono text-slate-500 dark:text-slate-400">
                       {pago.created_at ? new Date(pago.created_at).toLocaleString() : 'Fecha'}
                     </td>
@@ -311,16 +335,40 @@ export default function CobranzasView() {
                       <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-300 rounded font-semibold text-[11px]">
                         {pago.medio_pago}
                       </span>
+                      {pago.anulado && (
+                        <span className="ml-1.5 px-2 py-0.5 bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 rounded font-semibold text-[11px]">
+                          Anulado
+                        </span>
+                      )}
                       {pago.es_cobro_directo && (
                         <span className="ml-1.5 px-2 py-0.5 bg-sky-500/10 border border-sky-500/30 text-sky-700 dark:text-sky-300 rounded font-semibold text-[11px]">
                           Consulta directa
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-slate-500 dark:text-slate-400 italic">{pago.observaciones || '-'}</td>
-                    <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                    <td className="py-3 px-4 text-slate-500 dark:text-slate-400 italic">
+                      {pago.observaciones || '-'}
+                      {pago.anulado && <span className="block not-italic text-rose-700 dark:text-rose-300">Motivo de anulación: {pago.motivo_anulacion}</span>}
+                    </td>
+                    <td className={`py-3 px-4 text-right font-mono font-bold ${pago.anulado ? 'line-through text-slate-500 dark:text-slate-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                       ${Number(pago.monto).toFixed(2)}
                     </td>
+                    {puedeAnular && (
+                      <td className="py-3 px-4 text-right">
+                        {!pago.anulado && (
+                          <button
+                            onClick={() => {
+                              setErrorAnulacion('');
+                              setMotivoAnulacion('');
+                              setPagoAnular(pago);
+                            }}
+                            className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/30 text-xs font-semibold rounded-lg transition"
+                          >
+                            Anular
+                          </button>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -328,6 +376,44 @@ export default function CobranzasView() {
           </div>
         )}
       </div>
+
+      {/* Modal Anular Pago */}
+      {pagoAnular && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Anular pago de ${Number(pagoAnular.monto).toFixed(2)}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              {pagoAnular.cobro_cita_id
+                ? 'Este pago salió de la cuenta de una cita: se anulan todos los pagos de esa cuenta y vuelve a quedar pendiente.'
+                : 'El pago se conserva en el historial, deja de contar en el saldo y en las comisiones.'}
+              {pagoAnular.medio_pago === 'EFECTIVO' && ' El efectivo sale de la gaveta.'}
+            </p>
+            <form onSubmit={confirmarAnulacion} className="space-y-4">
+              <ErrorModal mensaje={errorAnulacion} />
+              <div>
+                <label htmlFor="anulacion-motivo" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Motivo de la anulación *</label>
+                <textarea
+                  id="anulacion-motivo"
+                  rows="2"
+                  required
+                  maxLength={500}
+                  value={motivoAnulacion}
+                  onChange={(e) => setMotivoAnulacion(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <button type="button" onClick={() => setPagoAnular(null)} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs transition">
+                  Volver
+                </button>
+                <button type="submit" className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition">
+                  Confirmar anulación
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal Registrar Abono */}
       {showModal && (

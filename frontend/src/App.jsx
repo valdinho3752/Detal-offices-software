@@ -21,6 +21,7 @@ import NominaComisionesView from './views/NominaComisionesView';
 import AuditoriaForenseView from './views/AuditoriaForenseView';
 import ReportesBIView from './views/ReportesBIView';
 import TratamientosCatalogoView from './views/TratamientosCatalogoView';
+import SillonesView from './views/SillonesView';
 import { puedeAcceder } from './config/accesos';
 
 function ProtectedRoute({ children }) {
@@ -66,6 +67,7 @@ const RUTAS = [
   ['auditoria', AuditoriaForenseView],
   ['reportes', ReportesBIView],
   ['tratamientos', TratamientosCatalogoView],
+  ['sillones', SillonesView],
 ];
 
 export default function App() {

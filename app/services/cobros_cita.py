@@ -37,7 +37,9 @@ def _resumen_lineas(cobro: CobroCita) -> dict:
 
 
 def _pagado_en_plan(plan_id: UUID, db: Session) -> Decimal:
-    return Decimal(db.query(func.coalesce(func.sum(Pago.monto), 0)).filter(Pago.plan_id == plan_id).scalar())
+    return Decimal(db.query(func.coalesce(func.sum(Pago.monto), 0)).filter(
+        Pago.plan_id == plan_id, Pago.anulado.is_(False)
+    ).scalar())
 
 
 def crear_cobro_de_cita(cita: Cita, items: List[ItemPlanTratamiento], usuario_id: UUID, db: Session) -> Optional[CobroCita]:

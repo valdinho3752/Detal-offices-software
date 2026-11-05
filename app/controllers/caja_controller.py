@@ -10,10 +10,11 @@ from app.models import (
     Usuario, RolCodigoEnum, AuditoriaLog, AuditoriaAccionEnum
 )
 from app.core.dependencies import get_current_user, require_permission, tiene_permiso
+from app.services.anulacion_pagos import anular_pago
 from app.services.saldos import validar_cobro_directo, validar_monto_cobro
 from app.schemas.caja import (
     CajaAperturaRequest, CajaCierreRequest, CajaSesionResponse,
-    PagoCreate, PagoResponse, EgresoCajaCreate, EgresoCajaResponse
+    PagoAnular, PagoCreate, PagoResponse, EgresoCajaCreate, EgresoCajaResponse
 )
 
 router = APIRouter(prefix="/caja", tags=["Caja Diaria y Finanzas"])
@@ -46,7 +47,7 @@ def obtener_estado_caja_actual(
     ingresos_por_metodo = db.query(
         Pago.metodo_pago,
         func.coalesce(func.sum(Pago.monto), 0).label("total")
-    ).filter(Pago.caja_sesion_id == caja.id).group_by(Pago.metodo_pago).all()
+    ).filter(Pago.caja_sesion_id == caja.id, Pago.anulado.is_(False)).group_by(Pago.metodo_pago).all()
 
     metodos_dict = {m.value: 0.0 for m in MetodoPagoEnum}
     for metodo, total in ingresos_por_metodo:
@@ -238,6 +239,23 @@ def registrar_pago_paciente(
     db.commit()
     db.refresh(nuevo_pago)
     return nuevo_pago
+
+@router.post("/pagos/{id}/anular", response_model=PagoResponse)
+def anular_pago_paciente(
+    id: UUID,
+    datos: PagoAnular,
+    current_user: Usuario = Depends(require_permission("CAJA_ANULAR_PAGOS")),
+    db: Session = Depends(get_db)
+):
+    """Anula el pago sin borrarlo: revierte la caja, devuelve la deuda y conserva el registro y su motivo."""
+    # El bloqueo evita que dos usuarios anulen el mismo pago y devuelvan el dinero dos veces
+    pago = db.query(Pago).filter(Pago.id == id).with_for_update().first()
+    if not pago:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pago no encontrado")
+    anular_pago(pago, datos.motivo, current_user.id, db)
+    db.commit()
+    db.refresh(pago)
+    return pago
 
 @router.post("/egresos", response_model=EgresoCajaResponse, status_code=status.HTTP_201_CREATED)
 def registrar_egreso_caja(

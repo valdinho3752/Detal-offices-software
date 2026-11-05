@@ -176,6 +176,10 @@ def consultar_saldo_paciente(
             "numero_comprobante": p.referencia_comprobante or f"REC-{str(p.id)[:8]}",
             "observaciones": p.observaciones,
             "es_cobro_directo": p.es_cobro_directo,
+            "cobro_cita_id": str(p.cobro_cita_id) if p.cobro_cita_id else None,
+            "anulado": p.anulado,
+            "motivo_anulacion": p.motivo_anulacion,
+            "fecha_anulacion": p.fecha_anulacion.isoformat() if p.fecha_anulacion else None,
             "created_at": p.fecha_hora.isoformat() if p.fecha_hora else None,
         }
         for p in pagos_db

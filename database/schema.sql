@@ -463,6 +463,15 @@ CREATE TABLE items_plan_tratamiento (
 -- 8. CITAS Y DURACIÓN EFECTIVA EN SILLÓN
 -- ==============================================================================
 
+CREATE TABLE sillones (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    numero INTEGER UNIQUE NOT NULL, -- Identifica al sillón en las citas; no cambia
+    nombre VARCHAR(100) NOT NULL,
+    especialidad VARCHAR(100),
+    activo BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
 CREATE TABLE citas (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     paciente_id UUID NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
@@ -595,6 +604,10 @@ CREATE TABLE pagos (
     referencia_comprobante VARCHAR(150),
     es_cobro_directo BOOLEAN NOT NULL DEFAULT false, -- Consulta cobrada sin plan: no afecta el saldo de los planes
     cobro_cita_id UUID REFERENCES cobros_cita(id) ON DELETE SET NULL,
+    anulado BOOLEAN NOT NULL DEFAULT false, -- Un pago anulado se conserva, pero deja de contar
+    motivo_anulacion TEXT,
+    fecha_anulacion TIMESTAMP WITH TIME ZONE,
+    anulado_por_usuario_id UUID REFERENCES usuarios(id) ON DELETE SET NULL,
     fecha_hora TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     observaciones TEXT
 );
@@ -621,6 +634,7 @@ CREATE TABLE egresos_caja (
     usuario_autoriza_id UUID NOT NULL REFERENCES usuarios(id),
     usuario_beneficiario_id UUID REFERENCES usuarios(id) ON DELETE SET NULL,
     pago_empleado_id UUID REFERENCES pagos_empleados(id) ON DELETE SET NULL,
+    pago_anulado_id UUID REFERENCES pagos(id) ON DELETE SET NULL, -- Devolución en efectivo: no es un gasto
     categoria categoria_egreso_caja_enum NOT NULL,
     monto NUMERIC(12, 2) NOT NULL,
     concepto_motivo VARCHAR(255) NOT NULL,

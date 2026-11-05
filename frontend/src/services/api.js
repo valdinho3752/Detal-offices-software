@@ -147,7 +147,14 @@ export const api = {
   abrirCaja: (data) => request('/caja/abrir', { method: 'POST', body: JSON.stringify(data) }),
   cerrarCaja: (data) => request('/caja/cerrar', { method: 'POST', body: JSON.stringify(data) }),
   registrarPago: (data) => request('/caja/pagos', { method: 'POST', body: JSON.stringify(data) }),
+  anularPago: (id, motivo) => request(`/caja/pagos/${id}/anular`, { method: 'POST', body: JSON.stringify({ motivo }) }),
   registrarEgreso: (data) => request('/caja/egresos', { method: 'POST', body: JSON.stringify(data) }),
+
+  // ==================== SILLONES ====================
+  getSillones: () => request('/sillones/'),
+  createSillon: (data) => request('/sillones/', { method: 'POST', body: JSON.stringify(data) }),
+  updateSillon: (id, data) => request(`/sillones/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteSillon: (id) => request(`/sillones/${id}`, { method: 'DELETE' }),
 
   // ==================== COBROS DE CITAS ====================
   getCobrosCita: (params = '') => request(`/cobros-cita/${params}`),
@@ -170,4 +177,11 @@ export const api = {
   getReporteDemanda: (limit = 10) => request(`/reportes/tratamientos-demanda?limit=${limit}`),
   getReporteProductividad: () => request('/reportes/productividad-doctores'),
   getReporteFinanciero: () => request('/reportes/resumen-financiero'),
+  getGraficoReporte: async (nombre, tema) => {
+    const res = await fetch(`${API_BASE}/reportes/graficos/${nombre}?tema=${tema}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    });
+    if (!res.ok) throw new Error('No se pudo generar el gráfico');
+    return res.blob();
+  },
 };

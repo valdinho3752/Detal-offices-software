@@ -1,8 +1,8 @@
-from typing import Optional
+from typing import Annotated, Optional
 from uuid import UUID
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 from app.models.enums import EstadoCajaEnum, MetodoPagoEnum, CategoriaEgresoCajaEnum
 
 class CajaAperturaRequest(BaseModel):
@@ -47,10 +47,18 @@ class PagoCreate(BaseModel):
     es_cobro_directo: bool = False
     observaciones: Optional[str] = None
 
+class PagoAnular(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    motivo: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
+
 class PagoResponse(PagoCreate):
     # Las respuestas no vuelven a validar montos: deben poder mostrar registros antiguos
     monto: Decimal
     id: UUID
+    anulado: bool = False
+    motivo_anulacion: Optional[str] = None
+    fecha_anulacion: Optional[datetime] = None
     caja_sesion_id: Optional[UUID] = None
     registrado_por_usuario_id: UUID
     fecha_hora: datetime

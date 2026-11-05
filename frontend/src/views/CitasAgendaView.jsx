@@ -139,6 +139,7 @@ export const getTratamientoConfig = (cita) => {
 };
 
 const ESTADOS_SIN_RESERVA = ['CANCELADA', 'NO_ASISTIO'];
+const COLORES_SILLON = ['bg-teal-500', 'bg-cyan-500', 'bg-indigo-500', 'bg-amber-500', 'bg-fuchsia-500', 'bg-emerald-500'];
 
 export default function CitasAgendaView() {
   const { user, isRecepcion, tienePermiso } = useAuth();
@@ -147,6 +148,7 @@ export default function CitasAgendaView() {
   const queryAction = searchParams.get('action');
 
   const [citas, setCitas] = useState([]);
+  const [sillones, setSillones] = useState([]);
   const [pacientes, setPacientes] = useState([]);
   const [doctores, setDoctores] = useState([]);
   const [catalogoTratamientos, setCatalogoTratamientos] = useState([]);
@@ -240,9 +242,8 @@ export default function CitasAgendaView() {
 
   const getCitaBox = (c) => {
     if (c.box_numero) return parseInt(c.box_numero);
-    if (c.notas_adicionales && c.notas_adicionales.includes('Box 2')) return 2;
-    if (c.notas_adicionales && c.notas_adicionales.includes('Box 3')) return 3;
-    return 1;
+    const coincidencia = (c.notas_adicionales || '').match(/Box\s*(\d+)/);
+    return coincidencia ? parseInt(coincidencia[1]) : 1;
   };
 
   const getCitaPacienteNombre = (c) => {
@@ -309,12 +310,14 @@ export default function CitasAgendaView() {
       if (selectedDoctorId) query += `&doctor_id=${selectedDoctorId}`;
       if (selectedCategoria) query += `&categoria=${selectedCategoria}`;
 
-      const [cRes, pRes, dRes, tRes] = await Promise.all([
+      const [cRes, pRes, dRes, tRes, sRes] = await Promise.all([
         api.getCitas(query),
         api.getPacientes('', 0, 100),
         api.getDoctores(),
         api.getCatalogoTratamientos(),
+        api.getSillones(),
       ]);
+      setSillones(Array.isArray(sRes) ? sRes : []);
 
       const listaPac = Array.isArray(pRes) ? pRes : [];
       const listaDoc = Array.isArray(dRes) ? dRes : [];
@@ -816,11 +819,17 @@ export default function CitasAgendaView() {
   });
 
   // Conjunto para rastrear celdas cubiertas por rowSpan en la matriz
-  const coveredSlotsByBox = {
-    1: new Set(),
-    2: new Set(),
-    3: new Set(),
-  };
+  // Sillones activos, más los retirados que todavía tengan citas ese día
+  const numerosConCitas = new Set(citasDelDia.map(getCitaBox));
+  const sillonesVisibles = [
+    ...sillones.filter((s) => s.activo || numerosConCitas.has(s.numero)),
+    ...[...numerosConCitas]
+      .filter((n) => !sillones.some((s) => s.numero === n))
+      .map((n) => ({ numero: n, nombre: `Box ${n}`, especialidad: null, activo: false })),
+  ].sort((a, b) => a.numero - b.numero);
+  const coveredSlotsByBox = Object.fromEntries(sillonesVisibles.map((s) => [s.numero, new Set()]));
+  const sillonesParaElegir = sillones.filter((s) => s.activo || String(s.numero) === String(formCita.box_numero));
+  const primerSillon = String(sillones.find((s) => s.activo)?.numero ?? 1);
 
   const getBadgeColor = (estado) => {
     switch (estado) {
@@ -912,7 +921,7 @@ export default function CitasAgendaView() {
                 selected_item_plan_ids: [],
                 item_plan_id: '',
                 tratamiento_id: '',
-                box_numero: '1',
+                box_numero: primerSillon,
                 fecha: selectedDateStr,
                 hora_inicio: '10:00',
                 hora_fin: '11:00',
@@ -1027,7 +1036,7 @@ export default function CitasAgendaView() {
                 Matriz Comparativa de Sillones Dentales
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Los 3 sillones sincronizados por hora en una sola matriz (07:00 a 22:00). Visualiza qué boxes están libres en el mismo horario.
+                Los {sillonesVisibles.length} sillones sincronizados por hora en una sola matriz (07:00 a 22:00). Visualiza qué boxes están libres en el mismo horario.
               </p>
             </div>
 
@@ -1101,39 +1110,21 @@ export default function CitasAgendaView() {
                   <th className="w-28 px-3 py-3.5 text-center text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 border-r border-slate-300 dark:border-slate-700 sticky left-0 z-30 bg-slate-100 dark:bg-slate-800">
                     Hora
                   </th>
-                  <th className="w-1/3 px-4 py-3.5 border-r border-slate-300 dark:border-slate-700">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-teal-500 shadow-sm" />
-                        Box 1 <span className="font-normal text-slate-500 dark:text-slate-400">(General)</span>
-                      </span>
-                      <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-300">
-                        {citasDelDia.filter((c) => getCitaBox(c) === 1 && ocupaHorario(c)).length} citas
-                      </span>
-                    </div>
-                  </th>
-                  <th className="w-1/3 px-4 py-3.5 border-r border-slate-300 dark:border-slate-700">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 shadow-sm" />
-                        Box 2 <span className="font-normal text-slate-500 dark:text-slate-400">(Cirugía)</span>
-                      </span>
-                      <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-300">
-                        {citasDelDia.filter((c) => getCitaBox(c) === 2 && ocupaHorario(c)).length} citas
-                      </span>
-                    </div>
-                  </th>
-                  <th className="w-1/3 px-4 py-3.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-sm" />
-                        Box 3 <span className="font-normal text-slate-500 dark:text-slate-400">(Ortodoncia)</span>
-                      </span>
-                      <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-300">
-                        {citasDelDia.filter((c) => getCitaBox(c) === 3 && ocupaHorario(c)).length} citas
-                      </span>
-                    </div>
-                  </th>
+                  {sillonesVisibles.map((sillon, indice) => (
+                    <th key={sillon.numero} className="min-w-[260px] px-4 py-3.5 border-r border-slate-300 dark:border-slate-700">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                          <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${COLORES_SILLON[indice % COLORES_SILLON.length]}`} />
+                          {sillon.nombre}
+                          {sillon.especialidad && <span className="font-normal text-slate-500 dark:text-slate-400">({sillon.especialidad})</span>}
+                          {!sillon.activo && <span className="font-normal text-slate-500 dark:text-slate-400">· Desactivado</span>}
+                        </span>
+                        <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                          {citasDelDia.filter((c) => getCitaBox(c) === sillon.numero && ocupaHorario(c)).length} citas
+                        </span>
+                      </div>
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -1164,7 +1155,7 @@ export default function CitasAgendaView() {
                       </td>
 
                       {/* Las 3 Columnas de Sillones en la misma fila */}
-                      {[1, 2, 3].map((boxNum) => {
+                      {sillonesVisibles.map(({ numero: boxNum }) => {
                         // Si este slot ya está cubierto por el rowSpan de una cita previa en este box, no renderizamos <td>
                         if (coveredSlotsByBox[boxNum].has(slot.index)) {
                           return null;
@@ -1381,7 +1372,7 @@ export default function CitasAgendaView() {
                     setFormCita({
                       paciente_id: formCita.paciente_id || pacientes[0]?.id || '',
                       doctor_id: selectedDoctorId || formCita.doctor_id || user?.doctor_id || doctores[0]?.id || '',
-                      box_numero: '1',
+                      box_numero: primerSillon,
                       fecha: item.dateStr,
                       hora_inicio: '10:00',
                       hora_fin: '11:00',
@@ -1557,9 +1548,11 @@ export default function CitasAgendaView() {
                     onChange={(e) => setFormCita({ ...formCita, box_numero: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-primary-500"
                   >
-                    <option value="1">Box 1 (General)</option>
-                    <option value="2">Box 2 (Cirugía)</option>
-                    <option value="3">Box 3 (Ortodoncia)</option>
+                    {sillonesParaElegir.map((s) => (
+                      <option key={s.numero} value={String(s.numero)}>
+                        {s.nombre}{s.especialidad ? ` (${s.especialidad})` : ''}{s.activo ? '' : ' · Desactivado'}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

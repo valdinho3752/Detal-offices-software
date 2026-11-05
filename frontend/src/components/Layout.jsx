@@ -28,6 +28,7 @@ import {
   Sun,
   Moon,
   BookOpen,
+  Armchair,
 } from 'lucide-react';
 import { puedeAcceder } from '../config/accesos';
 import CajaBloqueoBarrier from './CajaBloqueoBarrier';
@@ -90,6 +91,7 @@ export default function Layout({ children }) {
     { path: '/auditoria', label: 'Auditoría Forense', icon: ShieldCheck, badge: 'HU-13' },
     { path: '/reportes', label: 'Inteligencia de Negocio', icon: BarChart3, badge: 'HU-14' },
     { path: '/tratamientos', label: 'Catálogo de Tratamientos', icon: BookOpen, badge: 'Admin' },
+    { path: '/sillones', label: 'Sillones', icon: Armchair, badge: 'Admin' },
     { path: '/usuarios', label: 'Usuarios & Roles RBAC', icon: UserCog, badge: 'HU-01/02' },
   ];
   const menuItems = todasLasOpciones.filter((item) => puedeAcceder(item.path, auth));

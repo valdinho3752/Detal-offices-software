@@ -1,8 +1,8 @@
-from typing import List, Optional
+from typing import List, Literal, Optional
 from uuid import UUID
 from datetime import datetime
 from decimal import Decimal
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -13,6 +13,7 @@ from app.models import (
     Pago, EgresoCaja, MetodoPagoEnum, CategoriaEgresoCajaEnum
 )
 from app.core.dependencies import require_permission
+from app.services.graficos import grafico_productividad_doctores, grafico_tratamientos_demanda
 from app.schemas.reporte import (
     ReporteTratamientosDemandaResponse, TratamientoDemandaItem,
     ReporteProductividadDoctoresResponse, ProductividadDoctorItem,
@@ -141,6 +142,32 @@ def reporte_productividad_sillon_doctores(
         doctores=items
     )
 
+def _imagen_png(contenido: bytes) -> Response:
+    return Response(content=contenido, media_type="image/png", headers={"Cache-Control": "no-store"})
+
+@router.get("/graficos/tratamientos-demanda", response_class=Response)
+def grafico_demanda(
+    tema: Literal["claro", "oscuro"] = "claro",
+    fecha_desde: Optional[datetime] = None,
+    fecha_hasta: Optional[datetime] = None,
+    limit: int = Query(default=10, ge=1, le=20),
+    current_user: Usuario = Depends(require_permission("REPORTES_READ")),
+    db: Session = Depends(get_db)
+):
+    reporte = reporte_tratamientos_mayor_demanda(fecha_desde, fecha_hasta, limit, current_user, db)
+    return _imagen_png(grafico_tratamientos_demanda(reporte.ranking_tratamientos, tema))
+
+@router.get("/graficos/productividad-doctores", response_class=Response)
+def grafico_productividad(
+    tema: Literal["claro", "oscuro"] = "claro",
+    fecha_desde: Optional[datetime] = None,
+    fecha_hasta: Optional[datetime] = None,
+    current_user: Usuario = Depends(require_permission("REPORTES_READ")),
+    db: Session = Depends(get_db)
+):
+    reporte = reporte_productividad_sillon_doctores(None, fecha_desde, fecha_hasta, current_user, db)
+    return _imagen_png(grafico_productividad_doctores(reporte.doctores, tema))
+
 @router.get("/resumen-financiero", response_model=ResumenFinancieroResponse)
 def reporte_resumen_financiero_global(
     fecha_desde: Optional[datetime] = None,
@@ -152,7 +179,7 @@ def reporte_resumen_financiero_global(
     Balance financiero consolidado: ingresos por método de pago vs egresos operacionales.
     """
     # 1. Ingresos
-    pagos_query = db.query(Pago.metodo_pago, func.coalesce(func.sum(Pago.monto), 0).label("subtotal"))
+    pagos_query = db.query(Pago.metodo_pago, func.coalesce(func.sum(Pago.monto), 0).label("subtotal")).filter(Pago.anulado.is_(False))
     if fecha_desde:
         pagos_query = pagos_query.filter(Pago.fecha_hora >= fecha_desde)
     if fecha_hasta:
@@ -167,7 +194,8 @@ def reporte_resumen_financiero_global(
         total_ingresos += val
 
     # 2. Egresos
-    egresos_query = db.query(EgresoCaja.categoria, func.coalesce(func.sum(EgresoCaja.monto), 0).label("subtotal"))
+    # La devolución de un pago anulado no es un gasto: ese ingreso ya no cuenta
+    egresos_query = db.query(EgresoCaja.categoria, func.coalesce(func.sum(EgresoCaja.monto), 0).label("subtotal")).filter(EgresoCaja.pago_anulado_id.is_(None))
     if fecha_desde:
         egresos_query = egresos_query.filter(EgresoCaja.fecha_hora >= fecha_desde)
     if fecha_hasta:

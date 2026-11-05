@@ -22,7 +22,7 @@ const lineasDe = (cobro) =>
 
 const fechaCorta = (valor) => (valor ? new Date(valor).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Sin fecha');
 
-export default function CobrosCitaPanel({ cobroInicialId, doctores, onCobroCerrado, onAviso }) {
+export default function CobrosCitaPanel({ cobroInicialId, recarga, doctores, onCobroCerrado, onAviso }) {
   const [pendientes, setPendientes] = useState([]);
   const [cobro, setCobro] = useState(null);
   const [lineas, setLineas] = useState([]);
@@ -43,7 +43,7 @@ export default function CobrosCitaPanel({ cobroInicialId, doctores, onCobroCerra
 
   useEffect(() => {
     cargar();
-  }, []);
+  }, [recarga]);
 
   const abrir = (datos) => {
     setError('');

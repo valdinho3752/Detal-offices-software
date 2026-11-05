@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import SessionLocal
-from app.models import Rol, RolCodigoEnum, Usuario, Permiso, RolPermiso, Doctor
+from app.models import Rol, RolCodigoEnum, Usuario, Permiso, RolPermiso, Doctor, Sillon
 from app.core.security import hash_password
 
 def seed_database():
@@ -59,6 +59,7 @@ def seed_database():
             ("CAJA", "UPDATE", "CAJA_CIERRE", "Cerrar caja y registrar arqueo con descuadre"),
             ("CAJA", "CREATE", "CAJA_PAGOS", "Cobrar a pacientes (efectivo, tarjeta, transferencia)"),
             ("CAJA", "CREATE", "CAJA_EGRESOS", "Registrar salidas de dinero físico de la gaveta"),
+            ("CAJA", "UPDATE", "CAJA_ANULAR_PAGOS", "Anular pagos de pacientes indicando el motivo"),
 
             # Módulo Personal y Nómina
             ("PERSONAL", "CREATE", "ASISTENCIA_FICHAR", "Fichar entradas, salidas y descansos"),
@@ -183,6 +184,15 @@ def seed_database():
             print("-> Perfil Clínico Dual asignado al Administrador (Doctor ID generado).")
         else:
             print("-> Administrador ya cuenta con perfil de Doctor.")
+
+        # 5. Sillones iniciales de la agenda
+        if not db.query(Sillon.id).first():
+            db.add_all([
+                Sillon(numero=1, nombre="Box 1", especialidad="General"),
+                Sillon(numero=2, nombre="Box 2", especialidad="Cirugía"),
+                Sillon(numero=3, nombre="Box 3", especialidad="Ortodoncia"),
+            ])
+            db.commit()
 
         print("¡Seed de Roles y Permisos completado con total éxito!")
     except Exception as e:
