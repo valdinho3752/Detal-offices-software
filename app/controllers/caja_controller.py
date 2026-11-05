@@ -152,7 +152,10 @@ def cerrar_caja(
 
     monto_contado = datos.total_efectivo_contado if datos.monto_cierre_real is None else datos.monto_cierre_real
     if monto_contado is None:
-        monto_contado = Decimal("0.00")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Debes indicar el efectivo contado para cerrar la caja"
+        )
 
     saldo_esperado = caja.monto_inicial_fondo + caja.total_ingresos_efectivo - caja.total_egresos_efectivo
     descuadre = monto_contado - saldo_esperado
@@ -185,6 +188,11 @@ def registrar_pago_paciente(
     db: Session = Depends(get_db)
 ):
     caja = db.query(CajaSesion).filter(CajaSesion.estado == EstadoCajaEnum.ABIERTA).first()
+    if datos.metodo_pago == MetodoPagoEnum.EFECTIVO and not caja:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No se puede registrar un cobro en efectivo si no hay una caja abierta"
+        )
 
     nuevo_pago = Pago(
         **datos.model_dump(),

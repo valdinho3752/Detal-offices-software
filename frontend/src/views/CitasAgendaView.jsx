@@ -315,7 +315,8 @@ export default function CitasAgendaView() {
       const listaDoc = Array.isArray(dRes) ? dRes : [];
       const listaTrat = Array.isArray(tRes) ? tRes : [];
 
-      setCitas(Array.isArray(cRes) ? cRes : []);
+      // Una cita cancelada se conserva en el historial, pero libera el calendario
+      setCitas((Array.isArray(cRes) ? cRes : []).filter((c) => c.estado !== 'CANCELADA'));
       setPacientes(listaPac);
       setDoctores(listaDoc);
       setCatalogoTratamientos(listaTrat);
@@ -492,19 +493,19 @@ export default function CitasAgendaView() {
     }
   };
 
-  // Eliminar cita existente
+  // Cancelar cita existente (se conserva en el historial)
   const handleDeleteCita = async () => {
     if (!editingCitaId) return;
-    if (!window.confirm('¿Estás seguro de cancelar y eliminar esta cita odontológica?')) return;
+    if (!window.confirm('¿Seguro que deseas cancelar esta cita? Quedará en el historial y el horario se liberará.')) return;
     try {
       await api.deleteCita(editingCitaId);
-      setSuccess('Cita eliminada correctamente');
+      setSuccess('Cita cancelada correctamente');
       setShowModal(false);
       setEditingCitaId(null);
       setTimeout(() => setSuccess(''), 3000);
       loadCitas();
     } catch (err) {
-      setError(err.message || 'Error al eliminar cita');
+      setError(err.message || 'Error al cancelar cita');
     }
   };
 
@@ -1813,7 +1814,7 @@ export default function CitasAgendaView() {
                     className="px-3 py-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/30 text-xs font-semibold rounded-xl transition flex items-center gap-1.5"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    Eliminar
+                    Cancelar Cita
                   </button>
                 ) : (
                   <div />

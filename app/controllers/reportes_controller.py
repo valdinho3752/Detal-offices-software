@@ -112,8 +112,8 @@ def reporte_productividad_sillon_doctores(
         canceladas = citas_query.filter(Cita.estado == EstadoCitaEnum.CANCELADA).count()
 
         tiempo_total_min = (
-            db.query(func.coalesce(func.sum(Cita.duracion_sillon_minutos), 0))
-            .filter(Cita.doctor_id == doc.id, Cita.estado == EstadoCitaEnum.FINALIZADA)
+            citas_query.filter(Cita.estado == EstadoCitaEnum.FINALIZADA)
+            .with_entities(func.coalesce(func.sum(Cita.duracion_sillon_minutos), 0))
             .scalar()
         )
 

@@ -17,6 +17,17 @@ import {
 import PacienteSearchInput from '../components/PacienteSearchInput';
 
 
+// Valores aceptados por la API (TipoEstudioImagenEnum) y su nombre en pantalla
+const TIPOS_ESTUDIO = {
+  PERIAPICAL: 'Periapical',
+  PANORAMICA: 'Panorámica (Ortopanto)',
+  ALETA_MORDIDA: 'Bitewing (Aleta)',
+  OCLUSAL: 'Oclusal',
+  CEFALOMETRICA: 'Cefalométrica',
+  CONE_BEAM_CBCT: 'CBCT Tomografía 3D',
+  FOTOGRAFIA_CLINICA: 'Fotografía Clínica',
+};
+
 export default function VisorRadiografiasView() {
   const [searchParams] = useSearchParams();
   const pacienteIdParam = searchParams.get('paciente_id');
@@ -86,9 +97,12 @@ export default function VisorRadiografiasView() {
     try {
       await api.createRadiografia({
         paciente_id: selectedPacienteId,
-        tipo: rxForm.tipo,
+        tipo_estudio: rxForm.tipo,
+        titulo: rxForm.pieza_fdi
+          ? `${TIPOS_ESTUDIO[rxForm.tipo]} - Pieza ${rxForm.pieza_fdi}`
+          : TIPOS_ESTUDIO[rxForm.tipo],
         pieza_fdi: rxForm.pieza_fdi ? parseInt(rxForm.pieza_fdi) : null,
-        url_archivo: rxForm.url_archivo || 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&q=80&w=800',
+        archivo_url: rxForm.url_archivo.trim(),
         informe_diagnostico: rxForm.informe_diagnostico,
         fecha_toma: rxForm.fecha_toma,
       });
@@ -217,8 +231,8 @@ export default function VisorRadiografiasView() {
                     }}
                   >
                     <img
-                      src={rx.url_archivo}
-                      alt={rx.tipo}
+                      src={rx.archivo_url}
+                      alt={rx.titulo}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     />
                     <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
@@ -228,7 +242,7 @@ export default function VisorRadiografiasView() {
                     </div>
 
                     <div className="absolute top-2 left-2 px-2 py-0.5 bg-slate-950/80 backdrop-blur rounded text-[10px] font-bold text-white uppercase border border-slate-700">
-                      {rx.tipo}
+                      {TIPOS_ESTUDIO[rx.tipo_estudio] || rx.tipo_estudio}
                     </div>
 
                     {rx.pieza_fdi && (
@@ -284,7 +298,7 @@ export default function VisorRadiografiasView() {
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-4xl p-6 shadow-2xl flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
               <div className="flex items-center gap-3">
-                <span className="text-sm font-bold text-slate-900 dark:text-white uppercase">{selectedRx.tipo}</span>
+                <span className="text-sm font-bold text-slate-900 dark:text-white uppercase">{TIPOS_ESTUDIO[selectedRx.tipo_estudio] || selectedRx.tipo_estudio}</span>
                 {selectedRx.pieza_fdi && (
                   <span className="px-2 py-0.5 bg-primary-600 text-white rounded text-xs font-mono font-bold">
                     Pieza FDI #{selectedRx.pieza_fdi}
@@ -316,7 +330,7 @@ export default function VisorRadiografiasView() {
             {/* Imagen Ampliada */}
             <div className="flex-1 min-h-[350px] bg-black rounded-xl overflow-hidden flex items-center justify-center my-4 relative">
               <img
-                src={selectedRx.url_archivo}
+                src={selectedRx.archivo_url}
                 alt="Radiografía Dental"
                 className={`max-h-[500px] w-auto object-contain transition duration-200 ${
                   invertColors ? 'filter invert contrast-125' : ''
@@ -355,12 +369,9 @@ export default function VisorRadiografiasView() {
                     onChange={(e) => setRxForm({ ...rxForm, tipo: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
-                    <option value="PERIAPICAL" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Periapical</option>
-                    <option value="PANORAMICA" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Panorámica (Ortopanto)</option>
-                    <option value="BITEWING" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Bitewing (Aleta)</option>
-                    <option value="OCLUSAL" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Oclusal</option>
-                    <option value="CBCT_3D" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">CBCT Tomografía 3D</option>
-                    <option value="FOTO_INTRAORAL" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Fotografía Clínica</option>
+                    {Object.entries(TIPOS_ESTUDIO).map(([valor, nombre]) => (
+                      <option key={valor} value={valor} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{nombre}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -377,11 +388,11 @@ export default function VisorRadiografiasView() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">URL o Archivo de Imagen *</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">URL de la Imagen *</label>
                 <input
-                  type="text"
+                  type="url"
                   required
-                  placeholder="https://... o ruta en disco del archivo DICOM/PNG"
+                  placeholder="https://..."
                   value={rxForm.url_archivo}
                   onChange={(e) => setRxForm({ ...rxForm, url_archivo: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"

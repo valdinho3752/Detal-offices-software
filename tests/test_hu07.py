@@ -1,3 +1,4 @@
+import random
 import sys
 import os
 from datetime import date, datetime, timezone, timedelta
@@ -76,13 +77,14 @@ def test_hu07_completo():
     assert res_item2.status_code == 201, f"Error creando item 2: {res_item2.text}"
     item2_id = res_item2.json()["id"]
 
-    # Agendar cita previa vinculada a item1
+    # Agendar cita previa vinculada a item1 (fecha aleatoria para poder repetir la suite)
+    dia_cita = date(2031, 1, 1) + timedelta(days=random.randint(0, 18000))
     res_cita = client.post("/api/v1/citas/", json={
         "paciente_id": paciente_id,
         "doctor_id": doctor_id,
         "item_plan_id": item1_id,
-        "fecha_inicio_programada": "2026-10-24T16:00:00Z",
-        "fecha_fin_programada": "2026-10-24T17:00:00Z",
+        "fecha_inicio_programada": f"{dia_cita}T16:00:00Z",
+        "fecha_fin_programada": f"{dia_cita}T17:00:00Z",
         "motivo_consulta": "Conductometría e instrumentación pieza 16"
     }, headers=headers)
     assert res_cita.status_code == 201

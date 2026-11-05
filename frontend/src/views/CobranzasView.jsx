@@ -22,6 +22,7 @@ export default function CobranzasView() {
   const pacienteIdParam = searchParams.get('paciente_id');
 
   const [pacientes, setPacientes] = useState([]);
+  const [doctores, setDoctores] = useState([]);
   const [selectedPacienteId, setSelectedPacienteId] = useState(pacienteIdParam || '');
   const [saldoInfo, setSaldoInfo] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -34,14 +35,16 @@ export default function CobranzasView() {
     monto: '',
     medio_pago: 'EFECTIVO',
     numero_comprobante: '',
+    doctor_comision_id: '',
     observaciones: '',
   });
 
   useEffect(() => {
     const loadPacientes = async () => {
       try {
-        const pRes = await api.getPacientes('', 0, 100);
+        const [pRes, dRes] = await Promise.all([api.getPacientes('', 0, 100), api.getDoctores()]);
         setPacientes(Array.isArray(pRes) ? pRes : []);
+        setDoctores(Array.isArray(dRes) ? dRes : []);
         if (pacienteIdParam) {
           setSelectedPacienteId(pacienteIdParam);
         } else if (pRes?.length > 0) {
@@ -78,8 +81,9 @@ export default function CobranzasView() {
       await api.registrarPago({
         paciente_id: selectedPacienteId,
         monto: Number(formPago.monto),
-        medio_pago: formPago.medio_pago,
-        numero_comprobante: formPago.numero_comprobante || `REC-${Date.now().toString().slice(-6)}`,
+        metodo_pago: formPago.medio_pago,
+        referencia_comprobante: formPago.numero_comprobante || null,
+        doctor_comision_id: formPago.doctor_comision_id || null,
         observaciones: formPago.observaciones,
       });
 
@@ -89,6 +93,7 @@ export default function CobranzasView() {
         monto: '',
         medio_pago: 'EFECTIVO',
         numero_comprobante: '',
+        doctor_comision_id: '',
         observaciones: '',
       });
       setTimeout(() => setSuccess(''), 3000);
@@ -128,7 +133,8 @@ export default function CobranzasView() {
               setFormPago({
                 monto: deuda > 0 ? deuda.toFixed(2) : '',
                 medio_pago: 'EFECTIVO',
-                numero_comprobante: `REC-${Date.now().toString().slice(-6)}`,
+                numero_comprobante: '',
+                doctor_comision_id: '',
                 observaciones: '',
               });
               setShowModal(true);
@@ -310,6 +316,22 @@ export default function CobranzasView() {
                   <option value="TARJETA_DEBITO" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Tarjeta Débito (POS)</option>
                   <option value="TARJETA_CREDITO" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Tarjeta Crédito</option>
                   <option value="TRANSFERENCIA" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Transferencia Bancaria</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Doctor que recibe la comisión</label>
+                <select
+                  value={formPago.doctor_comision_id}
+                  onChange={(e) => setFormPago({ ...formPago, doctor_comision_id: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Sin comisión</option>
+                  {doctores.map((doc) => (
+                    <option key={doc.id} value={doc.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+                      Dr(a). {doc.nombre_completo}
+                    </option>
+                  ))}
                 </select>
               </div>
 

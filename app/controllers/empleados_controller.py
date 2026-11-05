@@ -41,6 +41,15 @@ def registrar_pago_empleado(
     Registra pago de sueldo, adelanto o comisión.
     Si se paga en efectivo desde caja, genera el egreso físico automático en la sesión de caja abierta.
     """
+    caja = None
+    if datos.metodo_pago == "EFECTIVO_CAJA":
+        caja = db.query(CajaSesion).filter(CajaSesion.estado == EstadoCajaEnum.ABIERTA).first()
+        if not caja:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se puede pagar en efectivo de caja si no hay una caja abierta"
+            )
+
     pago = PagoEmpleado(
         **datos.model_dump(),
         usuario_autoriza_id=current_user.id
@@ -48,23 +57,25 @@ def registrar_pago_empleado(
     db.add(pago)
     db.flush()
 
-    # Si salió en efectivo y hay caja abierta, registrar egreso automático en gaveta
-    if datos.metodo_pago == "EFECTIVO_CAJA":
-        caja = db.query(CajaSesion).filter(CajaSesion.estado == EstadoCajaEnum.ABIERTA).first()
-        if caja:
-            pago.caja_sesion_id = caja.id
-            egreso = EgresoCaja(
-                caja_sesion_id=caja.id,
-                usuario_autoriza_id=current_user.id,
-                usuario_beneficiario_id=datos.usuario_empleado_id,
-                pago_empleado_id=pago.id,
-                categoria=CategoriaEgresoCajaEnum.ADELANTO_SUELDO if datos.tipo_pago == TipoPagoEmpleadoEnum.ADELANTO else CategoriaEgresoCajaEnum.PAGO_SUELDO,
-                monto=datos.monto_neto_pagado,
-                concepto_motivo=f"Pago nómina/adelanto: {datos.tipo_pago.value}"
-            )
-            db.add(egreso)
-            caja.total_egresos_efectivo += datos.monto_neto_pagado
-            caja.saldo_efectivo_esperado = caja.monto_inicial_fondo + caja.total_ingresos_efectivo - caja.total_egresos_efectivo
+    # Un pago en efectivo genera el egreso automático en la gaveta
+    if caja:
+        categorias_egreso = {
+            TipoPagoEmpleadoEnum.ADELANTO: CategoriaEgresoCajaEnum.ADELANTO_SUELDO,
+            TipoPagoEmpleadoEnum.COMISION_TRATAMIENTOS: CategoriaEgresoCajaEnum.COMISION_DOCTOR,
+        }
+        pago.caja_sesion_id = caja.id
+        egreso = EgresoCaja(
+            caja_sesion_id=caja.id,
+            usuario_autoriza_id=current_user.id,
+            usuario_beneficiario_id=datos.usuario_empleado_id,
+            pago_empleado_id=pago.id,
+            categoria=categorias_egreso.get(datos.tipo_pago, CategoriaEgresoCajaEnum.PAGO_SUELDO),
+            monto=datos.monto_neto_pagado,
+            concepto_motivo=f"Pago nómina/adelanto: {datos.tipo_pago.value}"
+        )
+        db.add(egreso)
+        caja.total_egresos_efectivo += datos.monto_neto_pagado
+        caja.saldo_efectivo_esperado = caja.monto_inicial_fondo + caja.total_ingresos_efectivo - caja.total_egresos_efectivo
 
     log = AuditoriaLog(
         usuario_id=current_user.id,

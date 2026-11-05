@@ -404,7 +404,8 @@ CREATE TABLE hallazgos_superficie (
     condicion condicion_dental_enum NOT NULL,
     estado_clinico estado_clinico_hallazgo_enum NOT NULL,
     color_hex VARCHAR(10) DEFAULT '#FF0000', -- #FF0000 (Rojo/Requerido), #0000FF (Azul/Existente)
-    detalle TEXT
+    detalle TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -460,6 +461,7 @@ CREATE TABLE citas (
     paciente_id UUID NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
     doctor_id UUID NOT NULL REFERENCES doctores(id),
     item_plan_id UUID REFERENCES items_plan_tratamiento(id) ON DELETE SET NULL,
+    tratamiento_id UUID REFERENCES catalogo_tratamientos(id) ON DELETE SET NULL,
     fecha_inicio_programada TIMESTAMP WITH TIME ZONE NOT NULL,
     fecha_fin_programada TIMESTAMP WITH TIME ZONE NOT NULL,
     hora_llegada_recepcion TIMESTAMP WITH TIME ZONE,

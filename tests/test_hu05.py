@@ -1,12 +1,17 @@
 import sys
 import os
-from datetime import datetime, timezone
+import random
+from datetime import date, timedelta
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi.testclient import TestClient
 from app.main import app
 
 client = TestClient(app)
+
+# Fechas lejanas y aleatorias: la agenda rechaza citas superpuestas y la suite debe poder repetirse
+DIA_BASE = date(2031, 1, 1) + timedelta(days=random.randint(0, 3650) * 5)
+DIA_1, DIA_2, DIA_3 = (DIA_BASE + timedelta(days=i) for i in range(3))
 
 def test_hu05_completo():
     print("==================================================")
@@ -82,8 +87,8 @@ def test_hu05_completo():
         "paciente_id": paciente_id,
         "doctor_id": doctor_id,
         "item_plan_id": item_plan_id,
-        "fecha_inicio_programada": "2026-10-24T10:00:00Z",
-        "fecha_fin_programada": "2026-10-24T11:00:00Z",
+        "fecha_inicio_programada": f"{DIA_1}T10:00:00Z",
+        "fecha_fin_programada": f"{DIA_1}T11:00:00Z",
         "motivo_consulta": "Endodoncia pieza 16 - Sesión 1",
         "notas_adicionales": "Paciente hipertenso controlado"
     }
@@ -148,8 +153,8 @@ def test_hu05_completo():
     cita_canc_payload = {
         "paciente_id": paciente_id,
         "doctor_id": doctor_id,
-        "fecha_inicio_programada": "2026-10-25T15:00:00Z",
-        "fecha_fin_programada": "2026-10-25T16:00:00Z",
+        "fecha_inicio_programada": f"{DIA_2}T15:00:00Z",
+        "fecha_fin_programada": f"{DIA_2}T16:00:00Z",
         "motivo_consulta": "Control de sensibilidad - Cancelada por el paciente"
     }
     res_c2 = client.post("/api/v1/citas/", json=cita_canc_payload, headers=headers)
@@ -165,8 +170,8 @@ def test_hu05_completo():
     cita_noasist_payload = {
         "paciente_id": paciente_id,
         "doctor_id": doctor_id,
-        "fecha_inicio_programada": "2026-10-26T09:00:00Z",
-        "fecha_fin_programada": "2026-10-26T10:00:00Z",
+        "fecha_inicio_programada": f"{DIA_3}T09:00:00Z",
+        "fecha_fin_programada": f"{DIA_3}T10:00:00Z",
         "motivo_consulta": "Higiene y profilaxis - Inasistencia"
     }
     res_c3 = client.post("/api/v1/citas/", json=cita_noasist_payload, headers=headers)
@@ -191,7 +196,7 @@ def test_hu05_completo():
     ids_noasist = [c["id"] for c in filtro_noasist.json()]
     assert c3_id in ids_noasist
 
-    filtro_fechas = client.get(f"/api/v1/citas/?doctor_id={doctor_id}&fecha_desde=2026-10-24T00:00:00Z", headers=headers)
+    filtro_fechas = client.get(f"/api/v1/citas/?doctor_id={doctor_id}&fecha_desde={DIA_1}T00:00:00Z", headers=headers)
     assert filtro_fechas.status_code == 200
     assert len(filtro_fechas.json()) >= 3
     print("✔ [Escenario 6] Filtros de agenda por Doctor, Fechas y Estados verificados exitosamente.")

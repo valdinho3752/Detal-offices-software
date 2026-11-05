@@ -9,6 +9,7 @@ from app.models import (
     TipoOdontogramaEnum
 )
 from app.core.dependencies import get_current_user
+from app.services.tratamiento_clinico import clonar_odontograma_como_evolucion
 from app.schemas.odontograma import (
     OdontogramaCreate, OdontogramaUpdate, OdontogramaResponse,
     PiezaDentalCreate, PiezaDentalUpdate, PiezaDentalResponse,
@@ -177,38 +178,7 @@ def clonar_como_evolucion(
     if current_user.doctor_perfil:
         doctor_id = current_user.doctor_perfil.id
 
-    nuevo_odonto = Odontograma(
-        paciente_id=origen.paciente_id,
-        doctor_id=doctor_id,
-        tipo_denticion=origen.tipo_denticion,
-        tipo_registro=TipoOdontogramaEnum.EVOLUCION_ACTUAL,
-        observaciones_generales=f"Evolución y Plan Clínico basado en Odontograma Inicial"
-    )
-    db.add(nuevo_odonto)
-    db.flush()
-
-    for p in origen.piezas:
-        nueva_pieza = PiezaDental(
-            odontograma_id=nuevo_odonto.id,
-            numero_fdi=p.numero_fdi,
-            estado_general=p.estado_general,
-            tiene_endodoncia=p.tiene_endodoncia,
-            tiene_perno_poste=p.tiene_perno_poste,
-            notas_pieza=p.notas_pieza
-        )
-        db.add(nueva_pieza)
-        db.flush()
-
-        for h in p.hallazgos:
-            nuevo_h = HallazgoSuperficie(
-                pieza_dental_id=nueva_pieza.id,
-                superficie=h.superficie,
-                condicion=h.condicion,
-                estado_clinico=h.estado_clinico,
-                color_hex=h.color_hex,
-                detalle=h.detalle
-            )
-            db.add(nuevo_h)
+    nuevo_odonto = clonar_odontograma_como_evolucion(origen, doctor_id, db)
 
     log = AuditoriaLog(
         usuario_id=current_user.id,

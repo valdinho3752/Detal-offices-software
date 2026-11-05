@@ -160,11 +160,10 @@ def consultar_saldo_paciente(
     if not paciente:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado")
 
-    # Total de planes presupuestados y activos (no cancelados)
+    # Solo generan deuda los planes aceptados: un presupuesto PROPUESTO aún no es un compromiso de pago
     total_presupuestado = db.query(func.coalesce(func.sum(PlanTratamiento.costo_total), 0)).filter(
         PlanTratamiento.paciente_id == id,
         PlanTratamiento.estado.in_([
-            EstadoPlanEnum.PROPUESTO,
             EstadoPlanEnum.APROBADO,
             EstadoPlanEnum.EN_CURSO,
             EstadoPlanEnum.COMPLETADO

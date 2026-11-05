@@ -8,6 +8,7 @@ from app.models import (
     Usuario, AuditoriaLog, AuditoriaAccionEnum, Doctor
 )
 from app.core.dependencies import get_current_user
+from app.services.tratamiento_clinico import registrar_tratamiento_realizado
 from app.schemas.visita import (
     VisitaEvolucionCreate, VisitaEvolucionUpdate, VisitaEvolucionResponse
 )
@@ -27,82 +28,6 @@ def listar_visitas(
     if doctor_id:
         query = query.filter(VisitaEvolucion.doctor_id == doctor_id)
     return query.order_by(VisitaEvolucion.fecha_hora.desc()).all()
-
-def _normalize_superficie(s):
-    from app.models.enums import SuperficieDentalEnum
-    if not s:
-        return SuperficieDentalEnum.GENERAL
-    if isinstance(s, SuperficieDentalEnum):
-        return s
-    s = str(s).upper().strip()
-    if s in ["OCLUSAL", "INCISAL"]:
-        return SuperficieDentalEnum.OCLUSAL_INCISAL
-    if s in ["LINGUAL", "PALATINO", "PALATINA"]:
-        return SuperficieDentalEnum.LINGUAL_PALATINO
-    if s in ["VESTIBULAR"]:
-        return SuperficieDentalEnum.VESTIBULAR
-    if s in ["MESIAL"]:
-        return SuperficieDentalEnum.MESIAL
-    if s in ["DISTAL"]:
-        return SuperficieDentalEnum.DISTAL
-    if s in ["RAIZ"]:
-        return SuperficieDentalEnum.RAIZ
-    return SuperficieDentalEnum.GENERAL
-
-def _superficies_match(sup1, sup2):
-    from app.models.enums import SuperficieDentalEnum
-    if not sup1 or not sup2:
-        return True
-    n1 = _normalize_superficie(sup1)
-    n2 = _normalize_superficie(sup2)
-    if n1 == SuperficieDentalEnum.GENERAL or n2 == SuperficieDentalEnum.GENERAL:
-        return True
-    return n1 == n2
-
-def _sync_odontograma_completado(paciente_id: UUID, item: ItemPlanTratamiento, db: Session):
-    from app.models.odontograma import Odontograma, PiezaDental, HallazgoSuperficie
-    from app.models.enums import CondicionDentalEnum, EstadoClinicoHallazgoEnum
-
-    nombre_trat = item.tratamiento.nombre if item.tratamiento else "Tratamiento Realizado"
-    if item.hallazgo:
-        item.hallazgo.estado_clinico = EstadoClinicoHallazgoEnum.REALIZADO_EN_CLINICA
-        item.hallazgo.color_hex = "#3B82F6"
-        item.hallazgo.detalle = f"Alta médica: {nombre_trat}"
-
-    odontos = db.query(Odontograma).filter(Odontograma.paciente_id == paciente_id).all()
-    norm_target = _normalize_superficie(item.superficie)
-
-    if item.pieza_fdi and odontos:
-        for od in odontos:
-            pz = db.query(PiezaDental).filter_by(odontograma_id=od.id, numero_fdi=item.pieza_fdi).first()
-            if not pz:
-                continue
-            matching_hallazgos = [
-                h for h in pz.hallazgos
-                if _superficies_match(h.superficie, norm_target)
-            ]
-            if matching_hallazgos:
-                primary = matching_hallazgos[0]
-                primary.superficie = norm_target
-                primary.estado_clinico = EstadoClinicoHallazgoEnum.REALIZADO_EN_CLINICA
-                primary.color_hex = "#3B82F6"
-                primary.detalle = f"Alta médica: {nombre_trat}"
-                for extra in matching_hallazgos[1:]:
-                    if extra.superficie == primary.superficie or extra.color_hex == "#EF4444":
-                        db.delete(extra)
-                    else:
-                        extra.estado_clinico = EstadoClinicoHallazgoEnum.REALIZADO_EN_CLINICA
-                        extra.color_hex = "#3B82F6"
-            else:
-                nuevo_h = HallazgoSuperficie(
-                    pieza_dental_id=pz.id,
-                    superficie=norm_target,
-                    condicion=CondicionDentalEnum.OBTURACION_RESINA,
-                    estado_clinico=EstadoClinicoHallazgoEnum.REALIZADO_EN_CLINICA,
-                    color_hex="#3B82F6",
-                    detalle=f"Alta médica: {nombre_trat}"
-                )
-                db.add(nuevo_h)
 
 @router.post("/", response_model=VisitaEvolucionResponse, status_code=status.HTTP_201_CREATED)
 def registrar_visita_evolucion(
@@ -158,7 +83,7 @@ def registrar_visita_evolucion(
         item_hoy = db.query(ItemPlanTratamiento).filter(ItemPlanTratamiento.id == datos.item_plan_id).first()
         if item_hoy:
             item_hoy.estado = EstadoItemPlanEnum.COMPLETADO
-            _sync_odontograma_completado(visita.paciente_id, item_hoy, db)
+            registrar_tratamiento_realizado(visita.paciente_id, visita.doctor_id, item_hoy, db)
 
     # Marcar el ítem de la siguiente cita como PROXIMA_SESION
     if datos.proximo_item_plan_id:

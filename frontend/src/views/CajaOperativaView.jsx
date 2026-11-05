@@ -32,7 +32,7 @@ export default function CajaOperativaView() {
   // Forms
   const [montoApertura, setMontoApertura] = useState('100.00');
   const [egresoForm, setEgresoForm] = useState({
-    categoria: 'INSUMOS_MENORES',
+    categoria: 'COMPRA_INSUMOS',
     concepto: '',
     monto: '',
     comprobante_numero: '',
@@ -80,13 +80,15 @@ export default function CajaOperativaView() {
     e.preventDefault();
     try {
       await api.registrarEgreso({
-        ...egresoForm,
+        categoria: egresoForm.categoria,
         monto: Number(egresoForm.monto),
+        concepto_motivo: egresoForm.concepto,
+        numero_recibo_comprobante: egresoForm.comprobante_numero || null,
       });
       setSuccess('Egreso operativo registrado en caja');
       setShowEgresoModal(false);
       setEgresoForm({
-        categoria: 'INSUMOS_MENORES',
+        categoria: 'COMPRA_INSUMOS',
         concepto: '',
         monto: '',
         comprobante_numero: '',
@@ -384,9 +386,9 @@ export default function CajaOperativaView() {
                   onChange={(e) => setEgresoForm({ ...egresoForm, categoria: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs"
                 >
-                  <option value="INSUMOS_MENORES">Insumos Menores & Descartables</option>
-                  <option value="LABORATORIO">Pago a Laboratorio Dental</option>
-                  <option value="SERVICIOS_BASICOS">Servicios / Envíos</option>
+                  <option value="COMPRA_INSUMOS">Insumos Menores & Descartables</option>
+                  <option value="PAGO_LABORATORIO_PROTESIS">Pago a Laboratorio Dental</option>
+                  <option value="GASTO_OPERATIVO">Servicios / Envíos</option>
                   <option value="ADELANTO_SUELDO">Adelanto / Vale de Empleado</option>
                   <option value="OTRO">Otro Gasto Operativo</option>
                 </select>

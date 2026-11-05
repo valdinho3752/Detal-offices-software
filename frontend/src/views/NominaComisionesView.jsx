@@ -25,7 +25,7 @@ export default function NominaComisionesView() {
   // Modal registrar pago / anticipo
   const [showModal, setShowModal] = useState(false);
   const [formPago, setFormPago] = useState({
-    tipo_pago: 'PAGO_COMISION',
+    tipo_pago: 'COMISION_TRATAMIENTOS',
     monto: '',
     descontar_de_caja: true,
     observaciones: '',
@@ -46,14 +46,16 @@ export default function NominaComisionesView() {
     init();
   }, []);
 
+  const selectedDoctor = doctores.find((d) => d.id === selectedDoctorId);
+
   const loadDoctorFinanzas = async () => {
-    if (!selectedDoctorId) return;
+    if (!selectedDoctor) return;
     setLoading(true);
     setError('');
     try {
       const [comRes, pagRes] = await Promise.all([
         api.getComisionesDoctor(selectedDoctorId),
-        api.getPagosEmpleados(selectedDoctorId),
+        api.getPagosEmpleados(selectedDoctor.usuario_id),
       ]);
       setComisionesData(comRes);
       setPagosHistorico(Array.isArray(pagRes) ? pagRes : []);
@@ -66,23 +68,27 @@ export default function NominaComisionesView() {
 
   useEffect(() => {
     loadDoctorFinanzas();
-  }, [selectedDoctorId]);
+  }, [selectedDoctorId, doctores]);
 
   const handleRegistrarPago = async (e) => {
     e.preventDefault();
     try {
+      const monto = Number(formPago.monto);
       await api.registrarPagoEmpleado({
-        usuario_empleado_id: selectedDoctorId,
+        usuario_empleado_id: selectedDoctor.usuario_id,
         tipo_pago: formPago.tipo_pago,
-        monto: Number(formPago.monto),
-        descontar_de_caja: formPago.descontar_de_caja,
+        // El saldo de comisiones solo descuenta lo liquidado como comisión
+        monto_comisiones: formPago.tipo_pago === 'COMISION_TRATAMIENTOS' ? monto : 0,
+        monto_base: formPago.tipo_pago === 'SUELDO_MENSUAL' ? monto : 0,
+        monto_neto_pagado: monto,
+        metodo_pago: formPago.descontar_de_caja ? 'EFECTIVO_CAJA' : 'TRANSFERENCIA',
         observaciones: formPago.observaciones,
       });
 
       setSuccess('Pago de personal registrado y procesado exitosamente');
       setShowModal(false);
       setFormPago({
-        tipo_pago: 'PAGO_COMISION',
+        tipo_pago: 'COMISION_TRATAMIENTOS',
         monto: '',
         descontar_de_caja: true,
         observaciones: '',
@@ -93,8 +99,6 @@ export default function NominaComisionesView() {
       setError(err.message || 'Error al registrar pago');
     }
   };
-
-  const selectedDoctor = doctores.find((d) => d.id === selectedDoctorId);
 
   return (
     <div className="space-y-6">
@@ -127,8 +131,8 @@ export default function NominaComisionesView() {
           <button
             onClick={() => {
               setFormPago({
-                tipo_pago: 'PAGO_COMISION',
-                monto: comisionesData?.monto_neto_pagar ? Number(comisionesData.monto_neto_pagar).toFixed(2) : '',
+                tipo_pago: 'COMISION_TRATAMIENTOS',
+                monto: comisionesData?.saldo_comision_por_pagar > 0 ? Number(comisionesData.saldo_comision_por_pagar).toFixed(2) : '',
                 descontar_de_caja: true,
                 observaciones: `Liquidación comisiones Dr(a). ${selectedDoctor?.nombre_completo || selectedDoctor?.username}`,
               });
@@ -168,14 +172,14 @@ export default function NominaComisionesView() {
             </h2>
             <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Especialidad: {selectedDoctor?.especialidad || 'Odontología General'} · Colegiado:{' '}
-              {selectedDoctor?.numero_colegiado || 'N/A'}
+              {selectedDoctor?.numero_colegiatura || 'N/A'}
             </div>
           </div>
 
           <div className="text-right">
             <span className="text-xs text-slate-500 dark:text-slate-400 block">Comisión Pactada:</span>
             <span className="text-2xl font-bold font-mono text-primary-600 dark:text-primary-400">
-              {Number(comisionesData?.porcentaje_comision || 40)}%
+              {Number(comisionesData?.porcentaje_pactado || 0)}%
             </span>
           </div>
         </div>
@@ -186,7 +190,7 @@ export default function NominaComisionesView() {
           <div className="p-4 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/50 rounded-xl">
             <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Total Producido Efectivo</span>
             <div className="text-xl font-bold text-slate-900 dark:text-white font-mono">
-              ${Number(comisionesData?.total_producido || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+              ${Number(comisionesData?.total_cobrado_por_sus_tratamientos || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
             </div>
             <div className="text-[11px] text-slate-500 mt-1">Tratamientos pagados por pacientes</div>
           </div>
@@ -195,27 +199,27 @@ export default function NominaComisionesView() {
           <div className="p-4 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/50 rounded-xl">
             <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Comisión Bruta Generada</span>
             <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-              ${Number(comisionesData?.monto_comision_bruta || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+              ${Number(comisionesData?.comision_bruta_generada || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
             </div>
-            <div className="text-[11px] text-emerald-600 dark:text-emerald-500 mt-1">{comisionesData?.porcentaje_comision || 40}% del producido</div>
+            <div className="text-[11px] text-emerald-600 dark:text-emerald-500 mt-1">{Number(comisionesData?.porcentaje_pactado || 0)}% del producido</div>
           </div>
 
           {/* Anticipos Retirados */}
           <div className="p-4 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/50 rounded-xl">
-            <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Anticipos / Vales Retirados</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Comisiones ya Liquidadas</span>
             <div className="text-xl font-bold text-amber-600 dark:text-amber-400 font-mono">
-              -${Number(comisionesData?.total_anticipos || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+              -${Number(comisionesData?.comisiones_ya_liquidadas || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
             </div>
-            <div className="text-[11px] text-amber-600 dark:text-amber-500 mt-1">Descontados de gaveta</div>
+            <div className="text-[11px] text-amber-600 dark:text-amber-500 mt-1">Pagadas al profesional</div>
           </div>
 
           {/* Neto a Pagar */}
           <div className="p-4 bg-primary-50 dark:bg-primary-600/10 border border-primary-200 dark:border-primary-500/30 rounded-xl">
             <span className="text-xs text-primary-700 dark:text-primary-300 block mb-1 font-semibold">Neto a Liquidar</span>
             <div className="text-2xl font-bold text-primary-600 dark:text-primary-400 font-mono">
-              ${Number(comisionesData?.monto_neto_pagar || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+              ${Number(comisionesData?.saldo_comision_por_pagar || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
             </div>
-            <div className="text-[11px] text-primary-600/80 dark:text-primary-300/80 mt-1">Bruto menos anticipos</div>
+            <div className="text-[11px] text-primary-600/80 dark:text-primary-300/80 mt-1">Bruta menos lo ya liquidado</div>
           </div>
         </div>
       </div>
@@ -247,12 +251,12 @@ export default function NominaComisionesView() {
                 {pagosHistorico.map((pago) => (
                   <tr key={pago.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition">
                     <td className="py-3 px-4 font-mono text-slate-500 dark:text-slate-400">
-                      {pago.created_at ? new Date(pago.created_at).toLocaleString() : 'Fecha'}
+                      {pago.fecha_hora_pago ? new Date(pago.fecha_hora_pago).toLocaleString() : 'Fecha'}
                     </td>
                     <td className="py-3 px-4">
                       <span
                         className={`px-2.5 py-0.5 rounded text-[10px] font-bold border ${
-                          pago.tipo_pago === 'PAGO_COMISION'
+                          pago.tipo_pago === 'COMISION_TRATAMIENTOS'
                             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
                             : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
                         }`}
@@ -261,7 +265,7 @@ export default function NominaComisionesView() {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center font-mono">
-                      {pago.descontar_de_caja ? (
+                      {pago.metodo_pago === 'EFECTIVO_CAJA' ? (
                         <span className="text-emerald-600 dark:text-emerald-400 font-semibold">SÍ (Gaveta)</span>
                       ) : (
                         <span className="text-slate-400 dark:text-slate-500">NO</span>
@@ -269,7 +273,7 @@ export default function NominaComisionesView() {
                     </td>
                     <td className="py-3 px-4 text-slate-500 dark:text-slate-400 italic">{pago.observaciones || '-'}</td>
                     <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">
-                      ${Number(pago.monto).toFixed(2)}
+                      ${Number(pago.monto_neto_pagado).toFixed(2)}
                     </td>
                   </tr>
                 ))}
@@ -296,9 +300,9 @@ export default function NominaComisionesView() {
                   onChange={(e) => setFormPago({ ...formPago, tipo_pago: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
-                  <option value="PAGO_COMISION" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Liquidación de Comisiones Médicas</option>
-                  <option value="ANTICIPO" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Anticipo / Vale de Sueldo</option>
-                  <option value="SUELDO_BASE" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Sueldo Base Mensual</option>
+                  <option value="COMISION_TRATAMIENTOS" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Liquidación de Comisiones Médicas</option>
+                  <option value="ADELANTO" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Anticipo / Vale de Sueldo</option>
+                  <option value="SUELDO_MENSUAL" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Sueldo Base Mensual</option>
                 </select>
               </div>
 

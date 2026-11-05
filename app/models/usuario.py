@@ -94,6 +94,10 @@ class Doctor(Base):
     visitas = relationship("VisitaEvolucion", back_populates="doctor")
     ordenes_protesis = relationship("OrdenLaboratorioProtesis", back_populates="doctor")
 
+    @property
+    def nombre_completo(self):
+        return f"{self.usuario.nombre} {self.usuario.apellido}" if self.usuario else None
+
 class Asistente(Base):
     __tablename__ = "asistentes"
 

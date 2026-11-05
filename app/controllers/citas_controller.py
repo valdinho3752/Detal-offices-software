@@ -7,8 +7,12 @@ from app.database import get_db
 from app.models import Cita, EstadoCitaEnum, Usuario, Doctor, RolCodigoEnum, AuditoriaLog, AuditoriaAccionEnum
 from app.core.dependencies import get_current_user
 from app.schemas.cita import CitaCreate, CitaUpdate, CitaSillonControl, CitaResponse
+from app.services.tratamiento_clinico import registrar_tratamiento_realizado
 
 router = APIRouter(prefix="/citas", tags=["Agenda y Citas Dentales"])
+
+# Estas citas ya no ocupan el horario del doctor.
+ESTADOS_SIN_RESERVA = (EstadoCitaEnum.CANCELADA, EstadoCitaEnum.NO_ASISTIO)
 
 @router.get("/", response_model=List[CitaResponse])
 def listar_citas(
@@ -103,6 +107,12 @@ def agendar_cita(
         if trat and (not motivo or motivo == "Consulta Odontológica General"):
             motivo = trat.nombre
 
+    if not datos.fecha_inicio_programada or not datos.fecha_fin_programada:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Debes indicar la fecha y hora de inicio y fin de la cita"
+        )
+
     nueva_cita = Cita(
         paciente_id=datos.paciente_id,
         doctor_id=resolved_doctor_id,
@@ -115,48 +125,46 @@ def agendar_cita(
         created_by_usuario_id=current_user.id
     )
     db.add(nueva_cita)
+    db.flush()
+    db.refresh(nueva_cita)
+    _validar_horario_cita(nueva_cita, db)
     db.commit()
     db.refresh(nueva_cita)
     return nueva_cita
 
-def _normalize_superficie(sup):
-    from app.models.enums import SuperficieDentalEnum
-    if not sup:
-        return SuperficieDentalEnum.GENERAL
-    s = sup.value if hasattr(sup, "value") else str(sup).upper()
-    if s in ["OCLUSAL", "INCISAL", "OCLUSAL_INCISAL"]:
-        return SuperficieDentalEnum.OCLUSAL_INCISAL
-    if s in ["LINGUAL", "PALATINO", "LINGUAL_PALATINO"]:
-        return SuperficieDentalEnum.LINGUAL_PALATINO
-    if s in ["VESTIBULAR"]:
-        return SuperficieDentalEnum.VESTIBULAR
-    if s in ["MESIAL"]:
-        return SuperficieDentalEnum.MESIAL
-    if s in ["DISTAL"]:
-        return SuperficieDentalEnum.DISTAL
-    if s in ["RAIZ"]:
-        return SuperficieDentalEnum.RAIZ
-    return SuperficieDentalEnum.GENERAL
+def _validar_horario_cita(cita: Cita, db: Session):
+    """Comprueba que el horario sea coherente y que el doctor no tenga otra cita en ese rango."""
+    if cita.fecha_fin_programada <= cita.fecha_inicio_programada:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La hora de fin de la cita debe ser posterior a la hora de inicio"
+        )
 
-def _superficies_match(sup1, sup2):
-    from app.models.enums import SuperficieDentalEnum
-    if not sup1 or not sup2:
-        return True
-    n1 = _normalize_superficie(sup1)
-    n2 = _normalize_superficie(sup2)
-    if n1 == SuperficieDentalEnum.GENERAL or n2 == SuperficieDentalEnum.GENERAL:
-        return True
-    return n1 == n2
+    # El bloqueo evita que dos peticiones simultáneas reserven el mismo horario.
+    db.query(Doctor).filter(Doctor.id == cita.doctor_id).with_for_update().first()
+    conflicto = db.query(Cita).filter(
+        Cita.doctor_id == cita.doctor_id,
+        Cita.id != cita.id,
+        Cita.estado.notin_(ESTADOS_SIN_RESERVA),
+        Cita.fecha_inicio_programada < cita.fecha_fin_programada,
+        Cita.fecha_fin_programada > cita.fecha_inicio_programada,
+    ).first()
+    if conflicto:
+        inicio = conflicto.fecha_inicio_programada.strftime("%d/%m/%Y %H:%M")
+        fin = conflicto.fecha_fin_programada.strftime("%H:%M")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"El doctor ya tiene una cita de {inicio} a {fin}. Elige otro horario."
+        )
 
 def _finalizar_tratamientos_cita(cita: Cita, db: Session):
     """
     Sincroniza el plan de tratamiento y odontograma cuando la cita finaliza:
-    - Marca todos los items asignados (cita.item_plan_id y los incluidos en notas_adicionales) como COMPLETADO.
-    - Marca las piezas/superficies del odontograma del paciente en AZUL (#3B82F6, REALIZADO_EN_CLINICA).
+    marca los ítems asignados (cita.item_plan_id y los incluidos en notas_adicionales)
+    como COMPLETADO y los registra en el odontograma de evolución del paciente.
     """
     from app.models.tratamiento import ItemPlanTratamiento
-    from app.models.odontograma import Odontograma, PiezaDental, HallazgoSuperficie
-    from app.models.enums import SuperficieDentalEnum, CondicionDentalEnum, EstadoClinicoHallazgoEnum, EstadoItemPlanEnum
+    from app.models.enums import EstadoItemPlanEnum
     import re
 
     item_ids = []
@@ -165,66 +173,16 @@ def _finalizar_tratamientos_cita(cita: Cita, db: Session):
     if cita.notas_adicionales:
         matches = re.findall(r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}', cita.notas_adicionales)
         for m in matches:
-            try:
-                uid = UUID(m)
-                if uid not in item_ids:
-                    it_exists = db.query(ItemPlanTratamiento).filter_by(id=uid).first()
-                    if it_exists:
-                        item_ids.append(uid)
-            except Exception:
-                pass
-
-    if not item_ids:
-        return
-
-    odontos = db.query(Odontograma).filter(Odontograma.paciente_id == cita.paciente_id).all()
+            uid = UUID(m)
+            if uid not in item_ids:
+                item_ids.append(uid)
 
     for iid in item_ids:
         item = db.query(ItemPlanTratamiento).filter_by(id=iid).first()
         if not item:
             continue
         item.estado = EstadoItemPlanEnum.COMPLETADO
-        nombre_trat = item.tratamiento.nombre if item.tratamiento else "Tratamiento Realizado"
-        
-        if item.hallazgo:
-            item.hallazgo.estado_clinico = EstadoClinicoHallazgoEnum.REALIZADO_EN_CLINICA
-            item.hallazgo.color_hex = "#3B82F6"
-            item.hallazgo.detalle = f"Alta médica: {nombre_trat}"
-
-        target_sup = item.superficie
-        norm_target = _normalize_superficie(target_sup)
-
-        if item.pieza_fdi and odontos:
-            for od in odontos:
-                pz = db.query(PiezaDental).filter_by(odontograma_id=od.id, numero_fdi=item.pieza_fdi).first()
-                if not pz:
-                    continue
-                matching_hallazgos = [
-                    h for h in pz.hallazgos
-                    if _superficies_match(h.superficie, norm_target)
-                ]
-                if matching_hallazgos:
-                    primary = matching_hallazgos[0]
-                    primary.superficie = norm_target
-                    primary.estado_clinico = EstadoClinicoHallazgoEnum.REALIZADO_EN_CLINICA
-                    primary.color_hex = "#3B82F6"
-                    primary.detalle = f"Alta médica: {nombre_trat}"
-                    for extra in matching_hallazgos[1:]:
-                        if extra.superficie == primary.superficie or extra.color_hex == "#EF4444":
-                            db.delete(extra)
-                        else:
-                            extra.estado_clinico = EstadoClinicoHallazgoEnum.REALIZADO_EN_CLINICA
-                            extra.color_hex = "#3B82F6"
-                else:
-                    nuevo_h = HallazgoSuperficie(
-                        pieza_dental_id=pz.id,
-                        superficie=norm_target,
-                        condicion=CondicionDentalEnum.OBTURACION_RESINA,
-                        estado_clinico=EstadoClinicoHallazgoEnum.REALIZADO_EN_CLINICA,
-                        color_hex="#3B82F6",
-                        detalle=f"Alta médica: {nombre_trat}"
-                    )
-                    db.add(nuevo_h)
+        registrar_tratamiento_realizado(cita.paciente_id, cita.doctor_id, item, db)
     db.flush()
 
 @router.put("/{id}", response_model=CitaResponse)
@@ -259,6 +217,9 @@ def actualizar_cita(
                 )
             update_dict["doctor_id"] = current_user.doctor_perfil.id
 
+    horario_previo = (cita.doctor_id, cita.fecha_inicio_programada, cita.fecha_fin_programada)
+    estado_previo = cita.estado
+
     valid_fields = {
         "paciente_id", "doctor_id", "item_plan_id", "tratamiento_id",
         "fecha_inicio_programada", "fecha_fin_programada",
@@ -267,6 +228,16 @@ def actualizar_cita(
     for field, value in update_dict.items():
         if field in valid_fields:
             setattr(cita, field, value)
+
+    db.flush()
+    db.refresh(cita)
+    horario_actual = (cita.doctor_id, cita.fecha_inicio_programada, cita.fecha_fin_programada)
+    # Solo se valida si cambió el horario o si se reactiva una cita que no ocupaba lugar:
+    # cambiar el estado de una cita existente no debe bloquearse por datos antiguos.
+    if cita.estado not in ESTADOS_SIN_RESERVA and (
+        horario_actual != horario_previo or estado_previo in ESTADOS_SIN_RESERVA
+    ):
+        _validar_horario_cita(cita, db)
 
     # Si la cita pasa a FINALIZADA, actualizar tratamientos a Alta Clinica (Azul)
     if update_dict.get("estado") in [EstadoCitaEnum.FINALIZADA, "FINALIZADA"]:
@@ -277,15 +248,35 @@ def actualizar_cita(
     return cita
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def eliminar_cita(
+def cancelar_cita(
     id: UUID,
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Cancela la cita sin borrarla: libera el horario y conserva el registro para el
+    historial del paciente y las estadísticas de ausentismo.
+    """
     cita = db.query(Cita).filter(Cita.id == id).first()
     if not cita:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cita no encontrada")
-    db.delete(cita)
+    if cita.estado == EstadoCitaEnum.FINALIZADA:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No se puede cancelar una cita que ya fue atendida"
+        )
+
+    estado_previo = cita.estado.value
+    cita.estado = EstadoCitaEnum.CANCELADA
+    db.add(AuditoriaLog(
+        usuario_id=current_user.id,
+        tabla_afectada="citas",
+        registro_id=cita.id,
+        accion=AuditoriaAccionEnum.UPDATE,
+        seccion_consultada="CANCELAR_CITA",
+        datos_previos={"estado": estado_previo},
+        datos_nuevos={"estado": EstadoCitaEnum.CANCELADA.value}
+    ))
     db.commit()
     return None
 
