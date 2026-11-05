@@ -135,7 +135,6 @@ export const api = {
   getVisitas: (pacienteId) => request(`/visitas/?paciente_id=${pacienteId}`),
   getVisita: (id) => request(`/visitas/${id}`),
   createVisita: (data) => request('/visitas/', { method: 'POST', body: JSON.stringify(data) }),
-  updateVisita: (id, data) => request(`/visitas/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   agregarObservacionVisita: (id, texto) =>
     request(`/visitas/${id}/observaciones`, { method: 'POST', body: JSON.stringify({ texto }) }),
 

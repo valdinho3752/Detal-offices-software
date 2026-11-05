@@ -84,7 +84,6 @@ PROTECCION = {
     ("GET", "/visitas/"): "HISTORIA_CLINICA_READ",
     ("POST", "/visitas/"): "HISTORIA_CLINICA_CREATE",
     ("GET", "/visitas/{id}"): "HISTORIA_CLINICA_READ",
-    ("PUT", "/visitas/{id}"): "HISTORIA_CLINICA_UPDATE",
     ("POST", "/visitas/{id}/observaciones"): "HISTORIA_CLINICA_OBSERVAR",
     ("GET", "/radiografias/"): "RADIOGRAFIAS_READ",
     ("POST", "/radiografias/"): "RADIOGRAFIAS_CREATE",

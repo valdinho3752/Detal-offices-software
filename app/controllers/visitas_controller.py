@@ -10,7 +10,7 @@ from app.models import (
 from app.core.dependencies import doctor_solicitado, require_permission
 from app.services.tratamiento_clinico import registrar_tratamiento_realizado
 from app.schemas.visita import (
-    VisitaEvolucionCreate, VisitaEvolucionUpdate, VisitaEvolucionResponse,
+    VisitaEvolucionCreate, VisitaEvolucionResponse,
     ObservacionEvolucionCreate, ObservacionEvolucionResponse
 )
 
@@ -171,38 +171,3 @@ def agregar_observacion(
     db.commit()
     db.refresh(observacion)
     return observacion
-
-@router.put("/{id}", response_model=VisitaEvolucionResponse)
-def actualizar_visita(
-    id: UUID,
-    datos: VisitaEvolucionUpdate,
-    current_user: Usuario = Depends(require_permission("HISTORIA_CLINICA_UPDATE")),
-    db: Session = Depends(get_db)
-):
-    visita = db.query(VisitaEvolucion).filter(VisitaEvolucion.id == id).first()
-    if not visita:
-        raise HTTPException(status_code=404, detail="Visita clínica no encontrada")
-    if visita.generada_automaticamente:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Esta evolución se generó al finalizar la cita: solo se le pueden agregar observaciones"
-        )
-
-    update_data = datos.model_dump(exclude_unset=True)
-    es_admin = current_user.rol and str(current_user.rol.codigo).upper() == "ADMIN"
-
-    if "doctor_id" in update_data and update_data["doctor_id"]:
-        if not es_admin:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Solo los administradores pueden reasignar el doctor de la visita clínica"
-            )
-        doc = db.query(Doctor).filter((Doctor.id == update_data["doctor_id"]) | (Doctor.usuario_id == update_data["doctor_id"])).first()
-        if doc:
-            update_data["doctor_id"] = doc.id
-
-    for field, value in update_data.items():
-        setattr(visita, field, value)
-    db.commit()
-    db.refresh(visita)
-    return visita

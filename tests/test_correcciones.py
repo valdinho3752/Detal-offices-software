@@ -417,7 +417,7 @@ def test_evolucion_automatica():
 
     # El contenido no se edita, y no se crea otra evolución para la misma cita
     bloqueo = client.put(f"{API}/visitas/{visita['id']}", json={"diagnostico": "Cambiado"}, headers=H)
-    assert bloqueo.status_code == 409
+    assert bloqueo.status_code == 405
     assert visitas()[0]["diagnostico"] == visita["diagnostico"]
     duplicada = client.post(f"{API}/visitas/", json={
         "paciente_id": paciente_id, "doctor_id": doctor_id, "cita_id": cita["id"],
@@ -452,7 +452,12 @@ def test_evolucion_automatica():
     client.patch(f"{API}/citas/{cita['id']}/sillon", json={"estado": "FINALIZADA"}, headers=H)
     lista = visitas()
     assert len(lista) == 1 and lista[0]["generada_automaticamente"] is False
-    assert client.put(f"{API}/visitas/{lista[0]['id']}", json={"diagnostico": "Editada"}, headers=H).status_code == 200
+    assert client.put(f"{API}/visitas/{lista[0]['id']}", json={"diagnostico": "Editada"}, headers=H).status_code == 405, "Una evolución manual tampoco se edita"
+    assert client.delete(f"{API}/visitas/{lista[0]['id']}", headers=H).status_code == 405
+    observada = client.post(f"{API}/visitas/{lista[0]['id']}/observaciones", json={"texto": "Aclaración posterior"}, headers=H)
+    assert observada.status_code == 201, "La forma de corregirla es agregar una observación"
+    permisos = client.get(f"{API}/usuarios/permisos", headers=H).json()
+    assert not [p for p in permisos if p["codigo_permiso"] == "HISTORIA_CLINICA_UPDATE"], "Ya no hay permiso para editarlas"
 
     # Una cita sin plan también genera su evolución con el motivo de la consulta
     paciente_id = _crear_paciente()

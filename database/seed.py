@@ -51,7 +51,6 @@ def seed_database():
             # Módulo Historia Clínica Diaria
             ("HISTORIA_CLINICA", "READ", "HISTORIA_CLINICA_READ", "Consultar evoluciones médicas pasadas"),
             ("HISTORIA_CLINICA", "CREATE", "HISTORIA_CLINICA_CREATE", "Registrar atención médica de hoy y recetas"),
-            ("HISTORIA_CLINICA", "UPDATE", "HISTORIA_CLINICA_UPDATE", "Modificar notas de evolución"),
             ("HISTORIA_CLINICA", "CREATE", "HISTORIA_CLINICA_OBSERVAR", "Agregar observaciones a una evolución clínica"),
 
             # Módulo Radiografías e Imágenes
@@ -122,7 +121,7 @@ def seed_database():
             "CITAS_READ", "CITAS_CREATE", "CITAS_UPDATE", "CITAS_SILLON",
             "ODONTOGRAMA_READ", "ODONTOGRAMA_CREATE", "ODONTOGRAMA_UPDATE", "ODONTOGRAMA_DELETE",
             "TRATAMIENTOS_READ", "TRATAMIENTOS_CREATE", "TRATAMIENTOS_UPDATE",
-            "HISTORIA_CLINICA_READ", "HISTORIA_CLINICA_CREATE", "HISTORIA_CLINICA_UPDATE", "HISTORIA_CLINICA_OBSERVAR",
+            "HISTORIA_CLINICA_READ", "HISTORIA_CLINICA_CREATE", "HISTORIA_CLINICA_OBSERVAR",
             "RADIOGRAFIAS_READ", "RADIOGRAFIAS_CREATE",
             "PROTESIS_READ", "PROTESIS_CREATE", "PROTESIS_UPDATE",
             "ASISTENCIA_FICHAR"

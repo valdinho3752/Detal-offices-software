@@ -25,19 +25,6 @@ class VisitaEvolucionBase(BaseModel):
 class VisitaEvolucionCreate(VisitaEvolucionBase):
     pass
 
-class VisitaEvolucionUpdate(BaseModel):
-    doctor_id: Optional[UUID] = None
-    asistente_id: Optional[UUID] = None
-    item_plan_id: Optional[UUID] = None
-    proximo_item_plan_id: Optional[UUID] = None
-    motivo_visita: Optional[str] = None
-    diagnostico: Optional[str] = None
-    procedimiento_realizado: Optional[str] = None
-    receta_medicamentos: Optional[str] = None
-    recomendaciones: Optional[str] = None
-    fecha_proximo_control: Optional[date] = None
-    indicaciones_proxima_visita: Optional[str] = None
-
 class ObservacionEvolucionCreate(BaseModel):
     texto: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=2000)]
 

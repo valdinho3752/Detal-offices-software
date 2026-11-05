@@ -166,12 +166,13 @@ def test_hu07_completo():
     assert visita_id in ids_visitas
     print(f"✔ [Escenario 3.1] Listado cronológico de evoluciones del paciente validado.")
 
-    # Actualización menor de notas
+    # Lo que se aclare después se agrega como observación: la nota original no cambia
     update_payload = {"recomendaciones": "No masticar alimentos duros. Control de dolor favorable."}
     res_update = client.put(f"/api/v1/visitas/{visita_id}", json=update_payload, headers=headers)
-    assert res_update.status_code == 200
-    assert res_update.json()["recomendaciones"] == update_payload["recomendaciones"]
-    print("✔ [Escenario 3.2] Actualización de notas clínicas efectuada correctamente.")
+    assert res_update.status_code == 405
+    res_obs = client.post(f"/api/v1/visitas/{visita_id}/observaciones", json={"texto": update_payload["recomendaciones"]}, headers=headers)
+    assert res_obs.status_code == 201
+    print("✔ [Escenario 3.2] La nota clínica no se edita y admite observaciones.")
 
     print("\n==================================================")
     print("TODAS LAS PRUEBAS DE HU-07 PASARON CON ÉXITO")

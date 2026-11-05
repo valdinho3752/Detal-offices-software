@@ -138,7 +138,7 @@ export default function EvolucionClinicaView() {
         fecha_hora: formVisita.fecha_hora ? new Date(formVisita.fecha_hora).toISOString() : new Date().toISOString(),
         motivo_consulta: formVisita.motivo_consulta,
         observaciones_clinicas: formVisita.observaciones_clinicas,
-        diagnostico: formVisita.diagnostico || formVisita.observaciones_clinicas || 'Atención Odontológica',
+        diagnostico: formVisita.diagnostico || formVisita.observaciones_clinicas,
         procedimiento_realizado: formVisita.procedimiento_realizado,
         receta_medicamentos: formVisita.receta_medicamentos,
         indicaciones_postoperatorias: formVisita.indicaciones_postoperatorias,
@@ -488,6 +488,14 @@ export default function EvolucionClinicaView() {
                         <Shield className="w-3 h-3" /> Generada al finalizar la cita
                       </span>
                     )}
+                    {!visita.generada_automaticamente && (
+                      <span
+                        className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700/60 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 flex items-center gap-1"
+                        title="Una vez guardada solo admite observaciones del doctor o asistente"
+                      >
+                        <Shield className="w-3 h-3" /> Registrada manualmente
+                      </span>
+                    )}
                     {visita.cita_id && (
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 dark:bg-primary-500/10 border border-primary-200 dark:border-primary-500/30 text-primary-600 dark:text-primary-400 flex items-center gap-1">
                         <LinkIcon className="w-3 h-3" /> Vinculada a Cita Programada
@@ -505,10 +513,10 @@ export default function EvolucionClinicaView() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                   <div className="p-3.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/40 rounded-xl space-y-1">
                     <span className="font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">
-                      Observaciones Clínicas / Diagnóstico:
+                      {visita.generada_automaticamente ? 'Diagnóstico (tomado del odontograma):' : 'Diagnóstico:'}
                     </span>
                     <p className="text-slate-700 dark:text-slate-200 whitespace-pre-line mt-1">
-                      {visita.recomendaciones || visita.diagnostico || 'Sin observaciones registradas.'}
+                      {visita.recomendaciones || visita.diagnostico || 'Sin diagnóstico registrado.'}
                     </p>
                   </div>
 
@@ -752,12 +760,14 @@ export default function EvolucionClinicaView() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Observaciones Clínicas / Diagnóstico
+                  <label htmlFor="visita-diagnostico" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Diagnóstico *
                   </label>
                   <textarea
+                    id="visita-diagnostico"
                     rows="3"
-                    placeholder="Evolución clínica, tolerancia a la anestesia, respuesta gingival..."
+                    required
+                    placeholder="Hallazgos clínicos y diagnóstico de esta atención..."
                     value={formVisita.observaciones_clinicas}
                     onChange={(e) => setFormVisita({ ...formVisita, observaciones_clinicas: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -855,6 +865,9 @@ export default function EvolucionClinicaView() {
                 </div>
               </div>
 
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                Una vez guardada, la evolución no se puede modificar. Lo que debas aclarar después se agrega como observación.
+              </p>
               <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
@@ -867,7 +880,7 @@ export default function EvolucionClinicaView() {
                   type="submit"
                   className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-xl text-xs font-semibold transition shadow-lg shadow-primary-600/20"
                 >
-                  Guardar Nota y Receta
+                  Guardar Evolución
                 </button>
               </div>
             </form>
