@@ -2,6 +2,7 @@
 Anulación de pagos, sillones configurables y gráficos de Inteligencia de Negocio.
 Escribe datos y cierra la caja abierta: ejecutar contra una base de pruebas.
 """
+import itertools
 import os
 import random
 import sys
@@ -16,6 +17,14 @@ from app.main import app
 client = TestClient(app)
 API = "/api/v1"
 PNG = b"\x89PNG\r\n\x1a\n"
+
+
+_siguiente_dia = itertools.count(random.randint(0, 20000))
+
+
+def _dia_unico():
+    """Las suites comparten doctor y base: un día repetido chocaría con otra cita."""
+    return date(2500, 1, 1) + timedelta(days=next(_siguiente_dia))
 
 
 def _login(usuario, clave):
@@ -90,7 +99,7 @@ def _resumen():
 
 
 def _cita(paciente_id, notas="Box 1", doctor=DOCTOR, dia=None):
-    dia = dia or date(2031, 1, 1) + timedelta(days=random.randint(0, 18000))
+    dia = dia or _dia_unico()
     return client.post(f"{API}/citas/", json={
         "paciente_id": paciente_id, "doctor_id": doctor, "motivo_consulta": "Consulta",
         "fecha_inicio_programada": f"{dia}T09:00:00Z", "fecha_fin_programada": f"{dia}T10:00:00Z", "notas_adicionales": notas,
@@ -181,7 +190,7 @@ def test_anular_cuenta_de_cita():
     plan_id = _plan(paciente_id, 0)
     trat = _ok(client.post(f"{API}/tratamientos/catalogo", json={"codigo": f"A-{uuid4().hex[:10]}", "categoria": "RESTAURADORA", "nombre": "Resina", "costo_base": 100}, headers=H), 201)["id"]
     item = _ok(client.post(f"{API}/tratamientos/items", json={"plan_id": plan_id, "tratamiento_id": trat, "pieza_fdi": 16, "costo_acordado": 100}, headers=H), 201)["id"]
-    dia = date(2031, 1, 1) + timedelta(days=random.randint(0, 18000))
+    dia = _dia_unico()
     cita = _ok(client.post(f"{API}/citas/", json={
         "paciente_id": paciente_id, "doctor_id": DOCTOR, "item_plan_id": item, "motivo_consulta": "Resina",
         "fecha_inicio_programada": f"{dia}T09:00:00Z", "fecha_fin_programada": f"{dia}T10:00:00Z",
@@ -252,7 +261,7 @@ def test_sillones():
     # La agenda acepta el sillón nuevo y valida su ocupación
     paciente_id = _paciente()
     notas = f"Box {nuevo['numero']}"
-    dia = date(2031, 1, 1) + timedelta(days=random.randint(0, 18000))
+    dia = _dia_unico()
     cita = _ok(_cita(paciente_id, notas, dia=dia), 201)
     doctores = _ok(client.get(f"{API}/usuarios/doctores/lista", headers=H))
     otro_doctor = next(d["id"] for d in doctores if d["id"] != DOCTOR)

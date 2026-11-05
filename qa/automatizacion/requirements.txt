@@ -1,0 +1,4 @@
+playwright
+pytest==8.4.2
+tzdata
+pip-audit

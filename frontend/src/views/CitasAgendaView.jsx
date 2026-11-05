@@ -391,7 +391,7 @@ export default function CitasAgendaView() {
     const horaFin = getNextHourStr(hora, 60);
     setEditingCitaId(null);
     setFormCita({
-      paciente_id: queryPacienteId || formCita.paciente_id || pacientes[0]?.id || '',
+      paciente_id: queryPacienteId || '',
       doctor_id: selectedDoctorId || formCita.doctor_id || user?.doctor_id || doctores[0]?.id || '',
       selected_item_plan_ids: [],
       item_plan_id: '',
@@ -920,7 +920,7 @@ export default function CitasAgendaView() {
             onClick={() => {
               setEditingCitaId(null);
               setFormCita({
-                paciente_id: queryPacienteId || formCita.paciente_id || pacientes[0]?.id || '',
+                paciente_id: queryPacienteId || '',
                 doctor_id: selectedDoctorId || formCita.doctor_id || user?.doctor_id || doctores[0]?.id || '',
                 selected_item_plan_ids: [],
                 item_plan_id: '',
@@ -1381,7 +1381,7 @@ export default function CitasAgendaView() {
                   onDoubleClick={() => {
                     setEditingCitaId(null);
                     setFormCita({
-                      paciente_id: formCita.paciente_id || pacientes[0]?.id || '',
+                      paciente_id: queryPacienteId || '',
                       doctor_id: selectedDoctorId || formCita.doctor_id || user?.doctor_id || doctores[0]?.id || '',
                       box_numero: primerSillon,
                       fecha: item.dateStr,

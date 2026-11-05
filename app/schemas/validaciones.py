@@ -1,4 +1,5 @@
 """Reglas de datos que comparten varios formularios."""
+import re
 from typing import Optional
 
 # Numeración FDI: permanentes 11-18, 21-28, 31-38 y 41-48; temporales 51-55, 61-65, 71-75 y 81-85
@@ -12,3 +13,13 @@ def validar_pieza_fdi(valor: Optional[int]) -> Optional[int]:
     if valor is not None and valor not in PIEZAS_FDI:
         raise ValueError(f"La pieza {valor} no existe en la numeración dental FDI")
     return valor
+
+
+def validar_url_imagen(valor: Optional[str]) -> Optional[str]:
+    """Solo direcciones web o rutas propias: evita guardar enlaces que ejecuten código."""
+    if valor is None:
+        return valor
+    limpio = valor.strip()
+    if not re.match(r"^(https?://|/(?!/))", limpio, re.IGNORECASE):
+        raise ValueError("La dirección de la imagen debe empezar con http:// o https://")
+    return limpio

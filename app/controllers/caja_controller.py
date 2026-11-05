@@ -2,7 +2,7 @@ from typing import List, Optional
 from uuid import UUID
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from app.database import get_db
 from app.models import (
@@ -23,6 +23,37 @@ from app.services.gaveta import exigir_efectivo
 from app.services.nomina import porcentaje_vigente
 
 router = APIRouter(prefix="/caja", tags=["Caja Diaria y Finanzas"])
+
+MEDIOS_DE_PAGO = {
+    MetodoPagoEnum.EFECTIVO: "Efectivo",
+    MetodoPagoEnum.TARJETA_DEBITO: "Tarjeta de débito",
+    MetodoPagoEnum.TARJETA_CREDITO: "Tarjeta de crédito",
+    MetodoPagoEnum.TRANSFERENCIA: "Transferencia",
+    MetodoPagoEnum.OTRO: "Otro medio",
+}
+
+
+def _movimientos_del_turno(caja: CajaSesion, db: Session) -> list:
+    """Cobros vigentes y egresos de la sesión, del más reciente al más antiguo."""
+    pagos = db.query(Pago).options(joinedload(Pago.paciente)).filter(
+        Pago.caja_sesion_id == caja.id, Pago.anulado.is_(False)
+    ).all()
+    egresos = db.query(EgresoCaja).filter(EgresoCaja.caja_sesion_id == caja.id).all()
+    movimientos = [{
+        "tipo": "INGRESO",
+        "timestamp": pago.fecha_hora,
+        "concepto": f"Cobro a {pago.paciente.nombres} {pago.paciente.apellidos} · {MEDIOS_DE_PAGO[pago.metodo_pago]}",
+        "comprobante_numero": pago.referencia_comprobante,
+        "monto": float(pago.monto),
+    } for pago in pagos] + [{
+        "tipo": "EGRESO",
+        "timestamp": egreso.fecha_hora,
+        "concepto": egreso.concepto_motivo,
+        "comprobante_numero": egreso.numero_recibo_comprobante,
+        "monto": float(egreso.monto),
+    } for egreso in egresos]
+    return sorted(movimientos, key=lambda m: m["timestamp"], reverse=True)
+
 
 @router.get("/estado")
 def obtener_estado_caja_actual(
@@ -111,6 +142,7 @@ def obtener_estado_caja_actual(
             "transferencia": metodos_dict.get(MetodoPagoEnum.TRANSFERENCIA.value, 0.0),
         },
         "total_recaudacion_global_sesion": sum(metodos_dict.values()),
+        "movimientos": _movimientos_del_turno(caja, db),
         "mensaje": mensaje
     }
 

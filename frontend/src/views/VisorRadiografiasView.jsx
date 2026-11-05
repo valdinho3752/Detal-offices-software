@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ErrorModal from '../components/ErrorModal';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { aFechaLocal } from '../utils/fechas';
 import {
   Camera,
@@ -31,6 +32,7 @@ const TIPOS_ESTUDIO = {
 };
 
 export default function VisorRadiografiasView() {
+  const { tienePermiso } = useAuth();
   const [searchParams] = useSearchParams();
   const pacienteIdParam = searchParams.get('paciente_id');
 
@@ -161,6 +163,7 @@ export default function VisorRadiografiasView() {
           </div>
 
           <button
+            style={tienePermiso('RADIOGRAFIAS_CREATE') ? undefined : { display: 'none' }}
             onClick={() => setShowUploadModal(true)}
             className="px-4 py-2.5 bg-primary-600 hover:bg-primary-500 text-white text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-primary-600/20 whitespace-nowrap"
           >
@@ -263,6 +266,7 @@ export default function VisorRadiografiasView() {
                           <Calendar className="w-3.5 h-3.5 text-primary-500" /> {fechaStr}
                         </span>
                       </div>
+                      <h3 className="text-sm font-semibold text-slate-900 dark:text-white truncate" title={rx.titulo}>{rx.titulo}</h3>
                       <p className="text-xs text-slate-700 dark:text-slate-200 line-clamp-2">
                         {rx.informe_diagnostico || 'Sin informe diagnóstico registrado.'}
                       </p>
@@ -280,6 +284,7 @@ export default function VisorRadiografiasView() {
                       </button>
 
                       <button
+                        style={tienePermiso('RADIOGRAFIAS_DELETE') ? undefined : { display: 'none' }}
                         onClick={() => handleDeleteRx(rx.id)}
                         className="p-1 text-slate-400 hover:text-rose-500 transition"
                         title="Eliminar radiografía"

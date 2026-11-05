@@ -1,15 +1,37 @@
 const API_BASE = '/api/v1';
 
+function mensajeDeValidacion(mensaje) {
+  const texto = String(mensaje || '').replace(/^Value error, /, '');
+  if (texto.startsWith('value is not a valid email')) return 'El correo electrónico no es válido';
+  if (texto === 'Field required') return 'Falta completar un campo obligatorio';
+  if (texto.startsWith('Input should be a valid date')) return 'La fecha no es válida';
+  return texto;
+}
+
 // La API describe los datos rechazados como una lista: se muestra solo el texto para la persona
 function textoDeError(detalle, porDefecto) {
   if (typeof detalle === 'string') return detalle;
   if (Array.isArray(detalle)) {
-    return detalle.map((e) => String(e.msg || '').replace(/^Value error, /, '')).filter(Boolean).join('. ') || porDefecto;
+    return detalle.map((e) => mensajeDeValidacion(e.msg)).filter(Boolean).join('. ') || porDefecto;
   }
   return porDefecto;
 }
 
-async function request(endpoint, options = {}) {
+const escriturasEnCurso = new Map();
+
+// Un doble clic no debe cobrar ni registrar dos veces: la misma escritura en curso no se reenvía
+function request(endpoint, options = {}) {
+  if (!options.method || options.method === 'GET' || options.body instanceof FormData) {
+    return enviar(endpoint, options);
+  }
+  const clave = `${options.method} ${endpoint} ${options.body ?? ''}`;
+  if (!escriturasEnCurso.has(clave)) {
+    escriturasEnCurso.set(clave, enviar(endpoint, options).finally(() => escriturasEnCurso.delete(clave)));
+  }
+  return escriturasEnCurso.get(clave);
+}
+
+async function enviar(endpoint, options) {
   const token = localStorage.getItem('token');
   const headers = {
     ...options.headers,
@@ -98,6 +120,7 @@ export const api = {
   getPaciente: (id) => request(`/pacientes/${id}`),
   createPaciente: (data) => request('/pacientes/', { method: 'POST', body: JSON.stringify(data) }),
   updatePaciente: (id, data) => request(`/pacientes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  updateAntecedentes: (id, data) => request(`/pacientes/${id}/antecedentes`, { method: 'PUT', body: JSON.stringify(data) }),
   getPacienteSaldo: (id) => request(`/pacientes/${id}/saldo`),
 
   // ==================== ODONTOGRAMA & PIEZAS ====================

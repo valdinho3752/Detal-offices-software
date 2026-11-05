@@ -31,7 +31,7 @@ export default function LoginView() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex flex-col justify-center items-center p-4 relative transition-colors duration-200">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex flex-col justify-center items-center p-4 relative overflow-hidden transition-colors duration-200">
       {/* Botón Theme Toggle en esquina superior */}
       <div className="absolute top-5 right-5 z-20">
         <button

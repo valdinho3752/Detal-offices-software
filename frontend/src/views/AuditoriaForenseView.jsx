@@ -154,10 +154,10 @@ export default function AuditoriaForenseView() {
                   return (
                     <tr key={log.id} className="hover:bg-slate-700/20 transition">
                       <td className="py-3 px-4 font-mono text-slate-400">
-                        {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Fecha'}
+                        {new Date(log.fecha_hora).toLocaleString()}
                       </td>
                       <td className="py-3 px-4 font-semibold text-white">
-                        {log.usuario_nombre || log.usuario?.username || 'Sistema'}
+                        {log.usuario_nombre || 'Sistema'}
                       </td>
                       <td className="py-3 px-4 font-mono text-primary-300">{log.tabla_afectada}</td>
                       <td className="py-3 px-4 text-center">
@@ -165,7 +165,7 @@ export default function AuditoriaForenseView() {
                           {log.accion}
                         </span>
                       </td>
-                      <td className="py-3 px-4 font-mono text-slate-400 text-[11px]">{log.ip_address || '127.0.0.1'}</td>
+                      <td className="py-3 px-4 font-mono text-slate-400 text-[11px]">{log.ip_origen || 'Sin registro'}</td>
                       <td className="py-3 px-4 text-right">
                         <button
                           onClick={() => setSelectedLog(log)}
@@ -240,8 +240,8 @@ export default function AuditoriaForenseView() {
 
             <div className="p-3 bg-slate-800/80 rounded-xl border border-slate-700 text-xs text-slate-400 flex items-center justify-between font-mono">
               <span>Usuario: {selectedLog.usuario_nombre || 'Desconocido'}</span>
-              <span>IP: {selectedLog.ip_address || '127.0.0.1'}</span>
-              <span>Timestamp: {new Date(selectedLog.timestamp).toISOString()}</span>
+              <span>IP: {selectedLog.ip_origen || 'Sin registro'}</span>
+              <span>Fecha: {new Date(selectedLog.fecha_hora).toLocaleString()}</span>
             </div>
           </div>
         </div>

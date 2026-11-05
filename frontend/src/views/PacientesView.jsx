@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ErrorModal from '../components/ErrorModal';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import {
   Users,
   UserPlus,
@@ -24,6 +25,8 @@ import {
 import { useMoneda } from '../context/MonedaContext';
 
 export default function PacientesView() {
+  const { tienePermiso } = useAuth();
+  const puedeEditarAnamnesis = tienePermiso('ANTECEDENTES_UPDATE');
   const { moneda } = useMoneda();
   const [pacientes, setPacientes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +44,7 @@ export default function PacientesView() {
     tipo_documento: 'CI',
     numero_documento: '',
     fecha_nacimiento: '',
-    sexo: 'M',
+    genero: 'MASCULINO',
     telefono: '',
     email: '',
     direccion: '',
@@ -89,7 +92,7 @@ export default function PacientesView() {
       tipo_documento: 'CI',
       numero_documento: '',
       fecha_nacimiento: '',
-      sexo: 'M',
+      genero: 'MASCULINO',
       telefono: '',
       email: '',
       direccion: '',
@@ -110,13 +113,13 @@ export default function PacientesView() {
       tipo_documento: p.tipo_documento || 'CI',
       numero_documento: p.numero_documento || '',
       fecha_nacimiento: p.fecha_nacimiento ? p.fecha_nacimiento.slice(0, 10) : '',
-      sexo: p.sexo || 'M',
+      genero: p.genero || 'OTRO',
       telefono: p.telefono || '',
       email: p.email || '',
       direccion: p.direccion || '',
-      alergias: p.alergias || '',
-      enfermedades_sistemicas: p.enfermedades_sistemicas || '',
-      medicamentos_actuales: p.medicamentos_actuales || '',
+      alergias: p.antecedentes?.alergias || '',
+      enfermedades_sistemicas: p.antecedentes?.enfermedades_sistemicas || '',
+      medicamentos_actuales: p.antecedentes?.medicamentos_actuales || '',
       contacto_emergencia_nombre: p.contacto_emergencia_nombre || '',
       contacto_emergencia_telefono: p.contacto_emergencia_telefono || '',
     });
@@ -127,13 +130,22 @@ export default function PacientesView() {
     e.preventDefault();
     setError('');
     try {
+      // La ficha y la anamnesis se guardan por separado; un campo opcional vacío se guarda como "sin dato"
+      const { alergias, enfermedades_sistemicas, medicamentos_actuales, ...resto } = form;
+      const ficha = Object.fromEntries(Object.entries(resto).map(([campo, valor]) => [campo, valor === '' ? null : valor]));
+      const antecedentes = { alergias, enfermedades_sistemicas, medicamentos_actuales };
+      let guardado;
       if (editingId) {
-        await api.updatePaciente(editingId, form);
+        guardado = await api.updatePaciente(editingId, ficha);
+        if (puedeEditarAnamnesis) {
+          guardado = { ...guardado, antecedentes: await api.updateAntecedentes(editingId, antecedentes) };
+        }
         setSuccess('Ficha del paciente actualizada con éxito');
       } else {
-        await api.createPaciente(form);
+        guardado = await api.createPaciente({ ...ficha, antecedentes });
         setSuccess('Paciente registrado correctamente');
       }
+      if (selectedPaciente?.id === guardado.id) setSelectedPaciente(guardado);
       setShowModal(false);
       loadPacientes(search);
       setTimeout(() => setSuccess(''), 3000);
@@ -153,6 +165,7 @@ export default function PacientesView() {
           </p>
         </div>
         <button
+          style={tienePermiso('PACIENTES_CREATE') ? undefined : { display: 'none' }}
           onClick={handleOpenCreate}
           className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-lg shadow-primary-600/20"
         >
@@ -218,7 +231,7 @@ export default function PacientesView() {
                     </div>
                     <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
                       <span>{p.telefono || 'Sin teléfono'}</span>
-                      {p.alergias && (
+                      {p.antecedentes?.alergias && (
                         <span className="text-amber-400 font-medium text-[10px] flex items-center gap-1">
                           <AlertTriangle className="w-3 h-3" /> Alergias
                         </span>
@@ -247,7 +260,7 @@ export default function PacientesView() {
                     </span>
                   </div>
                   <div className="flex items-center gap-4 text-xs text-slate-400 mt-1">
-                    <span>Sexo: {selectedPaciente.sexo === 'M' ? 'Masculino' : selectedPaciente.sexo === 'F' ? 'Femenino' : 'Otro'}</span>
+                    <span>Sexo: {selectedPaciente.genero === 'MASCULINO' ? 'Masculino' : selectedPaciente.genero === 'FEMENINO' ? 'Femenino' : 'Otro'}</span>
                     <span>·</span>
                     <span>Nacimiento: {selectedPaciente.fecha_nacimiento?.slice(0, 10) || 'N/D'}</span>
                   </div>
@@ -261,6 +274,7 @@ export default function PacientesView() {
                     <Calendar className="w-3.5 h-3.5" /> Agendar Cita
                   </Link>
                   <button
+                    style={tienePermiso('PACIENTES_UPDATE') ? undefined : { display: 'none' }}
                     onClick={() => handleOpenEdit(selectedPaciente)}
                     className="px-3 py-1.5 bg-slate-700/80 hover:bg-slate-600 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1"
                   >
@@ -355,7 +369,7 @@ export default function PacientesView() {
                       <AlertTriangle className="w-4 h-4" /> Alergias Conocidas
                     </div>
                     <p className="text-xs text-slate-300">
-                      {selectedPaciente.alergias || 'Sin alergias conocidas declaradas.'}
+                      {selectedPaciente.antecedentes?.alergias || 'Sin alergias conocidas declaradas.'}
                     </p>
                   </div>
 
@@ -365,7 +379,7 @@ export default function PacientesView() {
                       <HeartPulse className="w-4 h-4" /> Enfermedades Sistémicas
                     </div>
                     <p className="text-xs text-slate-300">
-                      {selectedPaciente.enfermedades_sistemicas || 'Ninguna condición registrada.'}
+                      {selectedPaciente.antecedentes?.enfermedades_sistemicas || 'Ninguna condición registrada.'}
                     </p>
                   </div>
 
@@ -375,7 +389,7 @@ export default function PacientesView() {
                       <Pill className="w-4 h-4" /> Medicación Habitual
                     </div>
                     <p className="text-xs text-slate-300">
-                      {selectedPaciente.medicamentos_actuales || 'No consume medicamentos habituales.'}
+                      {selectedPaciente.antecedentes?.medicamentos_actuales || 'No consume medicamentos habituales.'}
                     </p>
                   </div>
                 </div>
@@ -482,12 +496,12 @@ export default function PacientesView() {
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">Sexo *</label>
                   <select
-                    value={form.sexo}
-                    onChange={(e) => setForm({ ...form, sexo: e.target.value })}
+                    value={form.genero}
+                    onChange={(e) => setForm({ ...form, genero: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs"
                   >
-                    <option value="M">Masculino</option>
-                    <option value="F">Femenino</option>
+                    <option value="MASCULINO">Masculino</option>
+                    <option value="FEMENINO">Femenino</option>
                     <option value="OTRO">Otro</option>
                   </select>
                 </div>
@@ -495,18 +509,20 @@ export default function PacientesView() {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">F. Nacimiento</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">F. Nacimiento *</label>
                   <input
                     type="date"
+                    required
                     value={form.fecha_nacimiento}
                     onChange={(e) => setForm({ ...form, fecha_nacimiento: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Teléfono</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Teléfono *</label>
                   <input
                     type="text"
+                    required
                     value={form.telefono}
                     onChange={(e) => setForm({ ...form, telefono: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs"
@@ -524,10 +540,23 @@ export default function PacientesView() {
               </div>
 
               <div className="border-t border-slate-800 pt-3">
+                <div className="mb-3">
+                  <label htmlFor="paciente-direccion" className="block text-xs font-semibold text-slate-300 mb-1">Dirección</label>
+                  <input
+                    id="paciente-direccion"
+                    type="text"
+                    value={form.direccion}
+                    onChange={(e) => setForm({ ...form, direccion: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs"
+                  />
+                </div>
                 <span className="text-[11px] font-semibold text-rose-400 uppercase tracking-wider">
                   Anamnesis Clínica & Salud General
                 </span>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
+                {editingId && !puedeEditarAnamnesis && (
+                  <p className="text-[11px] text-slate-400 mt-1">Solo el personal clínico puede cambiar la anamnesis.</p>
+                )}
+                <fieldset disabled={Boolean(editingId) && !puedeEditarAnamnesis} className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2 disabled:opacity-60">
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1">Alergias</label>
                     <textarea
@@ -558,7 +587,7 @@ export default function PacientesView() {
                       className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs"
                     />
                   </div>
-                </div>
+                </fieldset>
               </div>
 
               <div className="border-t border-slate-800 pt-3">

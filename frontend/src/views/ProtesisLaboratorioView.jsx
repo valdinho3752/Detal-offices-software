@@ -29,9 +29,19 @@ const COLORES_VITA = [
   'BLEACH_BL1', 'BLEACH_BL2'
 ];
 
+const ETIQUETAS_ESTADO = {
+  ENVIADO: 'Enviado',
+  EN_LABORATORIO: 'En proceso',
+  RECIBIDO_EN_CLINICA: 'Recibido',
+  PRUEBA_EN_BOCA: 'Prueba en boca',
+  AJUSTE_REPETICION: 'Ajuste',
+  INSTALADO_FINALIZADO: 'Instalado',
+  CANCELADO: 'Cancelado',
+};
+
 export default function ProtesisLaboratorioView() {
   const { moneda, simbolo } = useMoneda();
-  const { user } = useAuth();
+  const { user, tienePermiso } = useAuth();
   const [protesis, setProtesis] = useState([]);
   const [pacientes, setPacientes] = useState([]);
   const [doctores, setDoctores] = useState([]);
@@ -96,7 +106,7 @@ export default function ProtesisLaboratorioView() {
   const handleUpdateEstado = async (id, nuevoEstado) => {
     try {
       const payload = { estado: nuevoEstado };
-      if (nuevoEstado === 'RECIBIDO') {
+      if (nuevoEstado === 'RECIBIDO_EN_CLINICA') {
         payload.fecha_recepcion_real = aFechaLocal();
       }
       await api.updateProtesis(id, payload);
@@ -149,6 +159,7 @@ export default function ProtesisLaboratorioView() {
           </p>
         </div>
         <button
+          style={tienePermiso('PROTESIS_CREATE') ? undefined : { display: 'none' }}
           onClick={() => setShowModal(true)}
           className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-lg shadow-primary-600/20"
         >
@@ -182,10 +193,12 @@ export default function ProtesisLaboratorioView() {
         >
           <option value="">Todos los Estados</option>
           <option value="ENVIADO">Enviado al Laboratorio</option>
-          <option value="EN_PROCESO">En Proceso / Fabricación</option>
-          <option value="RECIBIDO">Recibido en Clínica</option>
-          <option value="COLOCADO">Colocado en Paciente</option>
-          <option value="RECHAZADO_AJUSTE">Rechazado / Repetir Ajuste</option>
+          <option value="EN_LABORATORIO">En Proceso / Fabricación</option>
+          <option value="RECIBIDO_EN_CLINICA">Recibido en Clínica</option>
+          <option value="PRUEBA_EN_BOCA">Prueba en Boca</option>
+          <option value="AJUSTE_REPETICION">Ajuste / Repetición</option>
+          <option value="INSTALADO_FINALIZADO">Instalado en Paciente</option>
+          <option value="CANCELADO">Cancelado</option>
         </select>
       </div>
 
@@ -235,17 +248,17 @@ export default function ProtesisLaboratorioView() {
                       </td>
                       <td className="py-3 px-4">
                         <span className="font-semibold text-primary-300">{p.tipo_trabajo}</span>
-                        {p.pieza_fdi && (
-                          <div className="text-[10px] font-mono text-slate-400">Pieza FDI #{p.pieza_fdi}</div>
+                        {p.piezas_dentales && (
+                          <div className="text-[10px] font-mono text-slate-400">{p.piezas_dentales}</div>
                         )}
                       </td>
                       <td className="py-3 px-4 text-center">
                         <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded font-mono font-bold text-[11px]">
-                          {p.color_vita || 'N/A'}
+                          {p.color_guia_vita || 'N/A'}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-center font-mono text-slate-300">
-                        {p.fecha_prometida_entrega ? p.fecha_prometida_entrega.slice(0, 10) : 'Pendiente'}
+                        {p.fecha_entrega_esperada ? p.fecha_entrega_esperada.slice(0, 10) : 'Pendiente'}
                       </td>
                       <td className="py-3 px-4 text-right font-mono text-slate-300">
                         {moneda(p.costo_laboratorio)}
@@ -253,38 +266,54 @@ export default function ProtesisLaboratorioView() {
                       <td className="py-3 px-4 text-center">
                         <span
                           className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                            p.estado === 'RECIBIDO'
+                            p.estado === 'RECIBIDO_EN_CLINICA'
                               ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
-                              : p.estado === 'COLOCADO'
+                              : p.estado === 'INSTALADO_FINALIZADO'
                               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                              : p.estado === 'RECHAZADO_AJUSTE'
+                              : p.estado === 'AJUSTE_REPETICION' || p.estado === 'CANCELADO'
                               ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
                               : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
                           }`}
                         >
-                          {p.estado}
+                          {ETIQUETAS_ESTADO[p.estado] || p.estado}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right space-x-1">
-                        {p.estado === 'ENVIADO' && (
+                        {tienePermiso('PROTESIS_UPDATE') && p.estado === 'ENVIADO' && (
                           <button
-                            onClick={() => handleUpdateEstado(p.id, 'EN_PROCESO')}
+                            onClick={() => handleUpdateEstado(p.id, 'EN_LABORATORIO')}
                             className="px-2 py-1 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 rounded text-[11px] transition"
                           >
                             En Proceso
                           </button>
                         )}
-                        {(p.estado === 'ENVIADO' || p.estado === 'EN_PROCESO') && (
+                        {tienePermiso('PROTESIS_UPDATE') && ['ENVIADO', 'EN_LABORATORIO', 'AJUSTE_REPETICION'].includes(p.estado) && (
                           <button
-                            onClick={() => handleUpdateEstado(p.id, 'RECIBIDO')}
+                            onClick={() => handleUpdateEstado(p.id, 'RECIBIDO_EN_CLINICA')}
                             className="px-2 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded text-[11px] transition"
                           >
                             Recibir en Clínica
                           </button>
                         )}
-                        {p.estado === 'RECIBIDO' && (
+                        {tienePermiso('PROTESIS_UPDATE') && p.estado === 'RECIBIDO_EN_CLINICA' && (
                           <button
-                            onClick={() => handleUpdateEstado(p.id, 'COLOCADO')}
+                            onClick={() => handleUpdateEstado(p.id, 'PRUEBA_EN_BOCA')}
+                            className="px-2 py-1 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 rounded text-[11px] transition"
+                          >
+                            Prueba en Boca
+                          </button>
+                        )}
+                        {tienePermiso('PROTESIS_UPDATE') && p.estado === 'PRUEBA_EN_BOCA' && (
+                          <button
+                            onClick={() => handleUpdateEstado(p.id, 'AJUSTE_REPETICION')}
+                            className="px-2 py-1 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 rounded text-[11px] transition"
+                          >
+                            Requiere Ajuste
+                          </button>
+                        )}
+                        {tienePermiso('PROTESIS_UPDATE') && ['RECIBIDO_EN_CLINICA', 'PRUEBA_EN_BOCA'].includes(p.estado) && (
+                          <button
+                            onClick={() => handleUpdateEstado(p.id, 'INSTALADO_FINALIZADO')}
                             className="px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded text-[11px] transition"
                           >
                             Colocado

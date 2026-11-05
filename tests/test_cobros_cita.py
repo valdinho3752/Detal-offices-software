@@ -2,6 +2,7 @@
 Cobro que se crea al finalizar una cita: edición, confirmación y efecto en saldos, caja y comisiones.
 Escribe datos: ejecutar contra una base de pruebas.
 """
+import itertools
 import os
 import random
 import sys
@@ -15,6 +16,14 @@ from app.main import app
 
 client = TestClient(app)
 API = "/api/v1"
+
+
+_siguiente_dia = itertools.count(random.randint(0, 20000))
+
+
+def _dia_unico():
+    """Las suites comparten doctor y base: un día repetido chocaría con otra cita."""
+    return date(2400, 1, 1) + timedelta(days=next(_siguiente_dia))
 
 
 def _login(usuario, clave):
@@ -60,7 +69,7 @@ def _item(plan_id, costo, tratamiento=None, pieza=16):
 
 
 def _cita(paciente_id, item=None, notas=None, tratamiento=None):
-    dia = date(2031, 1, 1) + timedelta(days=random.randint(0, 18000))
+    dia = _dia_unico()
     return _ok(client.post(f"{API}/citas/", json={
         "paciente_id": paciente_id, "doctor_id": DOCTOR, "item_plan_id": item, "tratamiento_id": tratamiento,
         "fecha_inicio_programada": f"{dia}T09:00:00Z", "fecha_fin_programada": f"{dia}T10:00:00Z",
