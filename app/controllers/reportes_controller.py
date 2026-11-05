@@ -47,9 +47,9 @@ def reporte_tratamientos_mayor_demanda(
     )
 
     if fecha_desde:
-        query = query.filter(ItemPlanTratamiento.created_at >= fecha_desde)
+        query = query.filter(ItemPlanTratamiento.fecha_realizacion >= fecha_desde)
     if fecha_hasta:
-        query = query.filter(ItemPlanTratamiento.created_at <= fecha_hasta)
+        query = query.filter(ItemPlanTratamiento.fecha_realizacion <= fecha_hasta)
 
     resultados = (
         query.group_by(CatalogoTratamiento.id)
@@ -105,7 +105,8 @@ def reporte_productividad_sillon_doctores(
         if fecha_desde:
             citas_query = citas_query.filter(Cita.fecha_inicio_programada >= fecha_desde)
         if fecha_hasta:
-            citas_query = citas_query.filter(Cita.fecha_fin_programada <= fecha_hasta)
+            # La cita cuenta el día en que empieza, aunque termine después de medianoche
+            citas_query = citas_query.filter(Cita.fecha_inicio_programada <= fecha_hasta)
 
         total_citas = citas_query.count()
         finalizadas = citas_query.filter(Cita.estado == EstadoCitaEnum.FINALIZADA).count()

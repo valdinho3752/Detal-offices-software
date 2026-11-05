@@ -1,8 +1,9 @@
 import uuid
+from datetime import datetime, timezone
 from decimal import Decimal
 from sqlalchemy import Column, String, Integer, Boolean, DateTime, Date, ForeignKey, Numeric, Text
 from sqlalchemy.dialects.postgresql import UUID, ENUM
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 from sqlalchemy.sql import func
 from app.database import Base
 from app.models.enums import CategoriaTratamientoEnum, EstadoPlanEnum, EstadoItemPlanEnum
@@ -53,6 +54,7 @@ class ItemPlanTratamiento(Base):
     estado = Column(ENUM(EstadoItemPlanEnum, name="estado_item_plan_enum", create_type=False), default=EstadoItemPlanEnum.PENDIENTE, nullable=False)
     costo_acordado = Column(Numeric(12, 2), nullable=False)
     observaciones = Column(Text, nullable=True)
+    fecha_realizacion = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     plan = relationship("PlanTratamiento", back_populates="items")
@@ -62,6 +64,15 @@ class ItemPlanTratamiento(Base):
     visitas_realizadas = relationship("VisitaEvolucion", foreign_keys="VisitaEvolucion.item_plan_id", back_populates="item_plan")
     visitas_programadas = relationship("VisitaEvolucion", foreign_keys="VisitaEvolucion.proximo_item_plan_id", back_populates="proximo_item_plan")
     ordenes_protesis = relationship("OrdenLaboratorioProtesis", back_populates="item_plan")
+
+    @validates("estado")
+    def _fechar_realizacion(self, _clave, estado):
+        """Aplica a cualquier cambio de estado; quien conozca la fecha real, como la cita, la ajusta después."""
+        if estado != EstadoItemPlanEnum.COMPLETADO:
+            self.fecha_realizacion = None
+        elif self.estado != EstadoItemPlanEnum.COMPLETADO:
+            self.fecha_realizacion = datetime.now(timezone.utc)
+        return estado
 
     @property
     def es_proxima_sesion(self) -> bool:

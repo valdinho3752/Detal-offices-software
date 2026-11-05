@@ -174,11 +174,11 @@ export const api = {
   getAuditoria: (params = '') => request(`/auditoria/${params}`),
 
   // ==================== REPORTES ANALÍTICOS BI (HU-14) ====================
-  getReporteDemanda: (limit = 10) => request(`/reportes/tratamientos-demanda?limit=${limit}`),
-  getReporteProductividad: () => request('/reportes/productividad-doctores'),
-  getReporteFinanciero: () => request('/reportes/resumen-financiero'),
-  getGraficoReporte: async (nombre, tema) => {
-    const res = await fetch(`${API_BASE}/reportes/graficos/${nombre}?tema=${tema}`, {
+  getReporteDemanda: (limit = 10, periodo = {}) => request(`/reportes/tratamientos-demanda?${new URLSearchParams({ limit, ...periodo })}`),
+  getReporteProductividad: (periodo = {}) => request(`/reportes/productividad-doctores?${new URLSearchParams(periodo)}`),
+  getReporteFinanciero: (periodo = {}) => request(`/reportes/resumen-financiero?${new URLSearchParams(periodo)}`),
+  getGraficoReporte: async (nombre, tema, periodo = {}) => {
+    const res = await fetch(`${API_BASE}/reportes/graficos/${nombre}?${new URLSearchParams({ tema, ...periodo })}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     });
     if (!res.ok) throw new Error('No se pudo generar el gráfico');

@@ -84,7 +84,9 @@ def registrar_visita_evolucion(
     if datos.item_plan_id:
         item_hoy = db.query(ItemPlanTratamiento).filter(ItemPlanTratamiento.id == datos.item_plan_id).first()
         if item_hoy:
-            item_hoy.estado = EstadoItemPlanEnum.COMPLETADO
+            if item_hoy.estado != EstadoItemPlanEnum.COMPLETADO:
+                item_hoy.estado = EstadoItemPlanEnum.COMPLETADO
+                item_hoy.fecha_realizacion = visita.fecha_hora
             registrar_tratamiento_realizado(visita.paciente_id, visita.doctor_id, item_hoy, db)
 
     # Marcar el ítem de la siguiente cita como PROXIMA_SESION

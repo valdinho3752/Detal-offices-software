@@ -96,7 +96,7 @@ def grafico_tratamientos_demanda(items: List, tema_nombre: str) -> bytes:
     """Ranking horizontal: una sola serie, con el valor al final porque una imagen no tiene tooltip."""
     tema = TEMAS[tema_nombre]
     if not items:
-        return _sin_datos("Todavía no hay tratamientos completados", tema)
+        return _sin_datos("Sin tratamientos completados en este periodo", tema)
 
     filas = len(items)
     alto = 0.42 * filas + 0.2
@@ -113,7 +113,7 @@ def grafico_productividad_doctores(doctores: List, tema_nombre: str) -> bytes:
     doctores = [d for d in doctores if d.total_citas > 0]
     doctores = sorted(doctores, key=lambda d: (-d.citas_finalizadas, d.doctor_nombre))[:10]
     if not doctores:
-        return _sin_datos("Todavía no hay citas registradas", tema)
+        return _sin_datos("Sin citas en este periodo", tema)
 
     filas = len(doctores)
     encabezado = 0.32

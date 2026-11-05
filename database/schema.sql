@@ -455,6 +455,7 @@ CREATE TABLE items_plan_tratamiento (
     estado estado_item_plan_enum DEFAULT 'PENDIENTE' NOT NULL,
     costo_acordado NUMERIC(12, 2) NOT NULL,
     observaciones TEXT,
+    fecha_realizacion TIMESTAMP WITH TIME ZONE, -- Solo en estado COMPLETADO
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

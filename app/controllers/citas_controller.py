@@ -231,6 +231,7 @@ def _finalizar_tratamientos_cita(cita: Cita, usuario_id: UUID, db: Session):
             diagnosticos.append(diagnostico)
         if item.estado != EstadoItemPlanEnum.COMPLETADO:
             item.estado = EstadoItemPlanEnum.COMPLETADO
+            item.fecha_realizacion = cita.fecha_inicio_programada
             registrar_tratamiento_realizado(cita.paciente_id, cita.doctor_id, item, db)
 
     crear_evolucion_de_cita(cita, items, diagnosticos, usuario_id, db)

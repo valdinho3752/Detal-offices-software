@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Activity, AlertTriangle, BarChart3, DollarSign, TrendingUp, Users } from 'lucide-react';
 import { api } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
@@ -6,37 +6,147 @@ import { useTheme } from '../context/ThemeContext';
 const moneda = (valor) => `$${Number(valor || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}`;
 const TARJETA = 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-5 space-y-4 shadow-sm';
 const CELDA = 'py-2 px-3';
+const ACTUALIZANDO = 'transition-opacity opacity-50';
+
+const soloDia = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const sumarDias = (d, dias) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + dias);
+const lunesDe = (d) => sumarDias(d, -((d.getDay() + 6) % 7));
+const aTextoFecha = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const fechaVisible = (d) => d.toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' });
+
+// Los periodos en curso terminan hoy, para no contar como pendientes las citas futuras
+const PERIODOS = [
+  { id: 'hoy', etiqueta: 'Hoy', rango: (h) => [h, h] },
+  { id: 'semana', etiqueta: 'Esta semana', rango: (h) => [lunesDe(h), h] },
+  { id: 'semana_pasada', etiqueta: 'Semana pasada', rango: (h) => [sumarDias(lunesDe(h), -7), sumarDias(lunesDe(h), -1)] },
+  { id: 'mes', etiqueta: 'Mes actual', rango: (h) => [new Date(h.getFullYear(), h.getMonth(), 1), h] },
+  { id: 'mes_pasado', etiqueta: 'Mes pasado', rango: (h) => [new Date(h.getFullYear(), h.getMonth() - 1, 1), new Date(h.getFullYear(), h.getMonth(), 0)] },
+  { id: 'ultimos_30', etiqueta: 'Últimos 30 días', rango: (h) => [sumarDias(h, -29), h] },
+  { id: 'anio', etiqueta: 'Este año', rango: (h) => [new Date(h.getFullYear(), 0, 1), h] },
+  { id: 'todo', etiqueta: 'Todo', rango: () => [null, null] },
+];
+
+function rangoDePeriodo(id) {
+  const [desde, hasta] = PERIODOS.find((p) => p.id === id).rango(soloDia(new Date()));
+  return { id, desde, hasta };
+}
+
+// El navegador convierte cada límite de su día local a UTC, así el corte coincide con la hora de la clínica
+function aPeriodoApi({ desde, hasta }) {
+  if (!desde) return {};
+  const finDelDia = new Date(hasta.getFullYear(), hasta.getMonth(), hasta.getDate(), 23, 59, 59, 999);
+  return { fecha_desde: desde.toISOString(), fecha_hasta: finDelDia.toISOString() };
+}
+
+function textoDelRango({ desde, hasta }) {
+  if (!desde) return 'Todo el historial';
+  if (desde.getTime() === hasta.getTime()) return fechaVisible(desde);
+  return `Del ${fechaVisible(desde)} al ${fechaVisible(hasta)}`;
+}
+
+function SelectorPeriodo({ filtro, onCambiar }) {
+  const [personalizando, setPersonalizando] = useState(false);
+  const [textos, setTextos] = useState({ desde: '', hasta: '' });
+  const invertido = Boolean(textos.desde && textos.hasta && textos.desde > textos.hasta);
+
+  const abrirPersonalizado = () => {
+    const hoy = aTextoFecha(soloDia(new Date()));
+    setTextos({
+      desde: filtro.desde ? aTextoFecha(filtro.desde) : hoy,
+      hasta: filtro.hasta ? aTextoFecha(filtro.hasta) : hoy,
+    });
+    setPersonalizando(true);
+  };
+
+  const cambiarFecha = (campo, valor) => {
+    const nuevos = { ...textos, [campo]: valor };
+    setTextos(nuevos);
+    // Un rango incompleto o invertido no se aplica: sigue visible el último válido
+    if (nuevos.desde && nuevos.hasta && nuevos.desde <= nuevos.hasta) {
+      onCambiar({
+        id: 'personalizado',
+        desde: new Date(`${nuevos.desde}T00:00:00`),
+        hasta: new Date(`${nuevos.hasta}T00:00:00`),
+      });
+    }
+  };
+
+  const claseBoton = (activo) => `px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+    activo
+      ? 'bg-primary-600 border-primary-600 text-white'
+      : 'bg-white dark:bg-slate-800/70 border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60'
+  }`;
+  const claseFecha = 'px-2 py-1.5 rounded-lg text-xs border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/70 text-slate-900 dark:text-white';
+
+  return (
+    <div className="space-y-2">
+      <div role="group" aria-label="Periodo del reporte" className="flex flex-wrap items-center gap-2">
+        {PERIODOS.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            aria-pressed={!personalizando && filtro.id === p.id}
+            className={claseBoton(!personalizando && filtro.id === p.id)}
+            onClick={() => { setPersonalizando(false); onCambiar(rangoDePeriodo(p.id)); }}
+          >
+            {p.etiqueta}
+          </button>
+        ))}
+        <button type="button" aria-pressed={personalizando} className={claseBoton(personalizando)} onClick={abrirPersonalizado}>
+          Personalizado
+        </button>
+      </div>
+      {personalizando && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+          <label className="flex items-center gap-1.5">
+            Desde
+            <input type="date" value={textos.desde} onChange={(e) => cambiarFecha('desde', e.target.value)} className={claseFecha} />
+          </label>
+          <label className="flex items-center gap-1.5">
+            Hasta
+            <input type="date" value={textos.hasta} onChange={(e) => cambiarFecha('hasta', e.target.value)} className={claseFecha} />
+          </label>
+          {invertido && <span role="alert" className="text-rose-600 dark:text-rose-400">La fecha inicial no puede ser posterior a la final</span>}
+        </div>
+      )}
+      <p className="text-xs text-slate-500 dark:text-slate-400" data-testid="rango-reporte">{textoDelRango(filtro)}</p>
+    </div>
+  );
+}
 
 // El gráfico lo dibuja matplotlib en el servidor; la petición lleva la sesión, por eso no es un <img> directo
-function GraficoServidor({ nombre, descripcion, tema }) {
+function GraficoServidor({ nombre, descripcion, tema, periodo }) {
   const [url, setUrl] = useState(null);
   const [error, setError] = useState('');
+  const [actualizando, setActualizando] = useState(true);
 
   useEffect(() => {
     let vigente = true;
-    let urlCreada = null;
-    api.getGraficoReporte(nombre, tema)
+    setActualizando(true);
+    api.getGraficoReporte(nombre, tema, periodo)
       .then((blob) => {
         if (!vigente) return;
-        urlCreada = URL.createObjectURL(blob);
-        setUrl(urlCreada);
+        setUrl(URL.createObjectURL(blob));
         setError('');
       })
-      .catch((err) => vigente && setError(err.message || 'No se pudo generar el gráfico'));
-    return () => {
-      vigente = false;
-      if (urlCreada) URL.revokeObjectURL(urlCreada);
-    };
-  }, [nombre, tema]);
+      .catch((err) => vigente && setError(err.message || 'No se pudo generar el gráfico'))
+      .finally(() => vigente && setActualizando(false));
+    return () => { vigente = false; };
+  }, [nombre, tema, periodo]);
+
+  useEffect(() => () => { if (url) URL.revokeObjectURL(url); }, [url]);
 
   if (error) return <p className="py-8 text-center text-rose-600 dark:text-rose-400 text-xs">{error}</p>;
   if (!url) return <p className="py-8 text-center text-slate-500 dark:text-slate-400 text-xs">Generando gráfico...</p>;
-  return <img src={url} alt={descripcion} className="w-full h-auto" />;
+  // Mientras llega el periodo nuevo se conserva el anterior atenuado, sin saltos en la página
+  return <img src={url} alt={descripcion} aria-busy={actualizando} className={`w-full h-auto ${actualizando ? ACTUALIZANDO : 'transition-opacity'}`} />;
 }
 
 export default function ReportesBIView() {
   const { isDark } = useTheme();
   const tema = isDark ? 'oscuro' : 'claro';
+  const [filtro, setFiltro] = useState(() => rangoDePeriodo('mes'));
+  const periodo = useMemo(() => aPeriodoApi(filtro), [filtro]);
   const [demanda, setDemanda] = useState([]);
   const [productividad, setProductividad] = useState([]);
   const [finanzas, setFinanzas] = useState(null);
@@ -44,33 +154,47 @@ export default function ReportesBIView() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    let vigente = true;
     const cargar = async () => {
+      setLoading(true);
+      setError('');
       try {
         const [dRes, pRes, fRes] = await Promise.all([
-          api.getReporteDemanda(10),
-          api.getReporteProductividad(),
-          api.getReporteFinanciero(),
+          api.getReporteDemanda(10, periodo),
+          api.getReporteProductividad(periodo),
+          api.getReporteFinanciero(periodo),
         ]);
+        if (!vigente) return;
         setDemanda(dRes?.ranking_tratamientos || []);
         setProductividad((pRes?.doctores || []).filter((d) => d.total_citas > 0).sort((a, b) => b.citas_finalizadas - a.citas_finalizadas));
         setFinanzas(fRes);
       } catch (err) {
+        if (!vigente) return;
+        // Sin datos del periodo elegido no se dejan a la vista los de otro
+        setDemanda([]);
+        setProductividad([]);
+        setFinanzas(null);
         setError(err.message || 'Error cargando reportes analíticos');
       } finally {
-        setLoading(false);
+        if (vigente) setLoading(false);
       }
     };
     cargar();
-  }, []);
+    return () => { vigente = false; };
+  }, [periodo]);
 
   const margen = Number(finanzas?.balance_neto_operativo || 0);
   const primero = demanda[0];
   const descripcionDemanda = primero
     ? `Barras de los ${demanda.length} tratamientos más realizados. El primero es ${primero.nombre}, con ${primero.cantidad_realizada}. Los valores están en la tabla inferior.`
-    : 'Todavía no hay tratamientos completados.';
+    : 'Sin tratamientos completados en este periodo.';
   const descripcionProductividad = productividad.length
     ? `Citas atendidas, minutos por cita y ausentismo de ${Math.min(productividad.length, 10)} profesionales. Los valores están en la tabla inferior.`
-    : 'Todavía no hay citas registradas.';
+    : 'Sin citas en este periodo.';
+  const valorMetrica = (valor) => {
+    if (finanzas) return moneda(valor);
+    return loading ? '...' : '—';
+  };
 
   const metricas = [
     { titulo: 'Ingresos Facturados', valor: finanzas?.total_ingresos, nota: 'Cobros en todos los medios, sin pagos anulados', Icono: TrendingUp },
@@ -85,6 +209,8 @@ export default function ReportesBIView() {
         <p className="text-slate-500 dark:text-slate-400 text-sm">Demanda de tratamientos, productividad médica y resultado financiero (HU-14)</p>
       </div>
 
+      <SelectorPeriodo filtro={filtro} onCambiar={setFiltro} />
+
       {error && (
         <div role="alert" className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 flex-shrink-0" />
@@ -92,14 +218,14 @@ export default function ReportesBIView() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div aria-busy={loading} className={`grid grid-cols-1 md:grid-cols-3 gap-4 ${loading ? ACTUALIZANDO : 'transition-opacity'}`}>
         {metricas.map(({ titulo, valor, nota, Icono }) => (
           <div key={titulo} className="bg-white dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-5 space-y-2 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{titulo}</span>
               <Icono className="w-5 h-5 text-slate-400" />
             </div>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white">{loading ? '...' : moneda(valor)}</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">{valorMetrica(valor)}</div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">{nota}</div>
           </div>
         ))}
@@ -113,12 +239,12 @@ export default function ReportesBIView() {
               Tratamientos Más Demandados
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Procedimientos completados, de mayor a menor
+              Procedimientos realizados en el periodo, de mayor a menor
             </p>
           </div>
-          <GraficoServidor nombre="tratamientos-demanda" descripcion={descripcionDemanda} tema={tema} />
+          <GraficoServidor nombre="tratamientos-demanda" descripcion={descripcionDemanda} tema={tema} periodo={periodo} />
           {demanda.length > 0 && (
-            <div className="overflow-x-auto">
+            <div className={`overflow-x-auto ${loading ? ACTUALIZANDO : 'transition-opacity'}`}>
               <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
                 <thead className="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700/60">
                   <tr>
@@ -149,9 +275,9 @@ export default function ReportesBIView() {
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">Los 10 profesionales con más citas atendidas; cada columna tiene su propia escala</p>
           </div>
-          <GraficoServidor nombre="productividad-doctores" descripcion={descripcionProductividad} tema={tema} />
+          <GraficoServidor nombre="productividad-doctores" descripcion={descripcionProductividad} tema={tema} periodo={periodo} />
           {productividad.length > 0 && (
-            <div className="overflow-x-auto">
+            <div className={`overflow-x-auto ${loading ? ACTUALIZANDO : 'transition-opacity'}`}>
               <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
                 <thead className="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700/60">
                   <tr>
