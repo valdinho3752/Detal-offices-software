@@ -82,7 +82,7 @@ def test_restaurar_copia(fab, api):
     lineas = [l for l in salida.strip().splitlines() if l.strip()]
     assert lineas[-3] == original, salida[-300:]
     assert lineas[-2] == "Antes de la copia" and lineas[-1] == "1"
-    api.put("/configuracion/", {"nombre_clinica": "Clínica Dental Gustavo"})
+    api.put("/configuracion/", {"nombre_clinica": "Clínica Dental"})
     assert paciente["id"]
 
 

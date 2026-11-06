@@ -7,11 +7,12 @@ Levanta la base de datos, el backend y la web con un solo comando. Usa una base 
 Con Docker Desktop abierto:
 
 ```powershell
-python scripts\preparar_docker.py --zona America/La_Paz
-docker compose up --build -d
+python scripts\preparar_docker.py --levantar
 ```
 
-Indica la zona horaria real de la clínica. El primer comando genera las claves y muestra la contraseña inicial de `admin`, que también queda en `.env.docker.admin`. Guárdala en un lugar seguro.
+Toma la zona horaria de este equipo, genera las claves, muestra la contraseña inicial de `admin` (que también queda en `.env.docker.admin`), construye e inicia el sistema. Guarda la contraseña en un lugar seguro.
+
+Revisa que la hora de Windows de este equipo sea la de la clínica: todos los equipos que abran el sistema mostrarán esa zona.
 
 Abre <http://localhost:8080>.
 
@@ -30,8 +31,10 @@ docker compose up -d               # Iniciar de nuevo
 
 ```powershell
 docker compose run --rm respaldo
-docker compose up --build -d
+python scripts\preparar_docker.py --levantar
 ```
+
+Las claves no cambian; solo se actualiza la zona horaria si la del equipo cambió. Docker no puede leer la zona de Windows por sí mismo: con `docker compose up --build -d` directo se usa la última zona guardada.
 
 Las migraciones pendientes se aplican solas al arrancar.
 
@@ -99,7 +102,7 @@ Pide la contraseña nueva, reactiva la cuenta y cierra sus sesiones anteriores.
 
 ## Cambiar la zona horaria
 
-Edita `CLINICA_TIMEZONE` en `.env.docker` y ejecuta `docker compose up -d`.
+Cambia la zona de Windows y ejecuta `python scripts\preparar_docker.py --levantar`. Para usar otra distinta a la del equipo, añade `--zona America/La_Paz`. Volver a ejecutar el comando sin `--zona` la reemplaza por la del equipo.
 
 ## Advertencias
 

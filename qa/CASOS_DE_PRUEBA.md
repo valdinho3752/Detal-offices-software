@@ -705,7 +705,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 
 | ID | Tipo | Caso y pasos | Resultado esperado | Prio | Estado |
 |---|---|---|---|---|---|
-| OPE-01 | O | Instalar desde cero con `docs/DOCKER.md` en un equipo limpio | Se completa sin pasos adicionales | P1 | PARCIAL |
+| OPE-01 | O | Instalar desde cero con `docs/DOCKER.md` en un equipo limpio | Se completa sin pasos adicionales y usa la zona horaria del equipo | P1 | PARCIAL |
 | OPE-02 | O | Revisar el estado | Base, backend, web y respaldos en marcha; migraciones terminadas con éxito | P1 | OK |
 | OPE-03 | S | Comprobar puertos publicados | La base y el backend no se publican fuera de Docker | P1 | OK |
 | OPE-04 | S | `/docs` en producción | No está disponible | P1 | OK |

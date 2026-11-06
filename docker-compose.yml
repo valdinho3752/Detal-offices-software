@@ -1,4 +1,4 @@
-# Uso: python scripts/preparar_docker.py y luego docker compose up --build -d
+# Uso: python scripts/preparar_docker.py --levantar
 # Guía completa en docs/DOCKER.md
 name: clinica-dental
 

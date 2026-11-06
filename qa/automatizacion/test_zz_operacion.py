@@ -490,7 +490,8 @@ class InstalacionAparte:
 
     def __init__(self, nombre, carpeta, puerto, version):
         self.proyecto, self.carpeta, self.puerto = nombre, carpeta, puerto
-        self.entorno = {**os.environ, "CLINICA_PUERTO_WEB": str(puerto), "CLINICA_RESPALDOS": str(carpeta / "copias")}
+        # El nombre del proyecto evita que los comandos de la guía alcancen la instalación real
+        self.entorno = {**os.environ, "COMPOSE_PROJECT_NAME": nombre, "CLINICA_PUERTO_WEB": str(puerto), "CLINICA_RESPALDOS": str(carpeta / "copias")}
         (carpeta.parent).mkdir(parents=True, exist_ok=True)
         subprocess.run(["git", "clone", "-q", str(RAIZ), str(carpeta)], check=True, capture_output=True)
         self.git("checkout", "-q", version)
@@ -508,9 +509,10 @@ class InstalacionAparte:
             raise AssertionError(f"{args}: {r.stderr[-300:]}\n{registros[-1800:]}")
         return r.stdout + r.stderr
 
-    def preparar(self):
-        r = subprocess.run(["python", "scripts/preparar_docker.py", "--zona", "America/La_Paz"], cwd=self.carpeta, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    def preparar(self, *opciones):
+        r = subprocess.run(["python", "scripts/preparar_docker.py", *opciones], cwd=self.carpeta, env=self.entorno, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=560)
         assert r.returncode == 0, r.stderr[-400:]
+        return r.stdout
 
     def sql(self, consulta):
         return self.docker("exec", "-T", "db", "sh", "-c", f'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "{consulta}"').strip()
@@ -543,9 +545,25 @@ def instalacion(tmp_path_factory):
 def test_instalar_desde_cero_con_la_guia(instalacion):
     actual = subprocess.run(["git", "rev-parse", "HEAD"], cwd=RAIZ, capture_output=True, text=True).stdout.strip()
     aparte = instalacion("clinica-limpia", 8082, actual)
-    aparte.preparar()
-    aparte.docker("up", "--build", "-d", "--wait")
+    # El único comando de la guía: toma la zona del equipo, construye e inicia
+    salida = aparte.preparar("--levantar")
+    assert "Contraseña inicial" in salida
+    aparte.docker("up", "-d", "--wait")
     assert aparte.web() == "200"
+    zona_equipo = subprocess.run(["python", "-c", "import sys; sys.path.insert(0, 'scripts'); import preparar_docker as p; print(p.detectar_zona())"], cwd=aparte.carpeta, capture_output=True, text=True).stdout.strip()
+    assert zona_equipo and _valor_env_de(aparte.carpeta / ".env.docker", "CLINICA_TIMEZONE") == zona_equipo, "Usa la zona del equipo"
+    assert aparte.docker("exec", "-T", "backend", "sh", "-c", "echo $CLINICA_TIMEZONE").strip().splitlines()[-1] == zona_equipo
+    assert aparte.sql("select nombre_clinica from configuracion_clinica") == "Clínica Dental"
+
+    # Repetirlo actualiza solo la zona: las claves, la contraseña y los datos no cambian
+    secreto = _valor_env_de(aparte.carpeta / ".env.docker", "SECRET_KEY")
+    clave_admin = _valor_env_de(aparte.carpeta / ".env.docker.admin", "ADMIN_PASSWORD")
+    assert "Contraseña inicial" not in aparte.preparar("--zona", "America/La_Paz")
+    assert _valor_env_de(aparte.carpeta / ".env.docker", "CLINICA_TIMEZONE") == "America/La_Paz"
+    assert _valor_env_de(aparte.carpeta / ".env.docker", "SECRET_KEY") == secreto
+    assert _valor_env_de(aparte.carpeta / ".env.docker.admin", "ADMIN_PASSWORD") == clave_admin
+    aparte.preparar()
+    assert _valor_env_de(aparte.carpeta / ".env.docker", "CLINICA_TIMEZONE") == zona_equipo, "Sin indicarla vuelve a la del equipo"
     admin = _valor_env_de(aparte.carpeta / ".env.docker.admin", "ADMIN_PASSWORD")
     resultado = subprocess.run(["curl", "-s", "-o", "NUL", "-w", "%{http_code}", "-d", f"username=admin&password={urllib.parse.quote(admin)}", f"http://localhost:8082/api/v1/auth/login"], capture_output=True, text=True).stdout
     assert resultado == "200", "Se entra con la contraseña generada"
@@ -563,7 +581,7 @@ def _valor_env_de(archivo, clave):
 def test_actualizar_con_datos(instalacion):
     actual = subprocess.run(["git", "rev-parse", "HEAD"], cwd=RAIZ, capture_output=True, text=True).stdout.strip()
     aparte = instalacion("clinica-actualiza", 8083, VERSION_ANTERIOR)
-    aparte.preparar()
+    aparte.preparar("--zona", "America/La_Paz")  # Las primeras versiones exigen indicarla
     aparte.docker("up", "--build", "-d", "--wait")
     aparte.sql(
         "insert into pacientes (nombres, apellidos, tipo_documento, numero_documento, genero, fecha_nacimiento, telefono) "
@@ -574,9 +592,12 @@ def test_actualizar_con_datos(instalacion):
     # Tal como indica la guía: copia y actualización
     assert "Copia creada y comprobada" in aparte.docker("run", "--rm", "respaldo")
     aparte.git("checkout", "-q", actual)
-    aparte.docker("up", "--build", "-d", "--wait")
+    aparte.preparar("--levantar")
+    aparte.docker("up", "-d", "--wait")
     assert aparte.sql("select count(*), md5(string_agg(id::text || numero_documento, chr(44) order by id)) from pacientes") == antes, "No se pierde nada"
     assert int(aparte.sql("select count(*) from migraciones_aplicadas")) == len(list((RAIZ / "database" / "migraciones").glob("*.sql"))) >= migraciones_antes
+    assert aparte.sql("select nombre_clinica from configuracion_clinica") == "Clínica Dental", "El nombre anterior por defecto se reemplaza"
+    assert aparte.sql("select column_default from information_schema.columns where table_name = 'usuarios' and column_name = 'minutos_inactividad'") == "5"
     assert aparte.web() == "200"
 
 

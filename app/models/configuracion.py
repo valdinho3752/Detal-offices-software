@@ -20,7 +20,7 @@ class ConfiguracionClinica(Base):
 
     id = Column(Integer, primary_key=True, default=1)
     moneda_simbolo = Column(String(8), default="$", server_default="$", nullable=False)
-    nombre_clinica = Column(String(120), default="Clínica Dental Gustavo", server_default="Clínica Dental Gustavo", nullable=False)
+    nombre_clinica = Column(String(120), default="Clínica Dental", server_default="Clínica Dental", nullable=False)
     logo = Column(LargeBinary, nullable=True)
     logo_tipo = Column(String(20), nullable=True)
     tema_por_defecto = Column(String(10), default="oscuro", server_default="oscuro", nullable=False)
