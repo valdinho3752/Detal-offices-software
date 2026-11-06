@@ -1,14 +1,152 @@
 {
- "TRA-19": {
+ "ACC-01": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_total_y_cancelacion_con_pagos",
-  "via": "API"
+  "prueba": "test_entrar",
+  "via": "UI"
  },
- "TRA-20": {
+ "ACC-14": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_total_y_cancelacion_con_pagos",
-  "via": "API"
+  "prueba": "test_entrar",
+  "via": "UI"
+ },
+ "ACC-21": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_entrar",
+  "via": "UI"
+ },
+ "CFG-01": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_marca_en_pantalla",
+  "via": "UI"
+ },
+ "CFG-02": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_marca_en_pantalla",
+  "via": "UI"
+ },
+ "CFG-05": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_marca_en_pantalla",
+  "via": "UI"
+ },
+ "CFG-06": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_marca_en_pantalla",
+  "via": "UI"
+ },
+ "CFG-07": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_marca_en_pantalla",
+  "via": "UI"
+ },
+ "CFG-08": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_marca_en_pantalla",
+  "via": "UI"
+ },
+ "CFG-10": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_marca_en_pantalla",
+  "via": "UI"
+ },
+ "CFG-12": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_tema_por_defecto",
+  "via": "UI"
+ },
+ "CFG-13": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_tema_por_defecto",
+  "via": "UI"
+ },
+ "CFG-14": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_tema_por_defecto",
+  "via": "UI"
+ },
+ "CFG-15": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_moneda_en_pantalla",
+  "via": "UI"
+ },
+ "CFG-16": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_moneda_en_pantalla",
+  "via": "UI"
+ },
+ "COR-12": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_anular_marcaje_en_pantalla",
+  "via": "UI"
+ },
+ "ODO-09": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_marcar_y_limpiar_cara",
+  "via": "UI"
+ },
+ "ODO-11": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_marcar_y_limpiar_cara",
+  "via": "UI"
+ },
+ "PAN-01": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_entrar",
+  "via": "UI"
+ },
+ "PAN-02": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_panel",
+  "via": "UI"
+ },
+ "PAN-04": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_panel",
+  "via": "UI"
+ },
+ "PAN-08": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_panel",
+  "via": "UI"
+ },
+ "PRO-15": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_moneda_en_pantalla",
+  "via": "UI"
+ },
+ "REP-18": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_moneda_en_pantalla",
+  "via": "UI"
+ },
+ "TRA-01": {
+  "detalle": "",
+  "estado": "OK",
+  "prueba": "test_catalogo_en_pantalla",
+  "via": "UI"
  }
 }

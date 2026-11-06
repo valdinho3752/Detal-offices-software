@@ -1,6 +1,6 @@
 # Resultados de QA
 
-Última ejecución: 2026-11-05 20:06, contra https://localhost:8443.
+Última ejecución: 2026-11-05 21:24, contra https://localhost:8443.
 
 | Estado | Casos |
 |---|---|
@@ -9,7 +9,7 @@
 | PARCIAL | 9 |
 | **Total** | **546** |
 
-Automatizados en esta ejecución: 2 (0 en pantalla y 2 por API).
+Automatizados en esta ejecución: 25 (25 en pantalla y 0 por API).
 
 
 ## Falta comprobar o decidir
