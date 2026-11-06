@@ -47,7 +47,11 @@ def _publica(configuracion: ConfiguracionClinica) -> dict:
 
 
 def _completa(configuracion: ConfiguracionClinica) -> dict:
-    return {**_publica(configuracion), "moneda_simbolo": configuracion.moneda_simbolo}
+    return {
+        **_publica(configuracion),
+        "moneda_simbolo": configuracion.moneda_simbolo,
+        "meses_inactividad_paciente": configuracion.meses_inactividad_paciente,
+    }
 
 
 def _auditar(usuario: Usuario, seccion: str, previos: dict, nuevos: dict) -> AuditoriaLog:

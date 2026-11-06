@@ -3,7 +3,7 @@ Casos que estas pruebas no pueden dar por aprobados, con el motivo. Se escriben 
 
 MANUAL: requiere un segundo equipo, hardware o personas.
 PARCIAL: comprobado aquí de forma simulada; falta confirmarlo en el equipo real.
-DECIDIR: el comportamiento actual está comprobado, pero el caso pide una decisión de la clínica.
+DECIDIR: el comportamiento actual está comprobado, pero el caso pide una decisión de la clínica. Hoy no queda ninguno.
 """
 
 CASOS = {
@@ -27,6 +27,4 @@ CASOS = {
     "REN-06": ("PARCIAL", "Sin crecimiento continuo de memoria durante una carga corta. Falta medir una jornada real."),
 
     # Requieren una decisión
-    "PAC-21": ("DECIDIR", "La pantalla no permite marcar un paciente como inactivo; solo la API. Sigue apareciendo en las búsquedas. ¿Hace falta en pantalla?"),
-    "CAJ-23": ("DECIDIR", "Hoy la API permite cobrar por transferencia con la caja cerrada. ¿Debe impedirse?"),
 }

@@ -246,10 +246,10 @@ def registrar_pago_paciente(
     db: Session = Depends(get_db)
 ):
     caja = db.query(CajaSesion).filter(CajaSesion.estado == EstadoCajaEnum.ABIERTA).first()
-    if datos.metodo_pago == MetodoPagoEnum.EFECTIVO and not caja:
+    if not caja:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No se puede registrar un cobro en efectivo si no hay una caja abierta"
+            detail="No se puede registrar un cobro si no hay una caja abierta"
         )
     if datos.es_cobro_directo:
         validar_cobro_directo(datos.paciente_id, datos.plan_id, datos.observaciones, db)
@@ -261,13 +261,12 @@ def registrar_pago_paciente(
     nuevo_pago = Pago(
         **datos.model_dump(),
         porcentaje_comision=porcentaje_vigente(datos.doctor_comision_id, db),
-        caja_sesion_id=caja.id if caja else None,
+        caja_sesion_id=caja.id,
         registrado_por_usuario_id=current_user.id
     )
     db.add(nuevo_pago)
 
-    # Si fue en efectivo y hay caja abierta, sumar a ingresos en efectivo
-    if datos.metodo_pago == MetodoPagoEnum.EFECTIVO and caja:
+    if datos.metodo_pago == MetodoPagoEnum.EFECTIVO:
         caja.total_ingresos_efectivo += datos.monto
         caja.saldo_efectivo_esperado = caja.monto_inicial_fondo + caja.total_ingresos_efectivo - caja.total_egresos_efectivo
 

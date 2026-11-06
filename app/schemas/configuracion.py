@@ -13,11 +13,20 @@ class ConfiguracionPublica(BaseModel):
 
 class ConfiguracionRespuesta(ConfiguracionPublica):
     moneda_simbolo: str
+    meses_inactividad_paciente: int
 
 class ConfiguracionActualizar(BaseModel):
     moneda_simbolo: Optional[str] = Field(default=None, max_length=8)
     nombre_clinica: Optional[str] = Field(default=None, max_length=120)
     tema_por_defecto: Optional[TemaClinica] = None
+    meses_inactividad_paciente: Optional[int] = Field(default=None, ge=0, le=120)
+
+    @field_validator("meses_inactividad_paciente")
+    @classmethod
+    def validar_meses(cls, valor):
+        if valor is None:
+            raise ValueError("Indica la cantidad de meses")
+        return valor
 
     @field_validator("moneda_simbolo")
     @classmethod

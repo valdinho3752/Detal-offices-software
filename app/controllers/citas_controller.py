@@ -9,6 +9,7 @@ from app.database import get_db
 from app.models import Cita, Paciente, Sillon, EstadoCitaEnum, Usuario, Doctor, RolCodigoEnum, AuditoriaLog, AuditoriaAccionEnum
 from app.core.dependencies import require_permission
 from app.schemas.cita import CitaCreate, CitaUpdate, CitaSillonControl, CitaResponse
+from app.models.enums import EstadoRegistroEnum
 from app.services.cobros_cita import crear_cobro_de_cita
 from app.services.sillones import numero_sillon_de_notas
 from app.services.tratamiento_clinico import (
@@ -156,6 +157,20 @@ def agendar_cita(
     db.flush()
     db.refresh(nueva_cita)
     _validar_horario_cita(nueva_cita, db)
+    # Volver a agendarlo significa que regresó; cargar una cita antigua no
+    paciente = db.query(Paciente).filter(Paciente.id == datos.paciente_id).first()
+    inicio = nueva_cita.fecha_inicio_programada
+    if paciente.estado == EstadoRegistroEnum.INACTIVO and inicio >= datetime.now(timezone.utc):
+        paciente.estado = EstadoRegistroEnum.ACTIVO
+        db.add(AuditoriaLog(
+            usuario_id=current_user.id,
+            tabla_afectada="pacientes",
+            registro_id=paciente.id,
+            accion=AuditoriaAccionEnum.UPDATE,
+            seccion_consultada="REACTIVADO_POR_CITA",
+            datos_previos={"estado": "INACTIVO"},
+            datos_nuevos={"estado": "ACTIVO"},
+        ))
     db.commit()
     db.refresh(nueva_cita)
     return nueva_cita

@@ -368,7 +368,8 @@ CREATE TABLE pacientes (
     ocupacion VARCHAR(100),
     contacto_emergencia_nombre VARCHAR(150),
     contacto_emergencia_telefono VARCHAR(30),
-    estado estado_registro_enum DEFAULT 'ACTIVO' NOT NULL,
+    estado estado_registro_enum DEFAULT 'ACTIVO' NOT NULL, -- INACTIVO: marcado a mano
+    reactivado_en TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -460,6 +461,7 @@ CREATE TABLE configuracion_clinica (
     logo BYTEA,
     logo_tipo VARCHAR(20),
     tema_por_defecto VARCHAR(10) NOT NULL DEFAULT 'oscuro',
+    meses_inactividad_paciente INTEGER NOT NULL DEFAULT 3, -- 0: nunca se marca solo
     CONSTRAINT configuracion_tema_valido CHECK (tema_por_defecto IN ('claro', 'oscuro')),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );

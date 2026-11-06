@@ -254,9 +254,11 @@ def test_efectivo_requiere_caja():
     url = f"{API}/cobros-cita/{cobro['id']}/confirmar"
     assert client.post(url, json={"metodo_pago": "EFECTIVO"}, headers=H).status_code == 400
     assert _ok(client.get(f"{API}/cobros-cita/{cobro['id']}", headers=H), 200)["estado"] == "PENDIENTE"
-    _ok(client.post(url, json={"metodo_pago": "TRANSFERENCIA"}, headers=H), 200)
+    assert client.post(url, json={"metodo_pago": "TRANSFERENCIA"}, headers=H).status_code == 400
+    assert _ok(client.get(f"{API}/cobros-cita/{cobro['id']}", headers=H), 200)["estado"] == "PENDIENTE"
     _caja()
-    print("✔ Sin caja abierta no se confirma en efectivo, y la cuenta sigue pendiente.")
+    _ok(client.post(url, json={"metodo_pago": "TRANSFERENCIA"}, headers=H), 200)
+    print("✔ Sin caja abierta no se confirma con ningún medio de pago, y la cuenta sigue pendiente.")
 
 
 def test_permisos():

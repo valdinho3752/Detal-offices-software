@@ -104,6 +104,7 @@ def test_citas_simultaneas():
 
 
 def test_referencias_inexistentes():
+    _abrir_caja()
     pid = _ok(_paciente(), 201)["id"]
     base = {"motivo_consulta": "x", "fecha_inicio_programada": "2061-01-01T09:00:00Z", "fecha_fin_programada": "2061-01-01T10:00:00Z", "notas_adicionales": "Box 1"}
     assert client.post(f"{API}/citas/", json={**base, "paciente_id": pid, "doctor_id": str(uuid4())}, headers=H).status_code == 404, "No se reasigna a otro doctor"

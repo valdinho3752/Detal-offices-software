@@ -1,4 +1,5 @@
-from typing import List, Optional
+from datetime import datetime, timezone
+from typing import List, Literal, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from sqlalchemy.orm import Session
@@ -9,6 +10,10 @@ from app.models import (
     Pago, Usuario
 )
 from app.core.dependencies import require_permission
+from app.models.enums import EstadoRegistroEnum
+from app.services.inactividad_pacientes import (
+    consulta_con_ultima_cita, describir_filas, describir_uno, filtro_activos, filtro_inactivos,
+)
 from app.services.saldos import calcular_saldo_paciente
 from app.schemas.paciente import (
     PacienteCreate, PacienteUpdate, PacienteResponse,
@@ -20,12 +25,17 @@ router = APIRouter(prefix="/pacientes", tags=["Pacientes y Ficha Médica"])
 @router.get("/", response_model=List[PacienteResponse])
 def listar_pacientes(
     q: Optional[str] = Query(None, description="Buscar por nombre, apellido o documento"),
+    estado: Optional[Literal["ACTIVO", "INACTIVO"]] = None,
     skip: int = 0,
     limit: int = 50,
     current_user: Usuario = Depends(require_permission("PACIENTES_READ")),
     db: Session = Depends(get_db)
 ):
-    query = db.query(Paciente)
+    query, ultima = consulta_con_ultima_cita(db)
+    if estado == "INACTIVO":
+        query = query.filter(filtro_inactivos(ultima, db))
+    elif estado == "ACTIVO":
+        query = query.filter(filtro_activos(ultima, db))
     if q:
         search = f"%{q}%"
         query = query.filter(
@@ -35,7 +45,7 @@ def listar_pacientes(
                 Paciente.telefono.ilike(search),
             )
         )
-    return query.order_by(Paciente.apellidos).offset(skip).limit(limit).all()
+    return describir_filas(query.order_by(Paciente.apellidos).offset(skip).limit(limit).all(), db)
 
 @router.post("/", response_model=PacienteResponse, status_code=status.HTTP_201_CREATED)
 def crear_paciente(
@@ -74,7 +84,7 @@ def crear_paciente(
     db.add(log)
     db.commit()
     db.refresh(nuevo_paciente)
-    return nuevo_paciente
+    return describir_uno(nuevo_paciente, db)
 
 @router.get("/{id}", response_model=PacienteResponse)
 def obtener_paciente(
@@ -102,7 +112,7 @@ def obtener_paciente(
     db.add(log)
     db.commit()
 
-    return paciente
+    return describir_uno(paciente, db)
 
 @router.put("/{id}", response_model=PacienteResponse)
 def actualizar_paciente(
@@ -125,6 +135,9 @@ def actualizar_paciente(
             )
 
     campos_actualizar = datos.model_dump(exclude_unset=True)
+    # Reactivarlo a mano también le da de nuevo el plazo completo sin citas
+    if campos_actualizar.get("estado") == EstadoRegistroEnum.ACTIVO:
+        paciente.reactivado_en = datetime.now(timezone.utc)
     datos_previos = {}
     datos_nuevos = {}
     for field, value in campos_actualizar.items():
@@ -146,7 +159,7 @@ def actualizar_paciente(
     db.add(log)
     db.commit()
     db.refresh(paciente)
-    return paciente
+    return describir_uno(paciente, db)
 
 @router.get("/{id}/saldo")
 def consultar_saldo_paciente(

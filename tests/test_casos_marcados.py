@@ -58,6 +58,8 @@ def _plan(paciente_id, costo=None):
 
 
 def _pagar(paciente_id, plan_id, monto):
+    if not client.get(f"{API}/caja/estado", headers=H).json()["caja_abierta"]:
+        _ok(client.post(f"{API}/caja/abrir", json={"monto_inicial_fondo": 100}, headers=H), 201)
     return _ok(client.post(f"{API}/caja/pagos", json={"paciente_id": paciente_id, "plan_id": plan_id, "monto": monto, "metodo_pago": "TRANSFERENCIA"}, headers=H), 201)
 
 

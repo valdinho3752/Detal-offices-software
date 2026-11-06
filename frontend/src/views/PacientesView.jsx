@@ -38,6 +38,7 @@ export default function PacientesView() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  const [filtroEstado, setFiltroEstado] = useState('');
   const [form, setForm] = useState({
     nombres: '',
     apellidos: '',
@@ -58,7 +59,7 @@ export default function PacientesView() {
   const loadPacientes = async (query = '') => {
     setLoading(true);
     try {
-      const data = await api.getPacientes(query);
+      const data = await api.getPacientes(query, 0, 100, filtroEstado);
       setPacientes(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message || 'Error al cargar pacientes');
@@ -72,7 +73,20 @@ export default function PacientesView() {
       loadPacientes(search);
     }, 300);
     return () => clearTimeout(delayDebounceFn);
-  }, [search]);
+  }, [search, filtroEstado]);
+
+  const cambiarEstadoPaciente = async (estado) => {
+    setError('');
+    try {
+      const actualizado = await api.updatePaciente(selectedPaciente.id, { estado });
+      setSelectedPaciente((previo) => ({ ...previo, ...actualizado }));
+      setSuccess(estado === 'INACTIVO' ? 'Paciente marcado como inactivo. Su historia se conserva.' : 'Paciente reactivado');
+      setTimeout(() => setSuccess(''), 3000);
+      loadPacientes(search);
+    } catch (err) {
+      setError(err.message || 'No se pudo cambiar el estado del paciente');
+    }
+  };
 
   const handleSelectPaciente = async (paciente) => {
     setSelectedPaciente(paciente);
@@ -203,6 +217,17 @@ export default function PacientesView() {
             />
           </div>
 
+          <select
+            aria-label="Filtrar por estado"
+            value={filtroEstado}
+            onChange={(e) => setFiltroEstado(e.target.value)}
+            className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs focus:outline-none focus:border-primary-500"
+          >
+            <option value="">Todos los pacientes</option>
+            <option value="ACTIVO">Solo activos</option>
+            <option value="INACTIVO">Solo inactivos</option>
+          </select>
+
           <div className="space-y-2 max-h-[650px] overflow-y-auto pr-1">
             {loading ? (
               <div className="py-8 text-center text-slate-400 text-xs">Cargando pacientes...</div>
@@ -230,7 +255,10 @@ export default function PacientesView() {
                       </span>
                     </div>
                     <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
-                      <span>{p.telefono || 'Sin teléfono'}</span>
+                      <span>
+                        {p.telefono || 'Sin teléfono'}
+                        {p.inactivo && <span data-testid="etiqueta-inactivo" className="ml-2 px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-700 dark:text-slate-300 font-semibold text-[10px]">Inactivo</span>}
+                      </span>
                       {p.antecedentes?.alergias && (
                         <span className="text-amber-400 font-medium text-[10px] flex items-center gap-1">
                           <AlertTriangle className="w-3 h-3" /> Alergias
@@ -264,6 +292,11 @@ export default function PacientesView() {
                     <span>·</span>
                     <span>Nacimiento: {selectedPaciente.fecha_nacimiento?.slice(0, 10) || 'N/D'}</span>
                   </div>
+                  {selectedPaciente.inactivo && (
+                    <p role="status" data-testid="estado-paciente" className="mt-2 px-2.5 py-1 w-fit rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-semibold">
+                      {selectedPaciente.motivo_inactividad === 'SIN_CITAS' ? 'Inactivo: sin citas en el plazo configurado' : 'Inactivo: marcado manualmente'}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -279,6 +312,13 @@ export default function PacientesView() {
                     className="px-3 py-1.5 bg-slate-700/80 hover:bg-slate-600 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1"
                   >
                     <Edit2 className="w-3.5 h-3.5" /> Editar Ficha
+                  </button>
+                  <button
+                    style={tienePermiso('PACIENTES_UPDATE') ? undefined : { display: 'none' }}
+                    onClick={() => cambiarEstadoPaciente(selectedPaciente.inactivo ? 'ACTIVO' : 'INACTIVO')}
+                    className="px-3 py-1.5 bg-slate-700/80 hover:bg-slate-600 text-white text-xs font-semibold rounded-lg transition"
+                  >
+                    {selectedPaciente.inactivo ? 'Reactivar' : 'Marcar Inactivo'}
                   </button>
                 </div>
               </div>

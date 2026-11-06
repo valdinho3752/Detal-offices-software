@@ -255,9 +255,11 @@ def test_caja():
     pago = {"paciente_id": paciente_id, "monto": 50}
     assert client.post(f"{API}/caja/pagos", json={**pago, "metodo_pago": "EFECTIVO"}, headers=H).status_code == 400
     tarjeta = client.post(f"{API}/caja/pagos", json={**pago, "metodo_pago": "TARJETA_DEBITO"}, headers=H)
-    assert tarjeta.status_code == 201, "Un cobro con tarjeta no depende de la gaveta"
+    assert tarjeta.status_code == 400, "Ningún cobro se registra sin caja abierta"
 
     _asegurar_caja(abierta=True)
+    tarjeta = client.post(f"{API}/caja/pagos", json={**pago, "metodo_pago": "TARJETA_DEBITO"}, headers=H)
+    assert tarjeta.status_code == 201, tarjeta.text
     antes = client.get(f"{API}/caja/estado", headers=H).json()
 
     # Montos inválidos y campos con nombre incorrecto se rechazan

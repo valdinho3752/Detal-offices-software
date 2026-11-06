@@ -114,9 +114,10 @@ export const api = {
   getAsistentes: () => request('/usuarios/asistentes/lista'),
 
   // ==================== PACIENTES & HISTORIA ====================
-  getPacientes: (q = '', skip = 0, limit = 100) => {
-    const query = q ? `?q=${encodeURIComponent(q)}` : `?skip=${skip}&limit=${limit}`;
-    return request(`/pacientes/${query}`);
+  getPacientes: (q = '', skip = 0, limit = 100, estado = '') => {
+    const parametros = new URLSearchParams(q ? { q } : { skip, limit });
+    if (estado) parametros.set('estado', estado);
+    return request(`/pacientes/?${parametros}`);
   },
   getPaciente: (id) => request(`/pacientes/${id}`),
   createPaciente: (data) => request('/pacientes/', { method: 'POST', body: JSON.stringify(data) }),

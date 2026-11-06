@@ -208,12 +208,15 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | PAC-18 | I | Comparar el saldo de la ficha con Cobranzas | Es exactamente el mismo | P1 | OK |
 | PAC-19 | S | Abrir una ficha y revisar la auditoría | Queda un registro `VIEW` del acceso | P2 | OK |
 | PAC-20 | S | Asistente intenta crear o editar | No ve esos botones; [API] responde 403 | P1 | OK |
-| PAC-21 | F | Marcar un paciente como inactivo | Decidir el comportamiento: su historia se conserva y su estado se ve claramente | P2 | DECIDIR |
+| PAC-21 | F | Marcar y reactivar un paciente en pantalla | Su historia se conserva, sigue en las búsquedas y su estado se ve claramente | P2 | DECIDIR |
 | PAC-22 | S | [API] Intentar eliminar un paciente | No existe esa acción: responde 405 | P1 | OK |
 | PAC-23 | F | Listado con más de 100 pacientes | Se puede encontrar a cualquiera; la pantalla responde bien | P2 | OK |
 | PAC-24 | V | Revisar buscador y formulario del paciente | Hablan de «documento», sin referencias a otro país; CI es la opción predeterminada | P3 | OK |
 | PAC-25 | F | Registrar en pantalla, sin correo, con sexo, dirección y alergias | Se guarda, y la ficha muestra sexo, dirección y alergias | P0 | OK |
 | PAC-26 | F | Editar en pantalla un paciente: cambiar alergias y dejar el correo vacío | Se guarda y la ficha se actualiza sin recargar | P1 | OK |
+| PAC-27 | S | Marcar o reactivar sin permiso de edición | No se ofrece; [API] responde 403 | P1 | |
+| PAC-28 | F | Paciente sin citas durante el plazo configurado | Aparece como inactivo, sin confundirse con la marca manual; las citas canceladas o sin asistencia no cuentan | P2 | |
+| PAC-29 | F | Agendar una cita a un paciente inactivo o reactivarlo | Vuelve a estar activo; cargar una cita antigua no lo reactiva | P2 | |
 
 ## 7. Odontograma
 
@@ -441,7 +444,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | CAJ-20 | N | Abrir una nueva caja sin cerrar la del día anterior | Se rechaza con la fecha pendiente | P1 | OK |
 | CAJ-21 | F | Abrir, cerrar y volver a abrir el mismo día | Funciona, con movimientos separados | P2 | OK |
 | CAJ-22 | N | Cobro en efectivo con la caja cerrada | Se rechaza | P1 | OK |
-| CAJ-23 | F | Cobro con transferencia con la caja cerrada | Decidir si la barrera debe impedirlo; por API se permite | P3 | DECIDIR |
+| CAJ-23 | F | Cobro con cualquier medio de pago con la caja cerrada | [API] Se rechaza; con la caja abierta queda en el turno, y una transferencia no cambia el efectivo | P3 | DECIDIR |
 | CAJ-24 | S | Sin `CAJA_READ` | [API] La consulta del estado no incluye montos | P1 | OK |
 | CAJ-25 | S | Doctor o asistente intenta abrir, cerrar o registrar egresos | [API] Responde 403 | P1 | OK |
 | CAJ-26 | F | Cambio de día a medianoche con la caja abierta | Pasa a «Caja anterior sin cerrar» | P1 | OK |
@@ -695,6 +698,8 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | CFG-21 | S | Otros roles | No aparece; [API] responde 403 al modificar | P1 | OK |
 | CFG-22 | V | Recorrer todas las pantallas en modo claro | Todo se lee correctamente | P1 | OK |
 | CFG-23 | V | Recorrer todas las pantallas en modo oscuro | Todo se lee correctamente | P1 | OK |
+| CFG-24 | F | Cambiar los meses sin citas para considerar inactivo a un paciente | Son 3 por defecto; el cambio se aplica de inmediato, y con 0 nunca se marcan solos | P2 | |
+| CFG-25 | N | Plazo negativo, mayor de 120 o no entero; otros roles | Se rechaza; [API] responde 403 a otros roles | P2 | |
 
 ## 23. Instalación local y operación
 

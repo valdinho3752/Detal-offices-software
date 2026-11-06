@@ -983,6 +983,133 @@ def test_empleado_inactivo_con_saldo_sigue_en_nomina(fab, api, como_admin):
     assert fila() is None, "Ya pagado, deja de aparecer"
 
 
+@caso("PAC-21", "PAC-27")
+def test_marcar_paciente_inactivo_en_pantalla(fab, api, abrir, como_admin):
+    nombre = f"Baja{uuid4().hex[:6]}"
+    paciente = fab.paciente(nombres=nombre)
+    pid = paciente["id"]
+    p = como_admin("pacientes")
+    buscador = p.get_by_placeholder("Buscar por nombre, documento o apellido...")
+    buscador.fill(nombre)
+    p.wait_for_timeout(600)
+    p.locator("main").get_by_text(nombre).first.click()
+    p.wait_for_timeout(300)
+    assert p.get_by_test_id("estado-paciente").count() == 0
+    p.get_by_role("button", name="Marcar Inactivo").click()
+    p.get_by_test_id("estado-paciente").wait_for()
+    assert "marcado manualmente" in p.get_by_test_id("estado-paciente").inner_text()
+    assert p.get_by_test_id("etiqueta-inactivo").count() == 1, "Se ve también en la lista"
+    assert api.get(f"/pacientes/{pid}").json()["motivo_inactividad"] == "MANUAL"
+    # Sigue en las búsquedas, y su historia intacta
+    p.reload()
+    p.wait_for_load_state("networkidle")
+    buscador.fill(nombre)
+    p.wait_for_timeout(600)
+    assert nombre in p.inner_text("main")
+    filtro = p.get_by_label("Filtrar por estado")
+    filtro.select_option("ACTIVO")
+    p.wait_for_timeout(600)
+    assert p.locator("main").get_by_text(nombre).count() == 0
+    filtro.select_option("INACTIVO")
+    p.wait_for_timeout(600)
+    p.locator("main").get_by_text(nombre).first.click()
+    p.wait_for_timeout(300)
+    p.get_by_role("button", name="Reactivar").click()
+    p.get_by_test_id("estado-paciente").wait_for(state="hidden")
+    assert api.get(f"/pacientes/{pid}").json()["inactivo"] is False
+
+    asi = fab.usuario("ASISTENTE")
+    q = abrir(asi.alias, asi.clave, ruta="pacientes")
+    q.get_by_placeholder("Buscar por nombre, documento o apellido...").fill(nombre)
+    q.wait_for_timeout(600)
+    q.locator("main").get_by_text(nombre).first.click()
+    q.wait_for_timeout(300)
+    assert not q.get_by_role("button", name="Marcar Inactivo").is_visible(), "Sin permiso no se ofrece"
+    assert asi.api.put(f"/pacientes/{pid}", {"estado": "INACTIVO"}).status == 403
+
+
+@caso("PAC-28", "PAC-29")
+def test_inactivo_por_tiempo_sin_citas(fab, api):
+    situacion = lambda pid: api.get(f"/pacientes/{pid}").json()
+    atras = lambda dias: (ahora_clinica() - timedelta(days=dias)).strftime("%Y-%m-%d")
+    pid = fab.paciente()["id"]
+    assert situacion(pid)["inactivo"] is False, "Uno nuevo está activo"
+
+    # Registrado hace 4 meses y sin citas
+    sql(f"update pacientes set created_at = now() - interval '4 months' where id = '{pid}'")
+    assert (situacion(pid)["inactivo"], situacion(pid)["motivo_inactividad"]) == (True, "SIN_CITAS")
+    assert situacion(pid)["estado"] == "ACTIVO", "No se confunde con la marca manual"
+
+    # Una cita cancelada o a la que no llegó no cuenta
+    doctor = fab.usuario("DOCTOR").doctor_id
+    cancelada = fab.cita(pid, atras(10), "09:00", "09:30", doctor=doctor).json()
+    assert api.delete(f"/citas/{cancelada['id']}").status == 204
+    assert situacion(pid)["inactivo"] is True
+    faltó = fab.cita(pid, atras(12), "09:00", "09:30", doctor=doctor).json()
+    sql(f"update citas set estado = 'NO_ASISTIO' where id = '{faltó['id']}'")
+    assert situacion(pid)["inactivo"] is True
+
+    # Una cita antigua tampoco basta; una reciente o futura, sí
+    fab.cita(pid, atras(150), "09:00", "09:30", doctor=doctor)
+    assert situacion(pid)["inactivo"] is True, "Hace 5 meses"
+    reciente = fab.cita(pid, atras(20), "09:00", "09:30", doctor=doctor).json()
+    assert situacion(pid)["inactivo"] is False
+    assert situacion(pid)["ultima_cita"]
+    sql(f"update citas set estado = 'FINALIZADA', fecha_inicio_programada = now() - interval '100 days', fecha_fin_programada = now() - interval '100 days' + interval '1 hour' where id = '{reciente['id']}'")
+    assert situacion(pid)["inactivo"] is True
+
+    # Filtros
+    documento = api.get(f"/pacientes/{pid}").json()["numero_documento"]
+    en = lambda estado: [x["id"] for x in api.get("/pacientes/", q=documento, estado=estado).json()]
+    assert en("INACTIVO") == [pid] and en("ACTIVO") == []
+
+    # Reactivar a mano le da de nuevo el plazo completo
+    assert api.put(f"/pacientes/{pid}", {"estado": "ACTIVO"}).ok
+    assert situacion(pid)["inactivo"] is False and en("ACTIVO") == [pid]
+    sql(f"update pacientes set reactivado_en = now() - interval '4 months' where id = '{pid}'")
+    assert situacion(pid)["inactivo"] is True
+
+    # Agendarle una cita lo reactiva: incluso si estaba marcado a mano. Cargar una antigua, no
+    assert api.put(f"/pacientes/{pid}", {"estado": "INACTIVO"}).ok
+    fab.cita(pid, atras(30), "09:00", "09:30", doctor=doctor)
+    assert situacion(pid)["motivo_inactividad"] == "MANUAL"
+    assert fab.cita(pid, dia_libre(), "09:00", "09:30", doctor=doctor).status == 201
+    assert (situacion(pid)["estado"], situacion(pid)["inactivo"]) == ("ACTIVO", False)
+    assert any(a["registro_id"] == pid and a["seccion_consultada"] == "REACTIVADO_POR_CITA" for a in fab.auditoria("pacientes"))
+
+
+@caso("CFG-24", "CFG-25")
+def test_plazo_de_inactividad_configurable(fab, api, abrir, como_admin):
+    original = api.get("/configuracion/").json()["meses_inactividad_paciente"]
+    assert original == 3, "Tres meses por defecto"
+    pid = fab.paciente()["id"]
+    sql(f"update pacientes set created_at = now() - interval '4 months' where id = '{pid}'")
+    inactivo = lambda: api.get(f"/pacientes/{pid}").json()["inactivo"]
+    assert inactivo() is True
+    try:
+        p = como_admin("configuracion")
+        campo_meses = p.get_by_label("Meses sin citas")
+        campo_meses.wait_for()
+        assert campo_meses.input_value() == "3"
+        campo_meses.fill("6")
+        p.get_by_role("button", name="Guardar Plazo").click()
+        p.wait_for_load_state("networkidle")
+        p.wait_for_timeout(300)
+        assert "6 mes" in p.inner_text("main")
+        assert inactivo() is False, "Con 6 meses todavía está activo"
+        assert api.put("/configuracion/", {"meses_inactividad_paciente": 0}).ok
+        sql(f"update pacientes set created_at = now() - interval '10 years' where id = '{pid}'")
+        assert inactivo() is False, "Con 0 nunca se marca solo"
+        assert api.put("/configuracion/", {"meses_inactividad_paciente": 2}).ok
+        assert inactivo() is True
+        for invalido in (-1, 121, 1.5, None, "tres"):
+            assert api.put("/configuracion/", {"meses_inactividad_paciente": invalido}).status == 422, invalido
+        u = fab.usuario("RECEPCION")
+        assert u.api.put("/configuracion/", {"meses_inactividad_paciente": 1}).status == 403
+    finally:
+        api.put("/configuracion/", {"meses_inactividad_paciente": original})
+
+
 # ---------------- Conexión ----------------
 
 @caso("RED-08")

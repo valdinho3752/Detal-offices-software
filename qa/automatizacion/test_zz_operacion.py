@@ -132,12 +132,28 @@ def test_citas_en_fechas_pasadas_se_permiten(fab):
 
 
 @caso("CAJ-23")
-def test_transferencia_con_caja_cerrada(fab):
+def test_ningun_cobro_sin_caja_abierta(fab, api):
+    pid = fab.paciente()["id"]
+    plan = fab.plan(pid)
+    item = fab.item(plan, fab.tratamiento(50)["id"], 50, pieza_fdi=11, superficie="OCLUSAL")
+    assert api.put(f"/tratamientos/planes/{plan}", {"estado": "APROBADO"}).ok
+    fab.caja()
+    cita = fab.cita(pid, item_plan_id=item["id"]).json()
+    assert api.put(f"/citas/{cita['id']}", {"estado": "FINALIZADA"}).ok
+    cuenta = next(c for c in api.get("/cobros-cita/").json() if c["cita_id"] == cita["id"])
     fab.cerrar_caja()
     try:
-        assert fab.cobro_directo(fab.paciente()["id"], 10, "TRANSFERENCIA")["id"]
+        for metodo in ("EFECTIVO", "TRANSFERENCIA", "TARJETA_DEBITO", "TARJETA_CREDITO", "OTRO"):
+            res = api.post("/caja/pagos", {"paciente_id": pid, "monto": 10, "metodo_pago": metodo, "es_cobro_directo": True, "observaciones": "Consulta"})
+            assert res.status == 400 and "caja abierta" in res.detalle, (metodo, res.text)
+        res = api.post(f"/cobros-cita/{cuenta['id']}/confirmar", {"metodo_pago": "TRANSFERENCIA", "doctor_comision_id": fab.doctor})
+        assert res.status == 400 and "caja abierta" in res.detalle, res.text
     finally:
         fab.caja()
+    # Con la caja abierta, la transferencia queda en el turno sin tocar el efectivo
+    gaveta = fab.gaveta()
+    pago = fab.cobro_directo(pid, 10, "TRANSFERENCIA")
+    assert pago["caja_sesion_id"] and fab.gaveta() == gaveta
 
 
 # Sin saldo por cobrar, un empleado desactivado sale de la lista
@@ -145,14 +161,6 @@ def test_empleado_desactivado_sin_saldo_desaparece(fab, api):
     rec = fab.usuario("RECEPCION", salario_base=1000)
     assert api.put(f"/usuarios/{rec.id}", {"activo": False}).ok
     assert rec.id not in {e["usuario_id"] for e in api.get("/empleados/personal").json()}
-
-
-@caso("PAC-21")
-def test_paciente_sin_opcion_de_inactivo(fab, api):
-    # Hoy solo se puede por API: el paciente conserva su historia y sigue apareciendo en las búsquedas
-    paciente = fab.paciente()
-    assert api.put(f"/pacientes/{paciente['id']}", {"estado": "INACTIVO"}).ok
-    assert [x["id"] for x in api.get("/pacientes/", q=paciente["numero_documento"]).json()] == [paciente["id"]]
 
 
 # ---------------- Copias automáticas ----------------

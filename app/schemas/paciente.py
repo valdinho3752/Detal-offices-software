@@ -72,6 +72,9 @@ class PacienteUpdate(BaseModel):
 
 class PacienteResponse(PacienteBase):
     id: UUID
+    inactivo: bool = False
+    motivo_inactividad: Optional[str] = None
+    ultima_cita: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     antecedentes: Optional[AntecedenteMedicoResponse] = None

@@ -24,4 +24,5 @@ class ConfiguracionClinica(Base):
     logo = Column(LargeBinary, nullable=True)
     logo_tipo = Column(String(20), nullable=True)
     tema_por_defecto = Column(String(10), default="oscuro", server_default="oscuro", nullable=False)
+    meses_inactividad_paciente = Column(Integer, default=3, server_default="3", nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)

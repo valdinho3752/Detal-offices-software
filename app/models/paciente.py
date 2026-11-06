@@ -23,6 +23,7 @@ class Paciente(Base):
     contacto_emergencia_nombre = Column(String(150), nullable=True)
     contacto_emergencia_telefono = Column(String(30), nullable=True)
     estado = Column(ENUM(EstadoRegistroEnum, name="estado_registro_enum", create_type=False), default=EstadoRegistroEnum.ACTIVO, nullable=False)
+    reactivado_en = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

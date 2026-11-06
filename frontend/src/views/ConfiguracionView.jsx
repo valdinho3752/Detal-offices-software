@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertCircle, Banknote, Building2, CheckCircle2, Moon, Sun, Trash2, Upload } from 'lucide-react';
+import { AlertCircle, Banknote, Building2, CheckCircle2, Moon, Sun, Trash2, Upload, UserX } from 'lucide-react';
+import { api } from '../services/api';
 import LogoClinica from '../components/LogoClinica';
 import { useClinica } from '../context/ClinicaContext';
 import { formatearMoneda, useMoneda } from '../context/MonedaContext';
@@ -262,6 +263,54 @@ function SeccionMoneda() {
   );
 }
 
+function SeccionPacientes() {
+  const [guardados, setGuardados] = useState(null);
+  const [meses, setMeses] = useState('');
+  const [error, setError] = useState('');
+  const [exito, setExito] = useState('');
+  const [guardando, setGuardando] = useState(false);
+
+  useEffect(() => {
+    api.getConfiguracion()
+      .then((c) => { setGuardados(c.meses_inactividad_paciente); setMeses(String(c.meses_inactividad_paciente)); })
+      .catch((err) => setError(err.message || 'No se pudo cargar el plazo'));
+  }, []);
+
+  const guardar = async (e) => {
+    e.preventDefault();
+    setError('');
+    setExito('');
+    setGuardando(true);
+    try {
+      const c = await api.updateConfiguracion({ meses_inactividad_paciente: Number(meses) });
+      setGuardados(c.meses_inactividad_paciente);
+      setExito(c.meses_inactividad_paciente === 0 ? 'Ningún paciente se marcará como inactivo por falta de citas' : `Plazo guardado: ${c.meses_inactividad_paciente} mes(es) sin citas`);
+    } catch (err) {
+      setError(err.message || 'No se pudo guardar el plazo');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  return (
+    <form onSubmit={guardar} className={TARJETA}>
+      <Encabezado Icono={UserX} titulo="Pacientes inactivos" descripcion="Un paciente se marca solo como inactivo tras este tiempo sin citas. Su historia se conserva, y vuelve a estar activo al agendarle una cita." />
+      <Aviso tipo="error">{error}</Aviso>
+      <Aviso tipo="exito">{exito}</Aviso>
+      <div className="max-w-xs">
+        <label htmlFor="meses-inactividad" className={ETIQUETA}>Meses sin citas</label>
+        <input id="meses-inactividad" type="number" required min="0" max="120" step="1" value={meses} onChange={(e) => setMeses(e.target.value)} className={CAMPO} />
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Con 0, nunca se marcan solos.</p>
+      </div>
+      <div className="flex justify-end pt-3 border-t border-slate-200 dark:border-slate-700/60">
+        <button type="submit" disabled={guardando || meses === '' || Number(meses) === guardados} className={BOTON}>
+          {guardando ? 'Guardando...' : 'Guardar Plazo'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export default function ConfiguracionView() {
   return (
     <div className="space-y-6">
@@ -273,6 +322,7 @@ export default function ConfiguracionView() {
         <SeccionClinica />
         <SeccionTema />
         <SeccionMoneda />
+        <SeccionPacientes />
       </div>
     </div>
   );

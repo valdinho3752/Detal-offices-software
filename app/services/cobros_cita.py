@@ -137,8 +137,8 @@ def confirmar_pago(cobro: CobroCita, datos, usuario_id: UUID, db: Session) -> No
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor no encontrado")
 
     caja = db.query(CajaSesion).filter(CajaSesion.estado == EstadoCajaEnum.ABIERTA).first()
-    if datos.metodo_pago == MetodoPagoEnum.EFECTIVO and not caja:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No se puede registrar un cobro en efectivo si no hay una caja abierta")
+    if not caja:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No se puede registrar un cobro si no hay una caja abierta")
 
     por_plan = defaultdict(Decimal)
     directas = []
@@ -157,7 +157,7 @@ def confirmar_pago(cobro: CobroCita, datos, usuario_id: UUID, db: Session) -> No
             paciente_id=cobro.paciente_id,
             plan_id=plan_id,
             cobro_cita_id=cobro.id,
-            caja_sesion_id=caja.id if caja else None,
+            caja_sesion_id=caja.id,
             doctor_comision_id=doctor_id,
             porcentaje_comision=porcentaje_vigente(doctor_id, db),
             registrado_por_usuario_id=usuario_id,
