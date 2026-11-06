@@ -132,6 +132,40 @@ def test_primer_ingreso(fab, abrir):
     assert p.get_by_role("dialog").count() == 0
 
 
+@caso("PWD-09")
+def test_cambio_de_contrasena_con_peticion_en_curso(fab, abrir):
+    """Una consulta enviada con el token anterior no debe cerrar la sesión recién renovada."""
+    u = fab.usuario("RECEPCION")
+    p = abrir(u.alias, u.clave, reloj_vivo=True)
+    retenidas = []
+    p.route("**/api/v1/caja/estado*", lambda ruta: ruta.continue_() if retenidas else retenidas.append(ruta))
+    p.clock.fast_forward(16000)  # Dispara la consulta periódica
+    p.wait_for_timeout(300)
+    assert retenidas, "La consulta periódica quedó retenida"
+
+    def responder_al_final(ruta):
+        # La contraseña ya cambió en el servidor, pero el navegador todavía no recibe el token nuevo
+        respuesta = ruta.fetch()
+        retenidas[0].continue_()
+        p.wait_for_timeout(600)
+        ruta.fulfill(response=respuesta)
+
+    p.route("**/api/v1/auth/cambiar-contrasena", responder_al_final)
+    p.get_by_role("button", name="Cambiar mi contraseña").click()
+    d = p.get_by_role("dialog", name="Cambiar contraseña")
+    d.locator("#clave-actual").fill(u.clave)
+    d.locator("#clave-nueva").fill("OtraClave5678!")
+    d.locator("#clave-repetida").fill("OtraClave5678!")
+    d.get_by_role("button", name="Guardar Contraseña").click()
+    p.wait_for_timeout(1500)
+    assert "/login" not in p.url, "Sigue dentro"
+    assert p.evaluate("localStorage.getItem('token')"), "Con la sesión renovada"
+    assert p.get_by_role("dialog").count() == 0
+    p.goto(f"{BASE}/pacientes")
+    p.wait_for_load_state("networkidle")
+    assert "/login" not in p.url
+
+
 # ---------------- Menú por rol ----------------
 
 @caso("USU-21", "USU-22", "AUD-07", "REP-17", "SIL-10", "CFG-21", "TRA-12", "NOM-26", "COB-17", "EVO-15", "RAD-12", "ODO-30")

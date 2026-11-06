@@ -31,6 +31,9 @@ function request(endpoint, options = {}) {
   return escriturasEnCurso.get(clave);
 }
 
+const RUTA_CAMBIO_CONTRASENA = '/auth/cambiar-contrasena';
+let renovacionDeSesion = null;
+
 async function enviar(endpoint, options) {
   const token = localStorage.getItem('token');
   const headers = {
@@ -51,6 +54,11 @@ async function enviar(endpoint, options) {
   });
 
   if (response.status === 401 && !endpoint.includes('/auth/login')) {
+    // Enviada con el token anterior mientras se cambiaba la contraseña: la sesión sigue, con el token nuevo
+    if (renovacionDeSesion && !endpoint.includes(RUTA_CAMBIO_CONTRASENA)) await renovacionDeSesion.catch(() => {});
+    const tokenActual = localStorage.getItem('token');
+    if (tokenActual && tokenActual !== token) return enviar(endpoint, options);
+
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.href = '/login';
@@ -89,7 +97,15 @@ export const api = {
   },
   getMe: () => request('/auth/me'),
   actualizarTiempoSesion: (minutos) => request('/auth/sesion', { method: 'PUT', body: JSON.stringify({ minutos_inactividad: minutos }) }),
-  cambiarContrasena: (data) => request('/auth/cambiar-contrasena', { method: 'POST', body: JSON.stringify(data) }),
+  cambiarContrasena: (data) => {
+    renovacionDeSesion = request(RUTA_CAMBIO_CONTRASENA, { method: 'POST', body: JSON.stringify(data) })
+      .then((respuesta) => {
+        localStorage.setItem('token', respuesta.access_token);
+        return respuesta;
+      })
+      .finally(() => { renovacionDeSesion = null; });
+    return renovacionDeSesion;
+  },
   fichar: (tipo_evento, observaciones = '') =>
     request('/auth/fichar', {
       method: 'POST',
