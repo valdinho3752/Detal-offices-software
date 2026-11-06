@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from hashlib import sha256
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
@@ -33,8 +34,8 @@ def _tipo_de_imagen(contenido: bytes) -> Optional[str]:
 def _logo_url(configuracion: ConfiguracionClinica) -> Optional[str]:
     if not configuracion.logo:
         return None
-    # La versión cambia con cada logo nuevo: el navegador puede guardarlo sin mostrar uno viejo
-    return f"/api/v1/configuracion/logo?v={int(configuracion.updated_at.timestamp())}"
+    # La versión sale del contenido: el navegador puede guardarlo sin mostrar nunca uno viejo
+    return f"/api/v1/configuracion/logo?v={sha256(bytes(configuracion.logo)).hexdigest()[:16]}"
 
 
 def _publica(configuracion: ConfiguracionClinica) -> dict:

@@ -1048,6 +1048,7 @@ def test_marca_en_pantalla(api, abrir, como_admin, tmp_path):
             assert mensaje in p.get_by_role("alert").inner_text(), archivo.name
         icono_antes = p.evaluate("document.querySelector('link[rel~=icon]')?.href")
         # JPG y WEBP reales, generados por el navegador
+        direcciones = set()
         for tipo in ("jpeg", "webp"):
             datos = p.evaluate(f"""() => {{ const c = document.createElement('canvas'); c.width = c.height = 40; c.getContext('2d').fillRect(0, 0, 40, 40); return c.toDataURL('image/{tipo}').split(',')[1]; }}""")
             otro = tmp_path / f"logo.{tipo}"
@@ -1055,9 +1056,12 @@ def test_marca_en_pantalla(api, abrir, como_admin, tmp_path):
             entrada.set_input_files(str(otro))
             p.wait_for_timeout(700)
             assert p.locator("aside img").evaluate("e => e.naturalWidth") == 40, tipo
+            direcciones.add(p.locator("aside img").get_attribute("src"))
         entrada.set_input_files(str(logo))
         p.wait_for_timeout(700)
         assert p.locator("aside img").evaluate("e => e.naturalWidth") == 120
+        direcciones.add(p.locator("aside img").get_attribute("src"))
+        assert len(direcciones) == 3, f"Cada logo tiene su dirección, aunque se suban en el mismo segundo: {direcciones}"
         assert p.evaluate("document.querySelector('link[rel~=icon]')?.href") != icono_antes or "logo" in (icono_antes or ""), "También en la pestaña"
         v = abrir()
         v.wait_for_load_state("networkidle")
