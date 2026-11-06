@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { Award, Plus, User, AlertCircle, CheckCircle2, Receipt, Pencil } from 'lucide-react';
 import { useMoneda } from '../context/MonedaContext';
+import { verFechaHora } from '../utils/fechas';
 
 const ENTRADA = 'w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-primary-500';
 const ETIQUETA = 'block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1';
@@ -183,7 +184,7 @@ export default function NominaComisionesView() {
             >
               {personal.map((p) => (
                 <option key={p.usuario_id} value={p.usuario_id} className={OPCION}>
-                  {p.nombre_completo} ({p.rol})
+                  {p.nombre_completo} ({p.rol}){p.activo === false ? ' · Inactivo, con saldo por pagar' : ''}
                 </option>
               ))}
             </select>
@@ -296,7 +297,7 @@ export default function NominaComisionesView() {
               <tbody className="divide-y divide-slate-100 dark:divide-slate-700/40 text-slate-700 dark:text-slate-300">
                 {pagos.map((pago) => (
                   <tr key={pago.id}>
-                    <td className="py-3 px-4 font-mono text-slate-500 dark:text-slate-400">{new Date(pago.fecha_hora_pago).toLocaleString()}</td>
+                    <td className="py-3 px-4 font-mono text-slate-500 dark:text-slate-400">{verFechaHora(pago.fecha_hora_pago)}</td>
                     <td className="py-3 px-4">{TIPOS_PAGO[pago.tipo_pago] || pago.tipo_pago}</td>
                     <td className="py-3 px-4 text-center">{pago.metodo_pago === 'EFECTIVO_CAJA' && Number(pago.monto_neto_pagado) > 0 ? 'Sí' : 'No'}</td>
                     <td className="py-3 px-4 text-slate-500 dark:text-slate-400">{pago.observaciones || '-'}</td>

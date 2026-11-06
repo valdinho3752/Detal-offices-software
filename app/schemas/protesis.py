@@ -2,7 +2,7 @@ from typing import Optional, Any
 from uuid import UUID
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel, model_validator, Field
+from pydantic import BaseModel, ConfigDict, model_validator, Field
 from app.models.enums import TipoTrabajoProtesisEnum, EstadoOrdenProtesisEnum
 
 class OrdenLaboratorioCreate(BaseModel):
@@ -58,6 +58,11 @@ class OrdenLaboratorioUpdate(BaseModel):
     estado: Optional[EstadoOrdenProtesisEnum] = None
     egreso_caja_id: Optional[UUID] = None
     observaciones: Optional[str] = None
+
+class PagoLaboratorio(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    numero_recibo_comprobante: Optional[str] = None
 
 class OrdenLaboratorioResponse(OrdenLaboratorioCreate):
     id: UUID

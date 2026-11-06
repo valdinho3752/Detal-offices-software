@@ -68,14 +68,16 @@ def abrir(navegador, request):
     request.node.paginas = paginas
     request.node.errores_js = []
 
-    def _abrir(alias=None, clave=None, ancho=1500, alto=950, tema=None, ruta=None, reloj=None):
-        contexto = navegador.new_context(viewport={"width": ancho, "height": alto}, ignore_https_errors=True, timezone_id=ZONA, locale="es-BO")
+    def _abrir(alias=None, clave=None, ancho=1500, alto=950, tema=None, ruta=None, reloj=None, zona=ZONA, reloj_vivo=False):
+        contexto = navegador.new_context(viewport={"width": ancho, "height": alto}, ignore_https_errors=True, timezone_id=zona, locale="es-BO")
         contextos.append(contexto)
         pagina = contexto.new_page()
         paginas.append(pagina)
         pagina.on("pageerror", lambda e: request.node.errores_js.append(f"{pagina.url}: {str(e)[:200]}"))
         if reloj:
             pagina.clock.set_fixed_time(reloj)
+        if reloj_vivo:
+            pagina.clock.install()
         if tema:
             pagina.add_init_script(f"localStorage.setItem('tema_preferido', '{tema}')")
         pagina.goto(f"{BASE}/login")

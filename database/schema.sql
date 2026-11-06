@@ -263,6 +263,7 @@ CREATE TABLE usuarios (
     password_hash VARCHAR(255) NOT NULL,
     version_sesion INTEGER NOT NULL DEFAULT 0, -- Al aumentar, las sesiones anteriores dejan de servir
     debe_cambiar_contrasena BOOLEAN NOT NULL DEFAULT false,
+    minutos_inactividad INTEGER NOT NULL DEFAULT 5, -- Cierre de sesión sin actividad; cada usuario lo elige
     nombre VARCHAR(100) NOT NULL,
     apellido VARCHAR(100) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
@@ -463,6 +464,15 @@ CREATE TABLE configuracion_clinica (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 INSERT INTO configuracion_clinica (id) VALUES (1);
+
+-- Lo escribe el servicio de copias automáticas
+CREATE TABLE estado_copias (
+    id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1), -- Siempre una sola fila
+    ultima_exitosa TIMESTAMP WITH TIME ZONE,
+    ultimo_error_en TIMESTAMP WITH TIME ZONE,
+    creado_en TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+INSERT INTO estado_copias (id) VALUES (1);
 
 CREATE TABLE items_plan_tratamiento (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

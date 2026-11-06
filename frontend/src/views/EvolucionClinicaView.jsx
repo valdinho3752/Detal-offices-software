@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ErrorModal from '../components/ErrorModal';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
-import { aFechaHoraLocal } from '../utils/fechas';
+import { aFechaHoraLocal, aInstanteIso, verFecha, verFechaHora, verHora } from '../utils/fechas';
 import { useAuth } from '../context/AuthContext';
 import {
   FileText,
@@ -135,7 +135,7 @@ export default function EvolucionClinicaView() {
         cita_id: formVisita.cita_id || null,
         item_plan_id: formVisita.item_plan_completado_id || null,
         proximo_item_plan_id: formVisita.item_plan_proxima_sesion_id || null,
-        fecha_hora: formVisita.fecha_hora ? new Date(formVisita.fecha_hora).toISOString() : new Date().toISOString(),
+        fecha_hora: formVisita.fecha_hora ? aInstanteIso(formVisita.fecha_hora) : new Date().toISOString(),
         motivo_consulta: formVisita.motivo_consulta,
         observaciones_clinicas: formVisita.observaciones_clinicas,
         diagnostico: formVisita.diagnostico || formVisita.observaciones_clinicas,
@@ -447,14 +447,14 @@ export default function EvolucionClinicaView() {
         ) : (
           visitas.map((visita) => {
             const fechaStr = visita.fecha_hora
-              ? new Date(visita.fecha_hora).toLocaleDateString()
+              ? verFecha(visita.fecha_hora)
               : visita.created_at
-              ? new Date(visita.created_at).toLocaleDateString()
+              ? verFecha(visita.created_at)
               : 'Fecha';
             const horaStr = visita.fecha_hora
-              ? new Date(visita.fecha_hora).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              ? verHora(visita.fecha_hora, { hour: '2-digit', minute: '2-digit' })
               : visita.created_at
-              ? new Date(visita.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              ? verHora(visita.created_at, { hour: '2-digit', minute: '2-digit' })
               : '';
             const doctorNombre = visita.doctor_nombre || 'Dr(a). Tratante';
 
@@ -571,7 +571,7 @@ export default function EvolucionClinicaView() {
                     >
                       <p className="text-slate-700 dark:text-slate-200 whitespace-pre-line">{obs.texto}</p>
                       <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                        {obs.autor_nombre || 'Usuario'} ({obs.rol_autor}) · {new Date(obs.created_at).toLocaleString()}
+                        {obs.autor_nombre || 'Usuario'} ({obs.rol_autor}) · {verFechaHora(obs.created_at)}
                       </div>
                     </div>
                   ))}

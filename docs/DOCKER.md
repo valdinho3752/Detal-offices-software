@@ -37,7 +37,7 @@ Las migraciones pendientes se aplican solas al arrancar.
 
 ## Copias de seguridad
 
-El servicio `respaldos` crea una copia comprobada cada día desde las 21:00, hora de la clínica, y conserva las 30 más recientes en `backups\`. Si el equipo estaba apagado a esa hora, la crea al encender. Para ver si funcionan:
+El servicio `respaldos` crea una copia comprobada cada día desde las 21:00, hora de la clínica, y conserva las 30 más recientes en `backups\`. Si el equipo estaba apagado a esa hora, la crea al encender, en cuanto pasen 24 horas desde la anterior. Si una copia falla o lleva más de 26 horas sin hacerse, el administrador ve un aviso en todas las pantallas. Para ver el detalle:
 
 ```powershell
 docker compose logs respaldos

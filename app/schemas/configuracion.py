@@ -9,6 +9,7 @@ class ConfiguracionPublica(BaseModel):
     nombre_clinica: str
     tema_por_defecto: TemaClinica
     logo_url: Optional[str] = None
+    zona_horaria: Optional[str] = None
 
 class ConfiguracionRespuesta(ConfiguracionPublica):
     moneda_simbolo: str

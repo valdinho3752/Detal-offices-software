@@ -22,6 +22,7 @@ def _resumen_personal(usuario: Usuario, contrato: Optional[ContratoRemuneracion]
     return {
         "usuario_id": str(usuario.id),
         "nombre_completo": f"{usuario.nombre} {usuario.apellido}",
+        "activo": usuario.activo,
         "rol": usuario.rol.nombre if usuario.rol else "",
         "doctor_id": str(doctor.id) if doctor else None,
         "especialidad": doctor.especialidad if doctor else None,
@@ -65,15 +66,18 @@ def listar_personal(
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Personal activo y su contrato. Sin permiso de consulta general, solo los datos propios."""
+    """
+    Personal activo y su contrato, más quien ya no trabaja aquí pero aún tiene comisión por cobrar:
+    esa deuda no debe perderse de vista. Sin permiso de consulta general, solo los datos propios.
+    """
     if tiene_permiso(current_user, "EMPLEADOS_READ", db):
         usuarios = (
             db.query(Usuario)
             .options(joinedload(Usuario.doctor_perfil), joinedload(Usuario.rol))
-            .filter(Usuario.activo.is_(True))
             .order_by(Usuario.nombre, Usuario.apellido)
             .all()
         )
+        usuarios = [u for u in usuarios if u.activo or calcular_liquidacion(u, db).saldo_comision > 0]
     else:
         usuarios = [current_user]
     contratos = {

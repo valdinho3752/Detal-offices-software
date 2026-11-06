@@ -4,7 +4,7 @@ import { puedeModificarCita } from '../config/accesos';
 import { EnlaceCobroCita } from '../components/CobrosCitaPanel';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
-import { aPeriodoApi } from '../utils/fechas';
+import { aPeriodoApi, relojClinica } from '../utils/fechas';
 import { useAuth } from '../context/AuthContext';
 import {
   Calendar as CalendarIcon,
@@ -178,7 +178,7 @@ export default function CitasAgendaView() {
   };
 
   // Fecha de referencia seleccionada
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(() => relojClinica());
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
   const [selectedCategoria, setSelectedCategoria] = useState('');
 
@@ -192,7 +192,7 @@ export default function CitasAgendaView() {
     item_plan_id: '',
     tratamiento_id: '',
     box_numero: '1',
-    fecha: formatDateLocal(new Date()),
+    fecha: formatDateLocal(relojClinica()),
     hora_inicio: '10:00',
     hora_fin: '11:00',
     motivo: '',
@@ -356,7 +356,7 @@ export default function CitasAgendaView() {
   };
 
   const handleToday = () => {
-    setCurrentDate(new Date());
+    setCurrentDate(relojClinica());
   };
 
   // Navegación de días para la matriz
@@ -761,7 +761,7 @@ export default function CitasAgendaView() {
     }
 
     // Días del mes actual
-    const todayStr = formatDateLocal(new Date());
+    const todayStr = formatDateLocal(relojClinica());
     for (let i = 1; i <= totalDays; i++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
       days.push({

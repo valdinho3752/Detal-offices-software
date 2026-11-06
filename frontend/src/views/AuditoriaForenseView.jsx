@@ -13,6 +13,7 @@ import {
   ArrowRight,
   AlertCircle,
 } from 'lucide-react';
+import { verFechaHora } from '../utils/fechas';
 
 export default function AuditoriaForenseView() {
   const [logs, setLogs] = useState([]);
@@ -154,7 +155,7 @@ export default function AuditoriaForenseView() {
                   return (
                     <tr key={log.id} className="hover:bg-slate-700/20 transition">
                       <td className="py-3 px-4 font-mono text-slate-400">
-                        {new Date(log.fecha_hora).toLocaleString()}
+                        {verFechaHora(log.fecha_hora)}
                       </td>
                       <td className="py-3 px-4 font-semibold text-white">
                         {log.usuario_nombre || 'Sistema'}
@@ -241,7 +242,7 @@ export default function AuditoriaForenseView() {
             <div className="p-3 bg-slate-800/80 rounded-xl border border-slate-700 text-xs text-slate-400 flex items-center justify-between font-mono">
               <span>Usuario: {selectedLog.usuario_nombre || 'Desconocido'}</span>
               <span>IP: {selectedLog.ip_origen || 'Sin registro'}</span>
-              <span>Fecha: {new Date(selectedLog.fecha_hora).toLocaleString()}</span>
+              <span>Fecha: {verFechaHora(selectedLog.fecha_hora)}</span>
             </div>
           </div>
         </div>

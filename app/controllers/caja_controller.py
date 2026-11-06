@@ -302,15 +302,8 @@ def anular_pago_paciente(
     db.refresh(pago)
     return pago
 
-@router.post("/egresos", response_model=EgresoCajaResponse, status_code=status.HTTP_201_CREATED)
-def registrar_egreso_caja(
-    datos: EgresoCajaCreate,
-    current_user: Usuario = Depends(require_permission("CAJA_EGRESOS")),
-    db: Session = Depends(get_db)
-):
-    """
-    Registra salida física de efectivo: adelanto de sueldo, comisiones, compra de insumos urgentes o pago a laboratorio.
-    """
+def crear_egreso(datos: EgresoCajaCreate, current_user: Usuario, db: Session) -> EgresoCaja:
+    """Descuenta el efectivo de la gaveta y deja el registro. Quien llama confirma la transacción."""
     caja = db.query(CajaSesion).filter(CajaSesion.estado == EstadoCajaEnum.ABIERTA).with_for_update().first()
     if not caja:
         raise HTTPException(
@@ -339,6 +332,19 @@ def registrar_egreso_caja(
         seccion_consultada="EGRESO_CAJA"
     )
     db.add(log)
+    return nuevo_egreso
+
+
+@router.post("/egresos", response_model=EgresoCajaResponse, status_code=status.HTTP_201_CREATED)
+def registrar_egreso_caja(
+    datos: EgresoCajaCreate,
+    current_user: Usuario = Depends(require_permission("CAJA_EGRESOS")),
+    db: Session = Depends(get_db)
+):
+    """
+    Registra salida física de efectivo: adelanto de sueldo, comisiones, compra de insumos urgentes o pago a laboratorio.
+    """
+    nuevo_egreso = crear_egreso(datos, current_user, db)
     db.commit()
     db.refresh(nuevo_egreso)
     return nuevo_egreso

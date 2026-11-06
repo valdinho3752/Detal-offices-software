@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useMoneda } from '../context/MonedaContext';
 import { useClinica } from '../context/ClinicaContext';
+import { relojClinica } from '../utils/fechas';
 
 export default function CajaBloqueoBarrier({ cajaEstado, onCajaUpdated }) {
   const { moneda, simbolo } = useMoneda();
@@ -45,7 +46,7 @@ export default function CajaBloqueoBarrier({ cajaEstado, onCajaUpdated }) {
   const puedeOperarCaja = tienePermiso(isAperturaRequerida ? 'CAJA_APERTURA' : 'CAJA_CIERRE');
 
   // Fecha legible para hoy
-  const hoyStr = new Date().toLocaleDateString('es-ES', {
+  const hoyStr = relojClinica().toLocaleDateString('es-ES', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',

@@ -1,6 +1,6 @@
-from typing import List, Optional
+from typing import List, Literal, Optional
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 from app.core.contrasenas import validar_contrasena
 from app.models.enums import RolCodigoEnum
 
@@ -24,6 +24,13 @@ class CambioContrasena(BaseModel):
     def validar_nueva(cls, valor: str) -> str:
         return validar_contrasena(valor)
 
+class PreferenciaSesion(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    # Más allá de 8 horas no hace falta: la sesión vence de todos modos
+    minutos_inactividad: Literal[5, 10, 15, 30, 60, 120, 480]
+
+
 class UsuarioSimpleResponse(BaseModel):
     id: UUID
     username: str
@@ -37,6 +44,7 @@ class UsuarioSimpleResponse(BaseModel):
     doctor_id: Optional[UUID] = None
     permisos: List[str] = []
     debe_cambiar_contrasena: bool = False
+    minutos_inactividad: int = 5
 
     class Config:
         from_attributes = True

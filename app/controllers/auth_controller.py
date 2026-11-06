@@ -7,7 +7,7 @@ from app.models import AuditoriaAccionEnum, AuditoriaLog, Usuario, RegistroAsist
 from app.core.limite_login import limite_login
 from app.core.security import emitir_token_de, hash_password, verify_password
 from app.core.dependencies import get_current_user, permisos_efectivos, require_permission
-from app.schemas.auth import CambioContrasena, Token, UsuarioSimpleResponse
+from app.schemas.auth import CambioContrasena, PreferenciaSesion, Token, UsuarioSimpleResponse
 from app.schemas.asistencia import AsistenciaCreate, AsistenciaResponse, EstadoTurnoResponse
 from app.services.asistencia import consultar_estado
 
@@ -89,7 +89,29 @@ def get_me(current_user: Usuario = Depends(get_current_user), db: Session = Depe
         doctor_id=doc_id,
         permisos=sorted(permisos_efectivos(current_user, db)),
         debe_cambiar_contrasena=current_user.debe_cambiar_contrasena,
+        minutos_inactividad=current_user.minutos_inactividad,
     )
+
+@router.put("/sesion", response_model=PreferenciaSesion)
+def actualizar_tiempo_de_sesion(
+    datos: PreferenciaSesion,
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Cada usuario elige, bajo su responsabilidad, tras cuánto tiempo sin actividad se cierra su sesión."""
+    previo = current_user.minutos_inactividad
+    current_user.minutos_inactividad = datos.minutos_inactividad
+    db.add(AuditoriaLog(
+        usuario_id=current_user.id,
+        tabla_afectada="usuarios",
+        registro_id=current_user.id,
+        accion=AuditoriaAccionEnum.UPDATE,
+        seccion_consultada="TIEMPO_DE_SESION",
+        datos_previos={"minutos_inactividad": previo},
+        datos_nuevos={"minutos_inactividad": datos.minutos_inactividad},
+    ))
+    db.commit()
+    return datos
 
 @router.get("/fichaje/estado", response_model=EstadoTurnoResponse)
 def consultar_estado_de_turno(

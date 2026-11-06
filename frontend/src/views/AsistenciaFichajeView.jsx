@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { aFechaLocal, periodoDelDia } from '../utils/fechas';
+import { aFechaLocal, aInstanteIso, periodoDelDia, verFechaHora, verHora } from '../utils/fechas';
 import { useAuth } from '../context/AuthContext';
 import ErrorModal from '../components/ErrorModal';
 import {
@@ -113,10 +113,10 @@ export default function AsistenciaFichajeView() {
       await api.corregirMarcaje({
         usuario_id: correccion.usuario_id,
         tipo_evento: correccion.tipo_evento,
-        fecha_hora: new Date(`${correccion.fecha}T${correccion.hora}:00`).toISOString(),
+        fecha_hora: aInstanteIso(`${correccion.fecha}T${correccion.hora}`),
         motivo: correccion.motivo,
         ...(correccion.tipo_evento === 'INICIO_DESCANSO' && correccion.hora_fin
-          ? { fecha_hora_fin: new Date(`${correccion.fecha}T${correccion.hora_fin}:00`).toISOString() }
+          ? { fecha_hora_fin: aInstanteIso(`${correccion.fecha}T${correccion.hora_fin}`) }
           : {}),
       });
       const { fecha } = correccion;
@@ -244,7 +244,7 @@ export default function AsistenciaFichajeView() {
             {turno && (
               <span data-testid="estado-turno" className={`inline-block mt-2 px-2.5 py-1 rounded-full text-[11px] font-bold border ${ESTADOS_TURNO[turno.estado].clase}`}>
                 {ESTADOS_TURNO[turno.estado].texto}
-                {turno.desde && ` · ${turno.estado === 'TURNO_CERRADO' ? 'a las' : 'desde las'} ${new Date(turno.desde).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                {turno.desde && ` · ${turno.estado === 'TURNO_CERRADO' ? 'a las' : 'desde las'} ${verHora(turno.desde, { hour: '2-digit', minute: '2-digit' })}`}
               </span>
             )}
             {turno?.jornada_sin_salida && (
@@ -298,7 +298,7 @@ export default function AsistenciaFichajeView() {
                   {' · '}
                   {new Date(`${j.fecha}T00:00:00`).toLocaleDateString()}
                   {' · Último marcaje: '}
-                  {NOMBRES_EVENTO[j.ultimo_evento]} a las {new Date(j.ultima_hora).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {NOMBRES_EVENTO[j.ultimo_evento]} a las {verHora(j.ultima_hora, { hour: '2-digit', minute: '2-digit' })}
                 </span>
                 <button
                   type="button"
@@ -377,7 +377,7 @@ export default function AsistenciaFichajeView() {
               <tbody className="divide-y divide-slate-200 dark:divide-slate-700/40 text-slate-700 dark:text-slate-300">
                 {asistencias.map((a) => {
                   const empNombre = a.empleado_nombre || 'Personal';
-                  const horaStr = a.fecha_hora ? new Date(a.fecha_hora).toLocaleTimeString() : '--:--';
+                  const horaStr = a.fecha_hora ? verHora(a.fecha_hora) : '--:--';
 
                   const badgeClass =
                     a.tipo_evento === 'ENTRADA'
@@ -494,7 +494,7 @@ export default function AsistenciaFichajeView() {
           <div role="dialog" aria-label="Anular marcaje" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Anular Marcaje</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              {NOMBRES_EVENTO[anulacion.registro.tipo_evento]} de {anulacion.registro.empleado_nombre} del {new Date(anulacion.registro.fecha_hora).toLocaleString()}.
+              {NOMBRES_EVENTO[anulacion.registro.tipo_evento]} de {anulacion.registro.empleado_nombre} del {verFechaHora(anulacion.registro.fecha_hora)}.
               Dejará de contar, pero seguirá visible en la bitácora. Para corregir una hora, anúlalo y agrega el marcaje correcto.
             </p>
             <form onSubmit={guardarAnulacion} className="space-y-4">

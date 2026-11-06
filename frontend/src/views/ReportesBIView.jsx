@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Activity, AlertTriangle, BarChart3, Banknote, TrendingUp, Users } from 'lucide-react';
 import { api } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
-import { aFechaLocal, aPeriodoApi, inicioDelDia } from '../utils/fechas';
+import { aFechaLocal, aPeriodoApi, inicioDelDia, relojClinica } from '../utils/fechas';
 import { useMoneda } from '../context/MonedaContext';
 
 const TARJETA = 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-5 space-y-4 shadow-sm';
@@ -26,7 +26,7 @@ const PERIODOS = [
 ];
 
 function rangoDePeriodo(id) {
-  const [desde, hasta] = PERIODOS.find((p) => p.id === id).rango(inicioDelDia(new Date()));
+  const [desde, hasta] = PERIODOS.find((p) => p.id === id).rango(inicioDelDia(relojClinica()));
   return { id, desde, hasta };
 }
 

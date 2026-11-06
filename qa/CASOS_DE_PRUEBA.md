@@ -323,7 +323,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | AGE-35 | N | [API] Reactivar una cita cancelada sobre un horario ya ocupado | Se rechaza por solape | P1 | OK |
 | AGE-36 | F | [API] Finalizar directamente una cita PROGRAMADA | Se permite. Crea evolución y cuenta, y no afecta el promedio de minutos | P2 | OK |
 | AGE-37 | F | Cita que cruza la medianoche | Cuenta el día en que empieza, en la agenda y en Reportes | P3 | OK |
-| AGE-38 | F | Crear una cita en una fecha pasada | Decidir si se permite registrar citas históricas | P3 | DECIDIR |
+| AGE-38 | F | Crear una cita en una fecha pasada | Se permite, para cargar la historia de los pacientes | P3 | DECIDIR |
 
 ## 10. Agenda: vista mensual
 
@@ -412,7 +412,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | PRO-13 | N | [API] Costo negativo | Se rechaza | P2 | OK |
 | PRO-14 | N | Fecha de entrega anterior a la de envío | Se rechaza | P3 | OK |
 | PRO-15 | F | Moneda en costo y etiquetas | Usa el símbolo configurado | P2 | OK |
-| PRO-16 | I | Pagar al laboratorio como egreso | La caja se descuenta. Decidir si debe quedar vinculado a la orden | P3 | DECIDIR |
+| PRO-16 | I | Pagar al laboratorio desde su orden | La caja se descuenta, el egreso queda vinculado a la orden y no se puede pagar dos veces | P3 | OK |
 | PRO-17 | V | Revisar la lista de órdenes | Muestra el color y las piezas de cada orden | P2 | OK |
 
 ## 14. Caja operativa
@@ -549,7 +549,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | NOM-27 | S | [API] Otro rol intenta crear o editar un contrato | Responde 403 | P1 | OK |
 | NOM-28 | V | Valores en cero | No muestra `-$0,00` | P3 | OK |
 | NOM-29 | N | [API] `metodo_pago` con un texto inventado | Se rechaza | P2 | OK |
-| NOM-30 | F | Empleado desactivado con saldo | Decidir: hoy desaparece de la lista aunque tenga saldo por pagar | P2 | DECIDIR |
+| NOM-30 | F | Empleado desactivado con saldo | Sigue en la lista, marcado como inactivo, hasta que se le pague; sin saldo desaparece | P2 | OK |
 
 ## 17. Control de asistencia
 
@@ -707,16 +707,16 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | OPE-05 | S | Arrancar con `SECRET_KEY` corta, `DEBUG=True` o sin zona horaria | El backend se niega a arrancar y explica el motivo | P1 | OK |
 | OPE-06 | O | Apagar y encender el equipo | El sistema vuelve solo. Si Docker Desktop no abre al iniciar Windows, configurarlo y documentarlo | P1 | PARCIAL |
 | OPE-07 | O | Cortar la luz durante una operación | Al volver, sin datos corruptos ni pagos a medias | P1 | PARCIAL |
-| OPE-08 | O | Comprobar la copia automática | Se crea cada día; un día sin copia se recupera al encender | P1 | PARCIAL |
+| OPE-08 | O | Comprobar la copia automática | Se crea cada día, aunque el equipo se apague antes de la hora programada; un día sin copia se recupera al encender | P1 | PARCIAL |
 | OPE-09 | O | Guardar copias en un disco externo con `CLINICA_RESPALDOS` | Aparecen allí, y se conservan las últimas 30 | P1 | PARCIAL |
 | OPE-10 | O | Restaurar una copia en una base aparte, con la guía | Se restaura sin errores | P1 | OK |
 | OPE-11 | O | Comparar los datos restaurados con los originales | Coinciden pacientes, pagos, citas y evoluciones | P1 | OK |
-| OPE-12 | O | Desconectar el disco de copias | El sistema sigue y el error aparece en el registro. Definir quién lo revisa | P2 | DECIDIR |
+| OPE-12 | O | Desconectar el disco de copias | El sistema sigue y el administrador ve un aviso en todas las pantallas | P2 | OK |
 | OPE-13 | O | Actualizar a una versión nueva, con datos | Se aplican migraciones y no se pierde nada | P1 | OK |
 | OPE-14 | O | Reiniciar el backend en plena jornada | Vuelve en segundos y las sesiones siguen válidas | P2 | OK |
-| OPE-15 | O | Dejar el disco casi lleno | Definir un aviso; las copias fallan con un error visible en el registro | P2 | DECIDIR |
+| OPE-15 | O | Dejar el disco casi lleno o sin copias por más de 26 horas | El administrador ve un aviso en todas las pantallas | P2 | OK |
 | OPE-16 | O | Fechas y horas | Zona horaria de la clínica configurada, igual a la de los equipos | P1 | OK |
-| OPE-17 | O | Cambio de zona u hora en un equipo cliente | Decidir el comportamiento; todos los equipos deben tener la hora correcta | P2 | DECIDIR |
+| OPE-17 | O | Equipo cliente con otra zona horaria | Todas las fechas y horas se ven y se guardan en la hora de la clínica | P2 | OK |
 | OPE-18 | O | Recuperar el acceso del administrador en Docker | La guía funciona | P1 | OK |
 
 ### Red interna de la sede
@@ -748,7 +748,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | SEG-06 | S | Ver el código publicado | Sin claves ni contraseñas | P1 | OK |
 | SEG-07 | S | Revisar la imagen del backend | Sin `.env`, copias ni pruebas; corre sin ser root | P1 | OK |
 | SEG-08 | S | Revisar el repositorio | `.env`, `.env.docker`, `.env.docker.admin` y `backups` no están versionados | P1 | OK |
-| SEG-09 | S | Dejar un equipo sin usar durante horas | Decidir si debe cerrarse la sesión por inactividad: hoy solo vence a las 8 horas | P2 | DECIDIR |
+| SEG-09 | S | Dejar un equipo sin usar | La sesión se cierra a los 5 minutos, con aviso previo. Cada usuario puede ampliar su propio tiempo, hasta 8 horas, bajo su responsabilidad | P2 | OK |
 | SEG-10 | S | Permisos de la carpeta de copias | Solo personal autorizado: contienen datos clínicos sin cifrar | P1 | MANUAL |
 | SEG-11 | S | Ejecutar `npm audit` y `pip-audit` | Sin vulnerabilidades conocidas | P1 | OK |
 | SEG-12 | S | Por HTTPS, intentar saltarse el límite de login falsificando `X-Forwarded-For` | El bloqueo se aplica igual | P1 | OK |

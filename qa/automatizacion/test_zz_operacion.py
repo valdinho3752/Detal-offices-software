@@ -131,14 +131,6 @@ def test_citas_en_fechas_pasadas_se_permiten(fab):
     assert res.status == 201, res.text
 
 
-@caso("PRO-16")
-def test_pago_a_laboratorio(fab, api):
-    fab.caja()
-    gaveta = fab.gaveta()
-    res = api.post("/caja/egresos", {"categoria": "PAGO_LABORATORIO_PROTESIS", "monto": 15, "concepto_motivo": "Lab"})
-    assert res.ok and fab.gaveta() == gaveta - 15
-
-
 @caso("CAJ-23")
 def test_transferencia_con_caja_cerrada(fab):
     fab.cerrar_caja()
@@ -148,11 +140,11 @@ def test_transferencia_con_caja_cerrada(fab):
         fab.caja()
 
 
-@caso("NOM-30")
-def test_empleado_desactivado_desaparece(fab, api):
+# Sin saldo por cobrar, un empleado desactivado sale de la lista
+def test_empleado_desactivado_sin_saldo_desaparece(fab, api):
     rec = fab.usuario("RECEPCION", salario_base=1000)
     assert api.put(f"/usuarios/{rec.id}", {"activo": False}).ok
-    assert rec.id not in {e.get("usuario_id") or e.get("id") for e in api.get("/empleados/personal").json()}
+    assert rec.id not in {e["usuario_id"] for e in api.get("/empleados/personal").json()}
 
 
 @caso("PAC-21")
@@ -197,8 +189,36 @@ def test_copia_al_encender_y_conservacion():
         falsa.unlink()
 
 
+def _ciclo_de_copias(hora=24):
+    """Una vuelta del servicio de copias, antes de la hora programada."""
+    orden = "timeout 12 sh /respaldo_diario.sh; true"
+    return dc("run", "--rm", "--no-deps", "-T", "-e", f"RESPALDO_HORA={hora}", "--entrypoint", "sh", "respaldos", "-c", orden)
+
+
+@caso("OPE-08")
+def test_equipo_apagado_antes_de_la_hora_programada():
+    """Si el equipo se apaga cada noche antes de las 21:00, igual debe haber una copia diaria."""
+    hoy = ahora_clinica().strftime("%Y%m%d")
+    for copia in RESPALDOS.glob("clinica_auto_*.dump"):
+        copia.unlink()
+    anterior = RESPALDOS / "clinica_auto_20100101_210000.dump"
+    anterior.write_bytes(b"anterior")
+
+    # Hace menos de 24 horas: todavía no toca
+    os.utime(anterior, (time.time() - 3600, time.time() - 3600))
+    _ciclo_de_copias()
+    assert not list(RESPALDOS.glob(f"clinica_auto_{hoy}_*.dump"))
+
+    # Hace más de 24 horas: se crea al encender, aunque aún no sea la hora
+    os.utime(anterior, (time.time() - 90000, time.time() - 90000))
+    salida = _ciclo_de_copias()
+    assert "Copia creada y comprobada" in salida, salida[-300:]
+    assert list(RESPALDOS.glob(f"clinica_auto_{hoy}_*.dump"))
+    anterior.unlink()
+
+
 @caso("OPE-12", "OPE-15")
-def test_copia_sin_disco_deja_error_y_el_sistema_sigue(solicitudes):
+def test_copia_sin_disco_deja_error_y_el_sistema_sigue(solicitudes, api, fab, abrir, como_admin):
     orden = (
         "sed 's#^CARPETA=.*#CARPETA=/disco_desconectado#' /respaldo_diario.sh > /tmp/r.sh; "
         "timeout 15 sh /tmp/r.sh; true"
@@ -206,6 +226,24 @@ def test_copia_sin_disco_deja_error_y_el_sistema_sigue(solicitudes):
     salida = dc("run", "--rm", "--no-deps", "-T", "--entrypoint", "sh", "respaldos", "-c", orden)
     assert "ERROR: la copia de seguridad falló" in salida, salida[-400:]
     assert solicitudes.get(f"{BASE}/api/v1/configuracion/publica").status == 200, "El sistema sigue en marcha"
+    try:
+        estado = api.get("/configuracion/estado-copias").json()
+        assert estado["alerta"] and "falló" in estado["mensaje"], estado
+        p = como_admin()
+        assert "falló" in p.get_by_test_id("aviso-copias").inner_text(), "El administrador lo ve en pantalla"
+        u = fab.usuario()
+        assert u.api.get("/configuracion/estado-copias").status == 403
+        q = abrir(u.alias, u.clave)
+        assert q.get_by_test_id("aviso-copias").count() == 0, "Los demás no"
+
+        # Sin ningún error, pero con el servicio detenido más de un día
+        sql("update estado_copias set ultimo_error_en = null, ultima_exitosa = now() - interval '27 hours'")
+        estado = api.get("/configuracion/estado-copias").json()
+        assert estado["alerta"] and "No se ha creado" in estado["mensaje"], estado
+        sql("update estado_copias set ultima_exitosa = now() - interval '1 hour'")
+        assert not api.get("/configuracion/estado-copias").json()["alerta"], "Con una copia reciente desaparece el aviso"
+    finally:
+        sql("update estado_copias set ultimo_error_en = null, ultima_exitosa = now()")
 
 
 # ---------------- Reinicios y caídas ----------------
@@ -355,7 +393,7 @@ def test_protesis_de_principio_a_fin(fab, api):
     final = next(o for o in api.get("/protesis/").json() if o["id"] == orden["id"])
     assert final["fecha_recepcion_real"], "Recepción registrada"
     gaveta = fab.gaveta()
-    assert api.post("/caja/egresos", {"categoria": "PAGO_LABORATORIO_PROTESIS", "monto": 250, "concepto_motivo": f"Orden {orden['id']}"}).ok
+    assert api.post(f"/protesis/{orden['id']}/pagar-laboratorio", {}).ok
     assert fab.gaveta() == gaveta - 250, "Pago al laboratorio"
     etapas = [a for a in fab.auditoria("ordenes_laboratorio_protesis") if a["registro_id"] == orden["id"]]
     assert len(etapas) >= 5, f"Cada etapa queda registrada: {len(etapas)}"

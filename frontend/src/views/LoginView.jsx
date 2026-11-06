@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { MENSAJE_INACTIVIDAD, useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useClinica } from '../context/ClinicaContext';
 import LogoClinica from '../components/LogoClinica';
@@ -10,6 +10,11 @@ export default function LoginView() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [porInactividad] = useState(() => {
+    const cerrada = sessionStorage.getItem(MENSAJE_INACTIVIDAD) === '1';
+    sessionStorage.removeItem(MENSAJE_INACTIVIDAD);
+    return cerrada;
+  });
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const { isDark, toggleTheme } = useTheme();
@@ -67,6 +72,11 @@ export default function LoginView() {
         </div>
 
         <div className="bg-white/95 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-xl dark:shadow-2xl p-6 sm:p-8">
+          {porInactividad && !error && (
+            <div role="status" className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-800 dark:text-amber-300 text-xs">
+              Tu sesión se cerró por inactividad. Vuelve a entrar para continuar.
+            </div>
+          )}
           {error && (
             <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-start gap-3 text-rose-600 dark:text-rose-400 text-sm">
               <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />

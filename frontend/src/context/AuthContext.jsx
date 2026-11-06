@@ -3,6 +3,11 @@ import { api } from '../services/api';
 
 const AuthContext = createContext(null);
 
+const CLAVE_ACTIVIDAD = 'ultima_actividad'; // Compartida entre pestañas: usar una mantiene viva la sesión en todas
+const AVISO_CIERRE_MS = 30000;
+const EVENTOS_ACTIVIDAD = ['mousedown', 'mousemove', 'keydown', 'touchstart', 'wheel', 'scroll'];
+export const MENSAJE_INACTIVIDAD = 'sesion_cerrada_por_inactividad';
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('user');
@@ -10,6 +15,7 @@ export function AuthProvider({ children }) {
   });
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
+  const [segundosParaCierre, setSegundosParaCierre] = useState(null);
 
   const formatUser = (raw) => {
     if (!raw) return null;
@@ -44,6 +50,7 @@ export function AuthProvider({ children }) {
 
   const login = async (username, password) => {
     const res = await api.login(username, password);
+    localStorage.setItem(CLAVE_ACTIVIDAD, String(Date.now()));
     localStorage.setItem('token', res.access_token);
     setToken(res.access_token);
     const profile = await api.getMe();
@@ -65,9 +72,61 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem(CLAVE_ACTIVIDAD);
+    setSegundosParaCierre(null);
     setToken(null);
     setUser(null);
   };
+
+  const actualizarTiempoSesion = async (minutos) => {
+    await api.actualizarTiempoSesion(minutos);
+    const formatted = formatUser({ ...user, minutos_inactividad: minutos });
+    setUser(formatted);
+    localStorage.setItem('user', JSON.stringify(formatted));
+  };
+
+  // Evita que alguien use una sesión ajena en un equipo que quedó desatendido
+  const minutosInactividad = user?.minutos_inactividad;
+  useEffect(() => {
+    if (!token || !minutosInactividad) return undefined;
+    const limite = minutosInactividad * 60000;
+    if (!localStorage.getItem(CLAVE_ACTIVIDAD)) localStorage.setItem(CLAVE_ACTIVIDAD, String(Date.now()));
+
+    const revisar = () => {
+      if (!localStorage.getItem('token')) {
+        logout();
+        return;
+      }
+      const restante = limite - (Date.now() - Number(localStorage.getItem(CLAVE_ACTIVIDAD) || Date.now()));
+      if (restante <= 0) {
+        sessionStorage.setItem(MENSAJE_INACTIVIDAD, '1');
+        logout();
+      } else {
+        setSegundosParaCierre(restante <= AVISO_CIERRE_MS ? Math.ceil(restante / 1000) : null);
+      }
+    };
+    let ultimoRegistro = 0;
+    const registrarActividad = () => {
+      const ahora = Date.now();
+      if (ahora - ultimoRegistro < 1000) return;
+      // Un equipo que despierta tras la hora límite ya no reabre la sesión: primero se revisa
+      revisar();
+      if (!localStorage.getItem('token')) return;
+      ultimoRegistro = ahora;
+      localStorage.setItem(CLAVE_ACTIVIDAD, String(ahora));
+      setSegundosParaCierre(null);
+    };
+
+    revisar();
+    const intervalo = setInterval(revisar, 1000);
+    EVENTOS_ACTIVIDAD.forEach((evento) => window.addEventListener(evento, registrarActividad, { passive: true, capture: true }));
+    document.addEventListener('visibilitychange', revisar);
+    return () => {
+      clearInterval(intervalo);
+      EVENTOS_ACTIVIDAD.forEach((evento) => window.removeEventListener(evento, registrarActividad, { capture: true }));
+      document.removeEventListener('visibilitychange', revisar);
+    };
+  }, [token, minutosInactividad]);
 
   const rol = user?.rol_str || (typeof user?.rol === 'string' ? user?.rol : user?.rol?.codigo) || '';
 
@@ -82,6 +141,8 @@ export function AuthProvider({ children }) {
     login,
     logout,
     actualizarSesion,
+    actualizarTiempoSesion,
+    segundosParaCierre,
     isAuthenticated: !!token,
     isAdmin: rol === 'ADMIN',
     isDoctor: rol === 'DOCTOR',

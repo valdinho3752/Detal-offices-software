@@ -88,6 +88,7 @@ export const api = {
     return res.json();
   },
   getMe: () => request('/auth/me'),
+  actualizarTiempoSesion: (minutos) => request('/auth/sesion', { method: 'PUT', body: JSON.stringify({ minutos_inactividad: minutos }) }),
   cambiarContrasena: (data) => request('/auth/cambiar-contrasena', { method: 'POST', body: JSON.stringify(data) }),
   fichar: (tipo_evento, observaciones = '') =>
     request('/auth/fichar', {
@@ -176,6 +177,7 @@ export const api = {
   getProtesis: (params = '') => request(`/protesis/${params}`),
   createProtesis: (data) => request('/protesis/', { method: 'POST', body: JSON.stringify(data) }),
   updateProtesis: (id, data) => request(`/protesis/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  pagarLaboratorio: (id) => request(`/protesis/${id}/pagar-laboratorio`, { method: 'POST', body: JSON.stringify({}) }),
 
   // ==================== CAJA & FINANZAS ====================
   getEstadoCaja: () => request('/caja/estado'),
@@ -201,6 +203,7 @@ export const api = {
 
   // ==================== CONFIGURACIÓN ====================
   getConfiguracionPublica: () => request('/configuracion/publica'),
+  getEstadoCopias: () => request('/configuracion/estado-copias'),
   getConfiguracion: () => request('/configuracion/'),
   subirLogo: (archivo) => {
     const datos = new FormData();

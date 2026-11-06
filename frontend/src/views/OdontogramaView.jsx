@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useMoneda } from '../context/MonedaContext';
 import PacienteSearchInput from '../components/PacienteSearchInput';
+import { verFecha } from '../utils/fechas';
 
 // Cuadrantes FDI Dentición Adulta (Permanente)
 // Pantalla Izquierda: LADO DERECHO DEL PACIENTE
@@ -1956,7 +1957,7 @@ export default function OdontogramaView() {
                         {item.detalle || '—'}
                       </td>
                       <td className="py-2.5 px-3 text-center text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                        {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Ingreso inicial'}
+                        {item.created_at ? verFecha(item.created_at) : 'Ingreso inicial'}
                       </td>
                       <td className="py-2.5 px-3 text-center">
                         <button

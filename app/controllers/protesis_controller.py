@@ -8,7 +8,10 @@ from app.models import (
     AuditoriaLog, AuditoriaAccionEnum
 )
 from app.core.dependencies import es_admin, require_permission
-from app.schemas.protesis import OrdenLaboratorioCreate, OrdenLaboratorioUpdate, OrdenLaboratorioResponse
+from app.controllers.caja_controller import crear_egreso
+from app.models.enums import CategoriaEgresoCajaEnum
+from app.schemas.caja import EgresoCajaCreate
+from app.schemas.protesis import OrdenLaboratorioCreate, OrdenLaboratorioUpdate, OrdenLaboratorioResponse, PagoLaboratorio
 
 router = APIRouter(prefix="/protesis", tags=["Órdenes de Laboratorio y Prótesis"])
 
@@ -128,6 +131,43 @@ def actualizar_orden_protesis(
         seccion_consultada="ORDEN_LABORATORIO"
     )
     db.add(log)
+    db.commit()
+    db.refresh(orden)
+    return orden
+
+
+@router.post("/{id}/pagar-laboratorio", response_model=OrdenLaboratorioResponse)
+def pagar_laboratorio(
+    id: UUID,
+    datos: PagoLaboratorio,
+    current_user: Usuario = Depends(require_permission("CAJA_EGRESOS")),
+    db: Session = Depends(get_db),
+):
+    """Paga la orden desde la caja y la deja vinculada al egreso: así se sabe cuáles ya están pagadas."""
+    # El bloqueo evita que dos clics simultáneos paguen dos veces la misma orden
+    orden = db.query(OrdenLaboratorioProtesis).filter(OrdenLaboratorioProtesis.id == id).with_for_update().first()
+    if not orden:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden no encontrada")
+    if orden.egreso_caja_id:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Esta orden ya está pagada")
+    if orden.costo_laboratorio <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La orden no tiene costo de laboratorio")
+    egreso = crear_egreso(EgresoCajaCreate(
+        categoria=CategoriaEgresoCajaEnum.PAGO_LABORATORIO_PROTESIS,
+        monto=orden.costo_laboratorio,
+        concepto_motivo=f"Laboratorio {orden.laboratorio_nombre}"[:255],
+        numero_recibo_comprobante=datos.numero_recibo_comprobante,
+    ), current_user, db)
+    db.flush()
+    orden.egreso_caja_id = egreso.id
+    db.add(AuditoriaLog(
+        usuario_id=current_user.id,
+        tabla_afectada="ordenes_laboratorio_protesis",
+        registro_id=orden.id,
+        accion=AuditoriaAccionEnum.UPDATE,
+        seccion_consultada="ORDEN_LABORATORIO_PAGADA",
+        datos_nuevos={"egreso_caja_id": str(egreso.id), "monto": float(orden.costo_laboratorio)},
+    ))
     db.commit()
     db.refresh(orden)
     return orden

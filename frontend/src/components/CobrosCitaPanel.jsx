@@ -4,6 +4,7 @@ import { CalendarCheck, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
 import ErrorModal from './ErrorModal';
 import { useMoneda } from '../context/MonedaContext';
+import { verFechaHora } from '../utils/fechas';
 
 const CAMPO_BASE =
   'px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500';
@@ -21,7 +22,7 @@ const lineasDe = (cobro) =>
     item_plan_id: l.item_plan_id,
   }));
 
-const fechaCorta = (valor) => (valor ? new Date(valor).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Sin fecha');
+const fechaCorta = (valor) => (valor ? verFechaHora(valor, { dateStyle: 'short', timeStyle: 'short' }) : 'Sin fecha');
 
 export default function CobrosCitaPanel({ cobroInicialId, recarga, doctores, onCobroCerrado, onAviso }) {
   const { moneda } = useMoneda();

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ErrorModal from '../components/ErrorModal';
 import { api } from '../services/api';
-import { aFechaLocal } from '../utils/fechas';
+import { aFechaLocal, relojClinica } from '../utils/fechas';
 import { useAuth } from '../context/AuthContext';
 import {
   Layers,
@@ -118,6 +118,18 @@ export default function ProtesisLaboratorioView() {
     }
   };
 
+  const handlePagarLaboratorio = async (orden) => {
+    setError('');
+    try {
+      await api.pagarLaboratorio(orden.id);
+      setSuccess(`Pago de ${moneda(orden.costo_laboratorio)} registrado en caja y vinculado a la orden`);
+      setTimeout(() => setSuccess(''), 3000);
+      loadData();
+    } catch (err) {
+      setError(err.message || 'No se pudo registrar el pago');
+    }
+  };
+
   const handleCreateProtesis = async (e) => {
     e.preventDefault();
     setError('');
@@ -135,7 +147,7 @@ export default function ProtesisLaboratorioView() {
         costo_laboratorio: Number(form.costo_laboratorio),
         costo_paciente: Number(form.costo_paciente),
         fecha_envio: form.fecha_envio || aFechaLocal(),
-        fecha_entrega_esperada: form.fecha_prometida_entrega || aFechaLocal(new Date(Date.now() + 7*86400000)),
+        fecha_entrega_esperada: form.fecha_prometida_entrega || aFechaLocal(new Date(relojClinica().setDate(relojClinica().getDate() + 7))),
         observaciones: form.observaciones || '',
       });
 
@@ -262,6 +274,7 @@ export default function ProtesisLaboratorioView() {
                       </td>
                       <td className="py-3 px-4 text-right font-mono text-slate-300">
                         {moneda(p.costo_laboratorio)}
+                        {p.egreso_caja_id && <span className="block text-[10px] font-bold text-emerald-700 dark:text-emerald-400">Pagado</span>}
                       </td>
                       <td className="py-3 px-4 text-center">
                         <span
@@ -279,6 +292,15 @@ export default function ProtesisLaboratorioView() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right space-x-1">
+                        {tienePermiso('CAJA_EGRESOS') && !p.egreso_caja_id && Number(p.costo_laboratorio) > 0 && (
+                          <button
+                            onClick={() => handlePagarLaboratorio(p)}
+                            title="Registra la salida de efectivo de la caja y la vincula a esta orden"
+                            className="px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 rounded text-[11px] transition"
+                          >
+                            Pagar Laboratorio
+                          </button>
+                        )}
                         {tienePermiso('PROTESIS_UPDATE') && p.estado === 'ENVIADO' && (
                           <button
                             onClick={() => handleUpdateEstado(p.id, 'EN_LABORATORIO')}
@@ -314,7 +336,7 @@ export default function ProtesisLaboratorioView() {
                         {tienePermiso('PROTESIS_UPDATE') && ['RECIBIDO_EN_CLINICA', 'PRUEBA_EN_BOCA'].includes(p.estado) && (
                           <button
                             onClick={() => handleUpdateEstado(p.id, 'INSTALADO_FINALIZADO')}
-                            className="px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded text-[11px] transition"
+                            className="px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 rounded text-[11px] transition"
                           >
                             Colocado
                           </button>

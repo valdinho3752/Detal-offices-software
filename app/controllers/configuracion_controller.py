@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
@@ -5,7 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user, require_role
 from app.database import get_db
-from app.models import AuditoriaAccionEnum, AuditoriaLog, ConfiguracionClinica, RolCodigoEnum, Usuario
+from app.config import settings
+from app.models import AuditoriaAccionEnum, AuditoriaLog, ConfiguracionClinica, EstadoCopias, RolCodigoEnum, Usuario
 from app.schemas.configuracion import ConfiguracionActualizar, ConfiguracionPublica, ConfiguracionRespuesta
 from app.services.moneda import obtener_configuracion
 
@@ -40,6 +42,7 @@ def _publica(configuracion: ConfiguracionClinica) -> dict:
         "nombre_clinica": configuracion.nombre_clinica,
         "tema_por_defecto": configuracion.tema_por_defecto,
         "logo_url": _logo_url(configuracion),
+        "zona_horaria": settings.CLINICA_TIMEZONE or None,
     }
 
 
@@ -63,6 +66,26 @@ def consultar_configuracion_publica(db: Session = Depends(get_db)):
     configuracion = obtener_configuracion(db)
     db.commit()
     return _publica(configuracion)
+
+
+HORAS_SIN_COPIA_PARA_AVISAR = 26  # Una copia diaria, con margen para el horario de trabajo
+
+
+@router.get("/estado-copias")
+def consultar_estado_copias(
+    current_user: Usuario = Depends(require_role(RolCodigoEnum.ADMIN)),
+    db: Session = Depends(get_db),
+):
+    estado = db.query(EstadoCopias).first()
+    if not estado:
+        return {"alerta": False, "mensaje": None}
+    if estado.ultimo_error_en and (not estado.ultima_exitosa or estado.ultimo_error_en > estado.ultima_exitosa):
+        return {"alerta": True, "mensaje": f"La copia de seguridad falló el {estado.ultimo_error_en:%d/%m/%Y %H:%M}. Revisa el disco de copias: sin copia no se pueden recuperar los datos."}
+    referencia = estado.ultima_exitosa or estado.creado_en
+    if datetime.now(timezone.utc) - referencia > timedelta(hours=HORAS_SIN_COPIA_PARA_AVISAR):
+        ultima = f"desde el {estado.ultima_exitosa:%d/%m/%Y %H:%M}" if estado.ultima_exitosa else "todavía"
+        return {"alerta": True, "mensaje": f"No se ha creado ninguna copia de seguridad {ultima}. Revisa que el servicio de copias esté en marcha."}
+    return {"alerta": False, "mensaje": None}
 
 
 @router.get("/logo", response_class=Response)

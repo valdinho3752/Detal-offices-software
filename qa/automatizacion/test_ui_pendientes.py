@@ -818,6 +818,171 @@ def test_todas_las_pantallas_se_leen(fab, api, como_admin, tema):
     assert not problemas, problemas
 
 
+# ---------------- Decisiones de la clínica ----------------
+
+@caso("SEG-09")
+def test_sesion_se_cierra_por_inactividad(fab, api, abrir):
+    u = fab.usuario()
+    assert u.api.get("/auth/me").json()["minutos_inactividad"] == 5, "Cinco minutos por defecto"
+    p = abrir(u.alias, u.clave, reloj_vivo=True, ruta="pacientes")
+    p.clock.fast_forward(4 * 60 * 1000 + 35 * 1000)
+    p.get_by_test_id("aviso-inactividad").wait_for(timeout=3000)
+    p.mouse.move(300, 300)
+    p.mouse.move(320, 320)
+    p.get_by_test_id("aviso-inactividad").wait_for(state="hidden", timeout=3000)
+    p.clock.fast_forward(4 * 60 * 1000 + 35 * 1000)
+    assert "/login" not in p.url, "La actividad reinicia la cuenta"
+    p.mouse.move(340, 340)
+    p.clock.fast_forward(5 * 60 * 1000 + 2000)
+    p.wait_for_url(f"{BASE}/login", timeout=5000)
+    assert "por inactividad" in p.inner_text("body")
+    assert p.evaluate("localStorage.getItem('token')") is None
+
+    # Volver a abrir la página tras el tiempo límite tampoco reabre la sesión
+    q = abrir(u.alias, u.clave, ruta="pacientes")
+    q.evaluate("localStorage.setItem('ultima_actividad', String(Date.now() - 6 * 60 * 1000))")
+    q.reload()
+    q.wait_for_url(f"{BASE}/login", timeout=5000)
+
+
+@caso("SEG-09")
+def test_cada_usuario_elige_su_tiempo_de_sesion(fab, api, abrir):
+    u = fab.usuario()
+    otro = fab.usuario()
+    p = abrir(u.alias, u.clave, reloj_vivo=True)
+    p.get_by_role("button", name="Cierre de sesión por inactividad").click()
+    d = p.get_by_role("dialog", name="Cierre de sesión por inactividad")
+    assert d.get_by_role("status").count() == 0, "Con el tiempo recomendado no hay advertencia"
+    d.get_by_label("Cerrar mi sesión tras").select_option("30")
+    assert "propia responsabilidad" in d.get_by_role("status").inner_text()
+    d.get_by_role("button", name="Guardar").click()
+    d.wait_for(state="hidden")
+    assert u.api.get("/auth/me").json()["minutos_inactividad"] == 30
+    assert otro.api.get("/auth/me").json()["minutos_inactividad"] == 5, "Solo cambia el suyo"
+    p.clock.fast_forward(6 * 60 * 1000)
+    p.wait_for_timeout(500)
+    assert "/login" not in p.url
+    p.clock.fast_forward(25 * 60 * 1000)
+    p.wait_for_url(f"{BASE}/login", timeout=5000)
+    assert u.api.put("/auth/sesion", {"minutos_inactividad": 1}).status == 422, "Sin valores fuera de las opciones"
+    assert u.api.put("/auth/sesion", {"minutos_inactividad": 100000}).status == 422
+    cambios = [a for a in fab.auditoria("usuarios") if a["seccion_consultada"] == "TIEMPO_DE_SESION" and a["registro_id"] == u.id]
+    assert cambios and cambios[0]["datos_nuevos"]["minutos_inactividad"] == 30, "Queda registrado quién asumió el riesgo"
+
+
+@caso("OPE-17")
+def test_equipo_con_otra_zona_horaria_ve_la_hora_de_la_clinica(fab, api, abrir, sillon):
+    # A las 22:30 de la clínica ya es otro día en Tokio
+    noche = ahora_clinica().replace(hour=22, minute=30, second=0, microsecond=0)
+    hoy = noche.strftime("%Y-%m-%d")
+    nombre = f"Zona{uuid4().hex[:6]}"
+    paciente = fab.paciente(nombres=nombre)
+    numero = sillon()
+    assert cita_local(api, fab, paciente["id"], hoy, "21:15", "21:45", box=numero).status == 201
+    primero_mes = noche.replace(day=1).strftime("%Y-%m-%d")
+    peticiones = []
+    p = abrir(reloj=noche, zona="Asia/Tokyo")
+    p.on("request", lambda q: peticiones.append(q.url))
+    p.fill('input[type="text"]', "admin")
+    p.fill('input[type="password"]', CLAVE_ADMIN)
+    p.click('button[type="submit"]')
+    p.wait_for_url(f"{BASE}/")
+    p.wait_for_load_state("networkidle")
+    p.wait_for_timeout(400)
+    assert p.evaluate("Intl.DateTimeFormat().resolvedOptions().timeZone") == "Asia/Tokyo", "El equipo sí está en otra zona"
+    fila = p.locator("main").get_by_text(nombre).first.locator("xpath=ancestor::div[contains(@class,'justify-between')][1]")
+    assert "21:15" in fila.inner_text(), "El Panel muestra la hora de la clínica"
+    desde_mes = instante(primero_mes, "00:00")
+    utc = datetime.fromisoformat(desde_mes).astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H:%M")
+    assert any("/reportes/resumen-financiero" in u and f"fecha_desde={utc}" in u.replace("%3A", ":") for u in peticiones), "El mes es el de la clínica"
+
+    # La agenda abre el día de la clínica y una cita nueva queda a la hora escrita
+    p.goto(f"{BASE}/citas")
+    p.wait_for_selector("table")
+    p.wait_for_load_state("networkidle")
+    assert hoy in p.inner_text("main"), "Abre el día de la clínica, no el de Tokio"
+    assert nombre.lower() in p.locator("tbody").inner_text().lower()
+    p.get_by_role("button", name="Nueva Cita").click()
+    otro_nombre = f"Nueva{uuid4().hex[:6]}"
+    otro = fab.paciente(nombres=otro_nombre)
+    f = p.locator("form").last
+    assert f.locator('input[type="date"]').first.input_value() == hoy
+    f.get_by_placeholder("Buscar paciente por nombre o CI...").fill(otro_nombre)
+    f.get_by_text(otro_nombre).first.click()
+    f.locator(f'select:has(option[value="{numero}"])').first.select_option(str(numero))
+    f.locator('input[type="time"]').nth(0).fill("15:30")
+    f.locator('input[type="time"]').nth(1).fill("16:00")
+    f.get_by_placeholder("ej. Evaluación general, Extracción de tercer molar").fill("Zona horaria")
+    f.get_by_role("button", name="Agendar Cita").click()
+    p.wait_for_load_state("networkidle")
+    p.wait_for_timeout(500)
+    creada = api.get("/citas/", paciente_id=otro["id"]).json()
+    assert creada and datetime.fromisoformat(creada[0]["fecha_inicio_programada"]) == datetime.fromisoformat(instante(hoy, "15:30")), creada[:1]
+
+    # Una corrección de marcaje y el historial también usan la hora de la clínica
+    empleado = fab.usuario()
+    p.goto(f"{BASE}/asistencia")
+    p.wait_for_load_state("networkidle")
+    corregida = api.post("/personal/asistencia/correcciones", {"usuario_id": empleado.id, "tipo_evento": "ENTRADA", "fecha_hora": instante(hoy, "08:10"), "motivo": "Zona"})
+    assert corregida.status == 201, corregida.text
+    p.reload()
+    p.wait_for_load_state("networkidle")
+    p.wait_for_timeout(400)
+    assert re.search(r"8:10|08:10", p.inner_text("main")), "Hora de la clínica en la bitácora"
+
+
+@caso("PRO-16")
+def test_pagar_laboratorio_queda_vinculado(fab, api, abrir, como_admin):
+    fab.caja()
+    laboratorio = f"Lab{uuid4().hex[:6]}"
+    pid = fab.paciente()["id"]
+    orden = api.post("/protesis/", {"paciente_id": pid, "doctor_id": fab.doctor, "laboratorio_nombre": laboratorio, "tipo_trabajo": "CORONA_ZIRCONIO", "costo_laboratorio": 321.5}).json()
+    gaveta = fab.gaveta()
+    p = como_admin("protesis")
+    fila = p.locator("main table tbody tr").filter(has_text=laboratorio)
+    fila.wait_for()
+    fila.get_by_role("button", name="Pagar Laboratorio").click()
+    p.wait_for_load_state("networkidle")
+    p.wait_for_timeout(400)
+    assert fab.gaveta() == gaveta - 321.5, "Descuenta la caja"
+    actual = next(o for o in api.get("/protesis/").json() if o["id"] == orden["id"])
+    assert actual["egreso_caja_id"], "Queda vinculada al egreso"
+    assert sql(f"select categoria || '/' || monto from egresos_caja where id = '{actual['egreso_caja_id']}'") == "PAGO_LABORATORIO_PROTESIS/321.50"
+    assert "Pagado" in fila.inner_text() and fila.get_by_role("button", name="Pagar Laboratorio").count() == 0
+    assert api.post(f"/protesis/{orden['id']}/pagar-laboratorio", {}).status == 409, "No se paga dos veces"
+    assert fab.gaveta() == gaveta - 321.5
+
+    # Sin caja abierta no se paga y la orden queda sin vincular; sin permiso, ni se ofrece
+    otra = api.post("/protesis/", {"paciente_id": pid, "doctor_id": fab.doctor, "laboratorio_nombre": f"{laboratorio}B", "tipo_trabajo": "CORONA_ZIRCONIO", "costo_laboratorio": 10}).json()
+    fab.cerrar_caja()
+    try:
+        assert api.post(f"/protesis/{otra['id']}/pagar-laboratorio", {}).status == 400
+        assert not next(o for o in api.get("/protesis/").json() if o["id"] == otra["id"])["egreso_caja_id"]
+    finally:
+        fab.caja()
+    doc = fab.usuario("DOCTOR")
+    assert doc.api.post(f"/protesis/{otra['id']}/pagar-laboratorio", {}).status == 403
+    q = abrir(doc.alias, doc.clave, ruta="protesis")
+    q.locator("main table tbody tr").filter(has_text=f"{laboratorio}B").wait_for()
+    assert q.get_by_role("button", name="Pagar Laboratorio").count() == 0
+
+
+@caso("NOM-30")
+def test_empleado_inactivo_con_saldo_sigue_en_nomina(fab, api, como_admin):
+    apellido = f"Saldo{uuid4().hex[:5]}"
+    doc = fab.usuario("DOCTOR", apellido=apellido, tipo_remuneracion="PORCENTAJE_COMISION", porcentaje_comision=50)
+    fab.cobro_directo(fab.paciente()["id"], 1000, doctor_comision_id=doc.doctor_id)
+    assert api.put(f"/usuarios/{doc.id}", {"activo": False}).ok
+    fila = lambda: next((e for e in api.get("/empleados/personal").json() if e["usuario_id"] == doc.id), None)
+    assert fila() and fila()["activo"] is False, "Con saldo sigue visible"
+    p = como_admin("nomina")
+    opcion = p.get_by_label("Empleado").locator("option", has_text=apellido)
+    assert "Inactivo, con saldo por pagar" in opcion.inner_text()
+    pago = api.post("/empleados/pagos", {"usuario_empleado_id": doc.id, "tipo_pago": "COMISION_TRATAMIENTOS", "monto_neto_pagado": 500, "metodo_pago": "TRANSFERENCIA"})
+    assert pago.status == 201, pago.text
+    assert fila() is None, "Ya pagado, deja de aparecer"
+
+
 # ---------------- Conexión ----------------
 
 @caso("RED-08")

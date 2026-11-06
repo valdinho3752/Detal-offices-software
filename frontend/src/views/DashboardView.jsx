@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
-import { aFechaLocal, periodoDelDia, periodoMesActual } from '../utils/fechas';
+import { aFechaLocal, periodoDelDia, periodoMesActual, verHora } from '../utils/fechas';
 import { useAuth } from '../context/AuthContext';
 import { puedeAcceder, puedeModificarCita } from '../config/accesos';
 import {
@@ -220,7 +220,7 @@ export default function DashboardView() {
             <div className="space-y-3">
               {citasHoy.slice(0, 5).map((cita) => {
                 const pacienteNombre = cita.paciente ? `${cita.paciente.nombres} ${cita.paciente.apellidos}` : 'Paciente';
-                const hora = new Date(cita.fecha_inicio_programada).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', hour12: false });
+                const hora = verHora(cita.fecha_inicio_programada, { hour: '2-digit', minute: '2-digit', hour12: false });
                 return (
                   <div
                     key={cita.id}

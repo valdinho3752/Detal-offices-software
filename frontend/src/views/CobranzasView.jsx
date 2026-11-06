@@ -19,6 +19,7 @@ import PacienteSearchInput from '../components/PacienteSearchInput';
 import CobrosCitaPanel from '../components/CobrosCitaPanel';
 import { useAuth } from '../context/AuthContext';
 import { useMoneda } from '../context/MonedaContext';
+import { verFechaHora } from '../utils/fechas';
 
 
 export default function CobranzasView() {
@@ -336,7 +337,7 @@ export default function CobranzasView() {
                 {saldoInfo.pagos.map((pago) => (
                   <tr key={pago.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/20 transition ${pago.anulado ? 'opacity-70' : ''}`}>
                     <td className="py-3 px-4 font-mono text-slate-500 dark:text-slate-400">
-                      {pago.created_at ? new Date(pago.created_at).toLocaleString() : 'Fecha'}
+                      {pago.created_at ? verFechaHora(pago.created_at) : 'Fecha'}
                     </td>
                     <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-white">
                       {pago.numero_comprobante || 'REC-001'}

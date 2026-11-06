@@ -18,6 +18,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useMoneda } from '../context/MonedaContext';
+import { verHora } from '../utils/fechas';
 
 export default function CajaOperativaView() {
   const { moneda, simbolo } = useMoneda();
@@ -303,7 +304,7 @@ export default function CajaOperativaView() {
                 {caja.movimientos.map((m, idx) => (
                   <tr key={idx} className="hover:bg-slate-700/20 transition">
                     <td className="py-3 px-4 font-mono text-slate-400">
-                      {m.timestamp ? new Date(m.timestamp).toLocaleTimeString() : '--:--'}
+                      {m.timestamp ? verHora(m.timestamp) : '--:--'}
                     </td>
                     <td className="py-3 px-4">
                       <span

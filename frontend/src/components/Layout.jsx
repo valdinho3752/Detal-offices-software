@@ -5,8 +5,10 @@ import { useTheme } from '../context/ThemeContext';
 import { useClinica } from '../context/ClinicaContext';
 import LogoClinica from './LogoClinica';
 import CambiarContrasenaModal from './CambiarContrasenaModal';
+import TiempoSesionModal from './TiempoSesionModal';
 import { api } from '../services/api';
 import {
+  Timer,
   Activity,
   Users,
   Calendar,
@@ -51,7 +53,7 @@ const fichajeOpciones = [
 export default function Layout({ children }) {
   const { moneda } = useMoneda();
   const auth = useAuth();
-  const { user, logout, tienePermiso } = auth;
+  const { user, logout, tienePermiso, isAdmin, segundosParaCierre } = auth;
   const puedeFichar = tienePermiso('ASISTENCIA_FICHAR');
   const { isDark, toggleTheme } = useTheme();
   const { nombreClinica } = useClinica();
@@ -60,6 +62,8 @@ export default function Layout({ children }) {
   const [cajaEstado, setCajaEstado] = useState(null);
   const [fichajeModal, setFichajeModal] = useState(false);
   const [cambiandoClave, setCambiandoClave] = useState(false);
+  const [cambiandoTiempo, setCambiandoTiempo] = useState(false);
+  const [avisoCopias, setAvisoCopias] = useState(null);
   const [fichajeTipo, setFichajeTipo] = useState('ENTRADA');
   const [fichajeObs, setFichajeObs] = useState('');
   const [fichajeSuccess, setFichajeSuccess] = useState('');
@@ -80,6 +84,14 @@ export default function Layout({ children }) {
     const interval = setInterval(refreshCaja, 15000);
     return () => clearInterval(interval);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!isAdmin) return undefined;
+    const revisar = () => api.getEstadoCopias().then((e) => setAvisoCopias(e.alerta ? e.mensaje : null)).catch(() => {});
+    revisar();
+    const intervalo = setInterval(revisar, 300000);
+    return () => clearInterval(intervalo);
+  }, [isAdmin]);
 
   const cargarEstadoFichaje = async () => {
     setFichajePermitidos(null);
@@ -189,6 +201,14 @@ export default function Layout({ children }) {
               </span>
             </div>
           </div>
+          <button
+            onClick={() => setCambiandoTiempo(true)}
+            title="Cierre de sesión por inactividad"
+            aria-label="Cierre de sesión por inactividad"
+            className="p-1.5 mr-1 rounded-lg bg-slate-500/10 text-slate-600 dark:text-slate-300 border border-slate-500/30 hover:bg-slate-500/20 transition-colors flex-shrink-0"
+          >
+            <Timer className="w-4 h-4" />
+          </button>
           <button
             onClick={() => setCambiandoClave(true)}
             title="Cambiar mi contraseña"
@@ -339,9 +359,22 @@ export default function Layout({ children }) {
 
         {/* View Content */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50/70 dark:bg-slate-900/50">
+          {avisoCopias && (
+            <div role="alert" data-testid="aviso-copias" className="mb-4 p-3 bg-rose-500/10 border border-rose-500/40 rounded-xl text-rose-700 dark:text-rose-300 text-xs font-semibold">
+              {avisoCopias}
+            </div>
+          )}
           <div className={PANTALLAS_ANCHAS.includes(location.pathname) ? 'w-full' : 'max-w-7xl mx-auto'}>{children || <Outlet />}</div>
         </main>
       </div>
+
+      {cambiandoTiempo && <TiempoSesionModal onCerrar={() => setCambiandoTiempo(false)} />}
+
+      {segundosParaCierre !== null && (
+        <div role="alert" data-testid="aviso-inactividad" className="fixed top-4 left-1/2 -translate-x-1/2 z-[80] px-4 py-2.5 bg-amber-500 text-slate-950 rounded-xl shadow-2xl text-xs font-bold">
+          Tu sesión se cerrará en {segundosParaCierre} s por inactividad. Mueve el ratón o pulsa una tecla para continuar.
+        </div>
+      )}
 
       {(user?.debe_cambiar_contrasena || cambiandoClave) && (
         <CambiarContrasenaModal obligatorio={Boolean(user?.debe_cambiar_contrasena)} onCerrar={() => setCambiandoClave(false)} />

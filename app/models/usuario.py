@@ -60,6 +60,7 @@ class Usuario(Base):
     activo = Column(Boolean, default=True, nullable=False)
     version_sesion = Column(Integer, default=0, server_default="0", nullable=False)
     debe_cambiar_contrasena = Column(Boolean, default=False, server_default="false", nullable=False)
+    minutos_inactividad = Column(Integer, default=5, server_default="5", nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
