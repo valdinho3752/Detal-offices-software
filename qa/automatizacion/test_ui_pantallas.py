@@ -24,6 +24,18 @@ def _caja_abierta(fab):
     fab.caja()
 
 
+def elegir_en_odontograma(p, paciente):
+    """Busca al paciente en el selector, esté o no en la lista inicial."""
+    if p.get_by_placeholder("Buscar paciente por nombre o CI...").count() == 0:
+        p.get_by_title("Cambiar o deseleccionar paciente").click()
+    buscador = p.get_by_placeholder("Buscar paciente por nombre o CI...")
+    buscador.fill(paciente["numero_documento"])
+    p.wait_for_timeout(450)
+    p.locator("main").get_by_text(paciente["numero_documento"]).first.click()
+    p.wait_for_load_state("networkidle")
+    p.wait_for_timeout(500)
+
+
 # ---------------- Acceso ----------------
 
 @caso("ACC-01", "ACC-14", "ACC-21", "PAN-01")
@@ -306,7 +318,7 @@ def test_marcar_y_limpiar_cara(fab, abrir, api):
     nombre = f"Odo{uuid4().hex[:6]}"
     paciente = fab.paciente(nombres=nombre)
     p = abrir("admin", CLAVE_ADMIN, ruta=f"odontograma?paciente_id={paciente['id']}")
-    p.locator("select").first.select_option(paciente["id"])
+    elegir_en_odontograma(p, paciente)
     p.wait_for_load_state("networkidle")
     p.wait_for_timeout(600)
     p.get_by_title(re.compile("^#16 ")).first.click()
@@ -318,7 +330,7 @@ def test_marcar_y_limpiar_cara(fab, abrir, api):
     assert int(hallazgos) >= 1
     p.reload()
     p.wait_for_load_state("networkidle")
-    p.locator("select").first.select_option(paciente["id"])
+    elegir_en_odontograma(p, paciente)
     p.wait_for_load_state("networkidle")
     p.wait_for_timeout(500)
     p.get_by_title(re.compile("^#16 ")).first.click()
@@ -335,14 +347,12 @@ def test_marcar_y_limpiar_cara(fab, abrir, api):
 def test_cambiar_de_paciente_no_mezcla(fab, abrir):
     a, b = fab.paciente(nombres="Primero"), fab.paciente(nombres="Segundo")
     p = abrir("admin", CLAVE_ADMIN, ruta="odontograma")
-    selector = p.locator("select").first
-    selector.select_option(a["id"])
-    p.wait_for_load_state("networkidle")
-    p.wait_for_timeout(500)
-    selector.select_option(b["id"])
-    p.wait_for_load_state("networkidle")
-    p.wait_for_timeout(500)
-    assert selector.input_value() == b["id"]
+    p.wait_for_selector('[title^="#"]')
+    elegir_en_odontograma(p, a)
+    assert a["numero_documento"] in p.locator("main").first.inner_text()
+    elegir_en_odontograma(p, b)
+    texto = p.locator("main").first.inner_text()
+    assert b["numero_documento"] in texto and a["numero_documento"] not in texto
 
 
 # ---------------- Agenda ----------------

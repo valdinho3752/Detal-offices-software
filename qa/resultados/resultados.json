@@ -1,2774 +1,416 @@
 {
- "ACC-01": {
+ "ACC-10": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_entrar",
-  "via": "UI"
- },
- "ACC-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_clave_incorrecta",
-  "via": "API"
- },
- "ACC-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_usuario_inexistente_no_revela",
-  "via": "API"
- },
- "ACC-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_campos_vacios",
-  "via": "UI"
- },
- "ACC-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_bloqueo_tras_fallos",
-  "via": "UI"
- },
- "ACC-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_bloqueo_tras_fallos",
-  "via": "API"
- },
- "ACC-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_acierto_reinicia_el_conteo",
-  "via": "API"
- },
- "ACC-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_bloqueo_no_afecta_a_otro_usuario",
-  "via": "API"
- },
- "ACC-13": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_usuario_desactivado",
-  "via": "API"
- },
- "ACC-14": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_entrar",
-  "via": "UI"
- },
- "ACC-15": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_sesion",
-  "via": "UI"
- },
- "ACC-16": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_sesion",
-  "via": "UI"
- },
- "ACC-17": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_token_invalido_o_ausente",
-  "via": "UI"
- },
- "ACC-19": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_usuario_desactivado",
-  "via": "API"
- },
- "ACC-21": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_entrar",
-  "via": "UI"
- },
- "ACC-22": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_entrar_con_correo",
-  "via": "API"
- },
- "ACC-23": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_inyeccion_en_login",
-  "via": "API"
- },
- "ACC-24": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_pantalla_de_acceso",
-  "via": "UI"
- },
- "AGE-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_matriz",
-  "via": "UI"
- },
- "AGE-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_paciente_no_preseleccionado",
-  "via": "UI"
- },
- "AGE-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_nueva_cita_de_varios_bloques",
-  "via": "UI"
- },
- "AGE-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_nueva_cita_de_varios_bloques",
-  "via": "UI"
- },
- "AGE-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_reglas_de_horario",
-  "via": "API"
- },
- "AGE-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_reglas_de_horario",
-  "via": "API"
- },
- "AGE-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_reglas_de_horario",
-  "via": "API"
- },
- "AGE-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_reglas_de_horario",
-  "via": "API"
- },
- "AGE-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_reglas_de_horario",
-  "via": "API"
- },
- "AGE-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_citas_simultaneas",
-  "via": "API"
- },
- "AGE-11": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_reglas_de_horario",
-  "via": "API"
- },
- "AGE-12": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_reglas_de_horario",
-  "via": "API"
- },
- "AGE-13": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_mover_cita",
-  "via": "API"
- },
- "AGE-14": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_mover_cita",
-  "via": "API"
- },
- "AGE-15": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cancelada_visible",
-  "via": "UI"
- },
- "AGE-16": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cancelar_y_no_asistio",
-  "via": "API"
- },
- "AGE-17": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cancelar_y_no_asistio",
-  "via": "API"
- },
- "AGE-18": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cancelar_y_no_asistio",
-  "via": "API"
- },
- "AGE-19": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_recorrido_de_estados",
-  "via": "API"
- },
- "AGE-20": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_finalizar_con_tratamientos",
-  "via": "API"
- },
- "AGE-21": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_finalizar_con_tratamientos",
-  "via": "API"
- },
- "AGE-22": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_finalizar_sin_plan",
-  "via": "API"
- },
- "AGE-23": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cita_atendida_no_cambia",
-  "via": "API"
- },
- "AGE-24": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_recorrido_de_estados",
-  "via": "API"
- },
- "AGE-25": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_matriz",
-  "via": "UI"
- },
- "AGE-27": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_permisos_de_agenda",
-  "via": "API"
- },
- "AGE-28": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_permisos_de_agenda",
-  "via": "API"
- },
- "AGE-29": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_permisos_de_agenda",
-  "via": "API"
- },
- "AGE-30": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_permisos_de_agenda",
-  "via": "API"
- },
- "AGE-31": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_matriz",
-  "via": "UI"
- },
- "AGE-32": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_ancho_de_la_agenda",
-  "via": "UI"
- },
- "AGE-34": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cita_atendida_no_cambia",
-  "via": "API"
- },
- "AGE-35": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_reactivar_sobre_ocupado",
-  "via": "API"
- },
- "AGE-36": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_finalizar_saltando_pasos",
-  "via": "API"
- },
- "ANU-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_anular_en_caja_abierta",
-  "via": "API"
- },
- "ANU-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_anular_en_caja_abierta",
-  "via": "API"
- },
- "ANU-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_anular_efectivo_de_caja_cerrada",
-  "via": "API"
- },
- "ANU-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_anular_efectivo_de_caja_cerrada",
-  "via": "API"
- },
- "ANU-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_anular_efectivo_de_caja_cerrada",
-  "via": "API"
- },
- "ANU-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_anular_en_caja_abierta",
-  "via": "API"
- },
- "ANU-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_anular_en_caja_abierta",
-  "via": "API"
- },
- "ANU-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_anular_en_caja_abierta",
-  "via": "UI"
- },
- "ANU-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_anular_en_caja_abierta",
-  "via": "API"
- },
- "ANU-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_anular_cuenta_de_cita",
-  "via": "API"
- },
- "ANU-11": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_anular_cuenta_de_cita",
-  "via": "API"
- },
- "ANU-12": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_quien_puede_anular",
-  "via": "UI"
- },
- "ANU-13": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_quien_puede_anular",
-  "via": "API"
- },
- "ANU-14": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_anular_en_caja_abierta",
-  "via": "API"
- },
- "ANU-15": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_anular_cuenta_de_cita",
-  "via": "API"
- },
- "ASI-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_recorrido_de_turno",
-  "via": "UI"
- },
- "ASI-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_recorrido_de_turno",
-  "via": "UI"
- },
- "ASI-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_recorrido_de_turno",
-  "via": "UI"
- },
- "ASI-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_recorrido_de_turno",
-  "via": "UI"
- },
- "ASI-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_recorrido_de_turno",
-  "via": "UI"
- },
- "ASI-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_recorrido_de_turno",
-  "via": "API"
- },
- "ASI-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_asistencia_en_pantalla",
-  "via": "UI"
- },
- "ASI-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_recorrido_de_turno",
-  "via": "API"
- },
- "ASI-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_marcajes_simultaneos",
-  "via": "API"
- },
- "ASI-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_asistencia_en_pantalla",
-  "via": "UI"
- },
- "ASI-11": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_asistencia_en_pantalla",
-  "via": "UI"
- },
- "ASI-12": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_turnos_por_persona",
-  "via": "API"
- },
- "ASI-13": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_salida_olvidada_y_correccion",
-  "via": "UI"
- },
- "ASI-14": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_asistencia_en_pantalla",
-  "via": "UI"
- },
- "ASI-15": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_asistencia_en_pantalla",
-  "via": "UI"
- },
- "ASI-16": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_asistencia_en_pantalla",
-  "via": "UI"
- },
- "ASI-17": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_turnos_por_persona",
-  "via": "API"
- },
- "ASI-18": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_turnos_por_persona",
-  "via": "API"
- },
- "AUD-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_filtros_de_auditoria",
-  "via": "UI"
- },
- "AUD-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_detalle_de_auditoria",
-  "via": "UI"
- },
- "AUD-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_auditoria",
-  "via": "UI"
- },
- "AUD-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_auditoria",
-  "via": "API"
- },
- "AUD-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_configuracion",
-  "via": "API"
- },
- "AUD-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_auditoria",
-  "via": "API"
- },
- "AUD-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_auditoria",
-  "via": "UI"
- },
- "AUD-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_auditoria",
-  "via": "API"
- },
- "AUD-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_filtros_de_auditoria",
-  "via": "UI"
- },
- "CAJ-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_bloqueo_y_apertura",
-  "via": "UI"
- },
- "CAJ-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_bloqueo_y_apertura",
-  "via": "UI"
- },
- "CAJ-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abrir_y_cerrar_caja",
-  "via": "UI"
- },
- "CAJ-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abrir_y_cerrar_caja",
-  "via": "API"
- },
- "CAJ-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abrir_y_cerrar_caja",
-  "via": "API"
- },
- "CAJ-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abrir_y_cerrar_caja",
-  "via": "API"
- },
- "CAJ-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_gaveta_segun_medio",
-  "via": "API"
- },
- "CAJ-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_gaveta_segun_medio",
-  "via": "API"
- },
- "CAJ-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_egresos",
-  "via": "UI"
- },
- "CAJ-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_egresos",
-  "via": "API"
- },
- "CAJ-11": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_egresos",
-  "via": "API"
- },
- "CAJ-12": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_egresos",
-  "via": "API"
- },
- "CAJ-13": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_egresos",
-  "via": "API"
- },
- "CAJ-14": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_gaveta_segun_medio",
-  "via": "API"
- },
- "CAJ-15": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abrir_y_cerrar_caja",
-  "via": "UI"
- },
- "CAJ-16": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abrir_y_cerrar_caja",
-  "via": "API"
- },
- "CAJ-17": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abrir_y_cerrar_caja",
-  "via": "API"
- },
- "CAJ-18": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abrir_y_cerrar_caja",
-  "via": "API"
- },
- "CAJ-19": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_caja_de_un_dia_anterior",
-  "via": "API"
- },
- "CAJ-20": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_caja_de_un_dia_anterior",
-  "via": "API"
- },
- "CAJ-21": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abrir_y_cerrar_caja",
-  "via": "API"
- },
- "CAJ-22": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abrir_y_cerrar_caja",
-  "via": "API"
- },
- "CAJ-24": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_permisos_de_caja",
-  "via": "API"
- },
- "CAJ-25": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_permisos_de_caja",
-  "via": "API"
- },
- "CAJ-26": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_caja_de_un_dia_anterior",
-  "via": "API"
- },
- "CAJ-27": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_bloqueo_y_apertura",
-  "via": "UI"
- },
- "CAJ-28": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_bloqueo_y_apertura",
-  "via": "UI"
- },
- "CAJ-29": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abrir_y_cerrar_caja",
-  "via": "API"
- },
- "CAJ-30": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_movimientos_del_turno",
-  "via": "UI"
- },
- "CAL-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_vista_mensual",
-  "via": "UI"
- },
- "CAL-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_vista_mensual",
-  "via": "UI"
- },
- "CAL-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_vista_mensual",
-  "via": "UI"
- },
- "CAL-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_nueva_cita_de_varios_bloques",
-  "via": "UI"
- },
- "CAL-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cancelada_visible",
-  "via": "UI"
- },
- "CAL-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_nueva_cita_de_varios_bloques",
-  "via": "UI"
- },
- "CAL-11": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_ancho_de_la_agenda",
-  "via": "UI"
- },
- "CAL-12": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_vista_mensual",
-  "via": "UI"
- },
- "CCI-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_finalizar_con_tratamientos",
-  "via": "UI"
- },
- "CCI-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_finalizar_sin_plan",
-  "via": "API"
- },
- "CCI-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_editar_y_confirmar_cuenta",
-  "via": "UI"
- },
- "CCI-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_editar_y_confirmar_cuenta",
-  "via": "UI"
- },
- "CCI-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_editar_y_confirmar_cuenta",
-  "via": "API"
- },
- "CCI-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_tratamiento_en_varias_citas",
-  "via": "API"
- },
- "CCI-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_tratamiento_en_varias_citas",
-  "via": "API"
- },
- "CCI-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_editar_y_confirmar_cuenta",
-  "via": "API"
- },
- "CCI-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_editar_y_confirmar_cuenta",
-  "via": "API"
- },
- "CCI-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_lineas_de_plan_y_directas",
-  "via": "API"
- },
- "CCI-11": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_casos_limite_de_cuenta",
-  "via": "API"
- },
- "CCI-12": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_casos_limite_de_cuenta",
-  "via": "API"
- },
- "CCI-13": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_casos_limite_de_cuenta",
-  "via": "API"
- },
- "CCI-14": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_casos_limite_de_cuenta",
-  "via": "API"
- },
- "CCI-15": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_casos_limite_de_cuenta",
-  "via": "API"
- },
- "CCI-16": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_editar_y_confirmar_cuenta",
-  "via": "API"
- },
- "CCI-17": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_confirmar_a_la_vez",
-  "via": "API"
- },
- "CFG-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_marca_en_pantalla",
-  "via": "UI"
- },
- "CFG-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_marca_en_pantalla",
-  "via": "UI"
- },
- "CFG-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_configuracion",
-  "via": "API"
- },
- "CFG-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_marca_en_pantalla",
-  "via": "UI"
- },
- "CFG-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_marca_en_pantalla",
-  "via": "UI"
- },
- "CFG-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_marca_en_pantalla",
-  "via": "UI"
- },
- "CFG-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_marca_en_pantalla",
-  "via": "UI"
- },
- "CFG-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_marca_en_pantalla",
-  "via": "UI"
- },
- "CFG-12": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_tema_por_defecto",
-  "via": "UI"
- },
- "CFG-13": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_tema_por_defecto",
-  "via": "UI"
- },
- "CFG-14": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_tema_por_defecto",
-  "via": "UI"
- },
- "CFG-15": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_moneda_en_pantalla",
-  "via": "UI"
- },
- "CFG-16": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_moneda_en_pantalla",
-  "via": "UI"
- },
- "CFG-17": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_configuracion",
-  "via": "API"
- },
- "CFG-18": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_configuracion",
-  "via": "API"
- },
- "CFG-19": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_configuracion",
-  "via": "API"
- },
- "CFG-20": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_configuracion",
-  "via": "API"
- },
- "CFG-21": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_configuracion",
-  "via": "UI"
- },
- "COB-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abonos_y_saldo",
-  "via": "UI"
- },
- "COB-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abonos_y_saldo",
-  "via": "UI"
- },
- "COB-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abonos_y_saldo",
-  "via": "API"
- },
- "COB-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abonos_y_saldo",
-  "via": "API"
- },
- "COB-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abonos_y_saldo",
-  "via": "API"
- },
- "COB-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abonos_y_saldo",
-  "via": "API"
- },
- "COB-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cobro_directo",
-  "via": "API"
- },
- "COB-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cobro_directo",
-  "via": "API"
- },
- "COB-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cobro_directo",
-  "via": "API"
- },
- "COB-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cobro_directo",
-  "via": "API"
- },
- "COB-11": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cobro_directo",
-  "via": "API"
- },
- "COB-12": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_registrar_cobro_en_pantalla",
-  "via": "UI"
- },
- "COB-13": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cobros_simultaneos",
-  "via": "API"
- },
- "COB-14": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_comision_y_permisos",
-  "via": "API"
- },
- "COB-15": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cobro_directo",
-  "via": "API"
- },
- "COB-16": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cobro_directo",
-  "via": "UI"
- },
- "COB-17": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_comision_y_permisos",
-  "via": "UI"
- },
- "COB-18": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abonos_y_saldo",
-  "via": "UI"
- },
- "COR-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_salida_olvidada_y_correccion",
-  "via": "API"
- },
- "COR-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_correccion_en_pantalla",
-  "via": "UI"
- },
- "COR-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_salida_olvidada_y_correccion",
-  "via": "UI"
- },
- "COR-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_salida_olvidada_y_correccion",
-  "via": "UI"
- },
- "COR-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_validaciones_de_correccion",
-  "via": "UI"
- },
- "COR-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_validaciones_de_correccion",
-  "via": "API"
- },
- "COR-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_validaciones_de_correccion",
-  "via": "UI"
- },
- "COR-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_validaciones_de_correccion",
-  "via": "API"
- },
- "COR-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_descanso_en_turno_cerrado",
-  "via": "API"
- },
- "COR-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_descanso_en_turno_cerrado",
-  "via": "API"
- },
- "COR-11": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_descanso_en_turno_cerrado",
-  "via": "API"
- },
- "COR-12": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_anular_marcaje",
-  "via": "UI"
- },
- "COR-13": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_anular_marcaje",
-  "via": "API"
- },
- "COR-14": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_anular_marcaje",
-  "via": "API"
- },
- "COR-15": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_anular_marcaje",
-  "via": "API"
- },
- "COR-16": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_validaciones_de_correccion",
-  "via": "UI"
- },
- "COR-17": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_salida_olvidada_y_correccion",
-  "via": "API"
- },
- "COR-18": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_salida_olvidada_y_correccion",
-  "via": "API"
- },
- "E2E-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_plan_desde_el_odontograma",
-  "via": "UI"
- },
- "E2E-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_consulta_simple_y_reemplazo",
-  "via": "UI"
- },
- "E2E-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_tratamiento_en_varias_citas",
-  "via": "API"
- },
- "E2E-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cobro_directo",
-  "via": "API"
- },
- "E2E-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_consulta_simple_y_reemplazo",
-  "via": "UI"
- },
- "E2E-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_paciente_con_plan_de_principio_a_fin",
-  "via": "UI"
- },
- "E2E-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_dia_de_caja",
-  "via": "UI"
- },
- "E2E-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_fin_de_mes",
-  "via": "UI"
- },
- "E2E-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_turno_con_olvido",
-  "via": "UI"
- },
- "EVO-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_finalizar_con_tratamientos",
-  "via": "API"
- },
- "EVO-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_finalizar_sin_plan",
-  "via": "API"
- },
- "EVO-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_finalizar_con_tratamientos",
-  "via": "API"
- },
- "EVO-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_evolucion_inmutable",
-  "via": "UI"
- },
- "EVO-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_evolucion_en_pantalla",
-  "via": "UI"
- },
- "EVO-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_evolucion_en_pantalla",
-  "via": "UI"
- },
- "EVO-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_evolucion_inmutable",
-  "via": "API"
- },
- "EVO-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_evolucion_inmutable",
-  "via": "API"
- },
- "EVO-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_evolucion_inmutable",
-  "via": "API"
- },
- "EVO-11": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_observaciones",
-  "via": "UI"
- },
- "EVO-12": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_observaciones",
-  "via": "API"
- },
- "EVO-13": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_observaciones",
-  "via": "API"
- },
- "EVO-14": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_observaciones",
-  "via": "API"
- },
- "EVO-15": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_observaciones",
-  "via": "UI"
- },
- "EVO-16": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_observaciones",
-  "via": "API"
- },
- "EVO-17": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_una_evolucion_por_cita",
-  "via": "API"
- },
- "EVO-18": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_una_evolucion_por_cita",
-  "via": "API"
- },
- "EVO-19": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_plan_desde_el_odontograma",
-  "via": "UI"
- },
- "EVO-20": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_proxima_sesion",
-  "via": "API"
- },
- "EVO-21": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_evolucion_en_pantalla",
-  "via": "UI"
- },
- "EVO-22": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_evolucion_en_pantalla",
-  "via": "UI"
- },
- "EVO-24": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_historial_ordenado",
-  "via": "API"
- },
- "EVO-25": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_registrar_paciente_en_pantalla",
-  "via": "UI"
- },
- "NOM-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_personal_y_contratos",
-  "via": "UI"
- },
- "NOM-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_personal_y_contratos",
-  "via": "UI"
- },
- "NOM-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_personal_y_contratos",
-  "via": "API"
- },
- "NOM-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_comisiones",
-  "via": "API"
- },
- "NOM-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_comisiones",
-  "via": "API"
- },
- "NOM-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_comisiones",
-  "via": "API"
- },
- "NOM-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_comisiones",
-  "via": "API"
- },
- "NOM-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_comisiones",
-  "via": "UI"
- },
- "NOM-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_comisiones",
-  "via": "API"
- },
- "NOM-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_comisiones",
-  "via": "UI"
- },
- "NOM-11": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_comisiones",
-  "via": "API"
- },
- "NOM-12": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_sueldo_y_adelantos",
-  "via": "API"
- },
- "NOM-13": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_sueldo_y_adelantos",
-  "via": "UI"
- },
- "NOM-14": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_sueldo_y_adelantos",
-  "via": "API"
- },
- "NOM-15": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_sueldo_y_adelantos",
-  "via": "API"
- },
- "NOM-16": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_sueldo_y_adelantos",
-  "via": "API"
- },
- "NOM-18": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_contrato_mixto",
-  "via": "API"
- },
- "NOM-19": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_sueldo_y_adelantos",
-  "via": "API"
- },
- "NOM-20": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_nomina_y_gaveta",
-  "via": "API"
- },
- "NOM-21": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_nomina_y_gaveta",
-  "via": "API"
- },
- "NOM-22": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_sueldo_y_adelantos",
-  "via": "API"
- },
- "NOM-23": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_sueldo_y_adelantos",
-  "via": "API"
- },
- "NOM-24": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_nomina_en_pantalla",
-  "via": "UI"
- },
- "NOM-25": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_privacidad_de_nomina",
-  "via": "API"
- },
- "NOM-26": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_menu_por_rol[DOCTOR]",
-  "via": "UI"
- },
- "NOM-27": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_privacidad_de_nomina",
-  "via": "API"
- },
- "NOM-28": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_nomina_en_pantalla",
-  "via": "UI"
- },
- "NOM-29": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_privacidad_de_nomina",
-  "via": "API"
- },
- "ODO-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_denticiones",
-  "via": "UI"
- },
- "ODO-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_denticiones",
-  "via": "UI"
- },
- "ODO-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_estados_y_caras",
-  "via": "UI"
- },
- "ODO-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_estados_y_caras",
-  "via": "UI"
- },
- "ODO-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_estados_y_caras",
-  "via": "UI"
- },
- "ODO-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_estados_y_caras",
-  "via": "UI"
- },
- "ODO-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_estados_y_caras",
-  "via": "UI"
- },
- "ODO-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_marcar_y_limpiar_cara",
-  "via": "UI"
- },
- "ODO-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_estados_y_caras",
-  "via": "UI"
- },
- "ODO-11": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_marcar_y_limpiar_cara",
-  "via": "UI"
- },
- "ODO-13": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_plan_desde_el_odontograma",
-  "via": "UI"
- },
- "ODO-14": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_plan_desde_el_odontograma",
-  "via": "UI"
- },
- "ODO-15": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_eliminar_tratamiento",
-  "via": "API"
- },
- "ODO-16": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_total_del_plan",
-  "via": "API"
- },
- "ODO-17": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_descuento_mayor_al_precio",
-  "via": "API"
- },
- "ODO-18": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_total_del_plan",
-  "via": "API"
- },
- "ODO-19": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_plan_desde_el_odontograma",
-  "via": "UI"
- },
- "ODO-20": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_plan_desde_el_odontograma",
-  "via": "UI"
- },
- "ODO-21": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_plan_desde_el_odontograma",
-  "via": "UI"
- },
- "ODO-22": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_plan_desde_el_odontograma",
-  "via": "UI"
- },
- "ODO-23": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_resultado_clinico_por_tratamiento",
-  "via": "UI"
- },
- "ODO-24": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_resultado_clinico_por_tratamiento",
-  "via": "UI"
- },
- "ODO-25": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_plan_desde_el_odontograma",
-  "via": "UI"
- },
- "ODO-27": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cambiar_de_paciente_no_mezcla",
-  "via": "UI"
- },
- "ODO-28": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_permisos_de_odontograma",
-  "via": "API"
- },
- "ODO-29": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_permisos_de_odontograma",
-  "via": "API"
- },
- "ODO-30": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_permisos_de_odontograma",
-  "via": "UI"
- },
- "ODO-31": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_ancho_del_odontograma",
-  "via": "UI"
- },
- "ODO-32": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_ancho_del_odontograma",
-  "via": "UI"
- },
- "ODO-33": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_odontograma_en_celular",
-  "via": "UI"
- },
- "ODO-35": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_pieza_inexistente",
-  "via": "API"
- },
- "ODO-36": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_denticiones",
-  "via": "UI"
- },
- "OPE-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_servicios_en_marcha",
-  "via": "API"
- },
- "OPE-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_puertos_publicados",
-  "via": "API"
- },
- "OPE-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_documentacion_no_disponible",
-  "via": "API"
- },
- "OPE-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_no_arranca_con_configuracion_insegura",
-  "via": "API"
- },
- "OPE-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_restaurar_copia",
-  "via": "API"
- },
- "OPE-11": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_restaurar_copia",
-  "via": "API"
- },
- "OPE-14": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_reinicio_del_backend",
-  "via": "API"
- },
- "OPE-16": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_https_y_zona_horaria",
-  "via": "API"
- },
- "OPE-18": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_recuperar_acceso_por_terminal",
-  "via": "API"
- },
- "PAC-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_registrar_y_editar_paciente",
-  "via": "UI"
- },
- "PAC-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_registrar_y_editar_paciente",
-  "via": "API"
- },
- "PAC-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_documento_unico",
-  "via": "API"
- },
- "PAC-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_documento_unico",
-  "via": "API"
- },
- "PAC-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_validaciones_de_paciente",
-  "via": "API"
- },
- "PAC-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_validaciones_de_paciente",
-  "via": "API"
- },
- "PAC-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_validaciones_de_paciente",
-  "via": "UI"
- },
- "PAC-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_validaciones_de_paciente",
-  "via": "API"
- },
- "PAC-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_registrar_paciente_en_pantalla",
-  "via": "UI"
- },
- "PAC-11": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_registrar_y_editar_paciente",
-  "via": "API"
- },
- "PAC-12": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_registrar_paciente_en_pantalla",
-  "via": "UI"
- },
- "PAC-13": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_antecedentes_como_doctor",
-  "via": "API"
- },
- "PAC-14": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_permisos_de_pacientes",
-  "via": "API"
- },
- "PAC-15": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_buscar_paciente",
-  "via": "API"
- },
- "PAC-16": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_buscar_paciente",
-  "via": "UI"
- },
- "PAC-17": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_accesos_desde_la_ficha",
-  "via": "UI"
- },
- "PAC-18": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_abonos_y_saldo",
-  "via": "UI"
- },
- "PAC-19": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_ver_ficha_queda_auditado",
-  "via": "API"
- },
- "PAC-20": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_permisos_de_pacientes",
-  "via": "UI"
- },
- "PAC-22": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_permisos_de_pacientes",
-  "via": "API"
- },
- "PAC-24": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_buscador_de_pacientes",
-  "via": "UI"
- },
- "PAC-25": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_registrar_paciente_en_pantalla",
-  "via": "UI"
- },
- "PAC-26": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_registrar_paciente_en_pantalla",
-  "via": "UI"
- },
- "PAN-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_entrar",
-  "via": "UI"
- },
- "PAN-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_panel",
-  "via": "UI"
- },
- "PAN-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_panel",
-  "via": "UI"
- },
- "PAN-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_doctor_no_avanza_cita_ajena",
-  "via": "UI"
- },
- "PAN-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_panel",
-  "via": "UI"
- },
- "PAN-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_menu_de_administrador",
-  "via": "UI"
- },
- "PAN-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_todas_las_pantallas_abren",
-  "via": "UI"
- },
- "PRO-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_ordenes_de_protesis",
-  "via": "API"
- },
- "PRO-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_ordenes_de_protesis",
-  "via": "API"
- },
- "PRO-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_ordenes_de_protesis",
-  "via": "API"
- },
- "PRO-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_ordenes_de_protesis",
-  "via": "UI"
- },
- "PRO-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_ordenes_de_protesis",
-  "via": "UI"
- },
- "PRO-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_protesis_en_pantalla",
-  "via": "UI"
- },
- "PRO-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_permisos_de_protesis",
-  "via": "API"
- },
- "PRO-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_permisos_de_protesis",
-  "via": "API"
- },
- "PRO-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_permisos_de_protesis",
-  "via": "UI"
- },
- "PRO-11": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_permisos_de_protesis",
+  "prueba": "test_bloqueo_solo_afecta_a_un_equipo",
   "via": "API"
  },
- "PRO-12": {
+ "ACC-11": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_permisos_de_protesis",
+  "prueba": "test_muchos_usuarios_falsos_y_reinicio",
   "via": "API"
  },
- "PRO-13": {
+ "ACC-12": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_ordenes_de_protesis",
+  "prueba": "test_muchos_usuarios_falsos_y_reinicio",
   "via": "API"
  },
- "PRO-14": {
+ "ACC-18": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_ordenes_de_protesis",
+  "prueba": "test_sesion_vence_a_las_ocho_horas",
   "via": "API"
- },
- "PRO-15": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_protesis_en_pantalla",
-  "via": "UI"
  },
- "PRO-17": {
+ "ACC-20": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_protesis_en_pantalla",
+  "prueba": "test_misma_cuenta_en_dos_equipos",
   "via": "UI"
  },
- "PWD-01": {
+ "AGE-26": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_primer_ingreso",
+  "prueba": "test_filtros_de_agenda",
   "via": "UI"
  },
- "PWD-02": {
+ "AGE-33": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_primer_ingreso",
+  "prueba": "test_agenda_con_muchos_sillones",
   "via": "UI"
- },
- "PWD-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cambio_de_contrasena_propia",
-  "via": "API"
- },
- "PWD-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cambio_de_contrasena_propia",
-  "via": "API"
- },
- "PWD-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cambio_de_contrasena_propia",
-  "via": "API"
  },
- "PWD-06": {
+ "AGE-37": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_primer_ingreso",
+  "prueba": "test_cita_que_cruza_la_medianoche",
   "via": "UI"
- },
- "PWD-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cambio_de_contrasena_propia",
-  "via": "API"
  },
- "PWD-08": {
+ "AGE-38": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_cambio_de_contrasena_propia",
+  "prueba": "test_citas_en_fechas_pasadas_se_permiten",
   "via": "API"
- },
- "PWD-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cambio_de_contrasena_propia",
-  "via": "UI"
  },
- "PWD-10": {
+ "ASI-19": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_cambio_cierra_otras_sesiones",
+  "prueba": "test_ip_real_del_otro_equipo",
   "via": "API"
  },
- "PWD-11": {
+ "AUD-10": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_primer_ingreso",
+  "prueba": "test_auditoria_con_muchos_registros",
   "via": "UI"
- },
- "PWD-12": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_restablecer_por_administrador",
-  "via": "API"
- },
- "PWD-13": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_restablecer_por_administrador",
-  "via": "API"
  },
- "PWD-14": {
+ "CAJ-23": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_auditoria_sin_contrasenas",
+  "prueba": "test_transferencia_con_caja_cerrada",
   "via": "API"
  },
- "PWD-15": {
+ "CAL-02": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_administrador_no_asigna_debil",
+  "prueba": "test_meses_de_distinta_duracion",
   "via": "UI"
- },
- "PWD-16": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_recuperar_acceso_por_terminal",
-  "via": "API"
- },
- "PWD-17": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_recuperar_acceso_por_terminal",
-  "via": "API"
- },
- "PWD-18": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_api_exige_cambiar_la_contrasena_inicial",
-  "via": "API"
- },
- "RAD-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_radiografias",
-  "via": "API"
- },
- "RAD-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_radiografias",
-  "via": "API"
- },
- "RAD-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_radiografias",
-  "via": "API"
- },
- "RAD-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_url_javascript",
-  "via": "API"
  },
- "RAD-06": {
+ "CAL-04": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_radiografias_en_pantalla",
+  "prueba": "test_calendario_dia_actual_y_varias_citas",
   "via": "UI"
  },
- "RAD-07": {
+ "CAL-07": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_radiografias_en_pantalla",
+  "prueba": "test_calendario_dia_actual_y_varias_citas",
   "via": "UI"
  },
- "RAD-09": {
+ "CAL-10": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_radiografias_en_pantalla",
+  "prueba": "test_calendario_dia_actual_y_varias_citas",
   "via": "UI"
  },
- "RAD-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_radiografias",
+ "CCI-18": {
+  "detalle": "AssertionError: assert False\n +  where False = <apoyo.Respuesta object at 0x000001902C7736B0>.ok\n +    where <apoyo.Respuesta object at 0x000001902C7736B0> = put('/cobros-cita/bc16bc3a-6f09-4bb0-b72b-23310d846ceb', {'lineas': [{'concepto': 'Tratamiento QAe753d09b - Pieza 11 (Oclusal incisal)', 'item_plan_id': '67fe7ff7-3e2f-43d8-bfcf-c38acdaef55e', 'monto': 80}]})\n +      where put = <apoyo.Api ob",
+  "estado": "FALLA",
+  "prueba": "test_auditoria_de_la_cuenta_de_cita",
   "via": "API"
  },
- "RAD-11": {
+ "CFG-04": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_radiografias",
+  "prueba": "test_nombre_de_clinica_largo",
   "via": "UI"
  },
- "RAD-12": {
+ "CFG-09": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_radiografias",
+  "prueba": "test_logo_no_cuadrado",
   "via": "UI"
- },
- "RAD-13": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_radiografias",
-  "via": "API"
  },
- "RAD-14": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_radiografias_por_paciente",
+ "CFG-11": {
+  "detalle": "RuntimeError: ('exec', '-T', 'db', 'sh', '-c', 'psql -U \"$POSTGRES_USER\" -d qa_rest_fd5ff1 -Atc \"select archivo_url from radiografias where id = \\'053d2489-3ad2-495f-b57c-ddad10e8b4df\\'\"'): ERROR:  relation \"radiografias\" does not exist\nLINE 1: select archivo_url from radiografias where id = '053d2489-3a...\n                                ^",
+  "estado": "FALLA",
+  "prueba": "test_jornada_copia_y_restauracion",
   "via": "API"
  },
- "RAD-16": {
+ "CFG-22": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_radiografias_en_pantalla",
+  "prueba": "test_todas_las_pantallas_se_leen[light]",
   "via": "UI"
  },
- "RED-01": {
+ "CFG-23": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_https_y_zona_horaria",
-  "via": "API"
+  "prueba": "test_todas_las_pantallas_se_leen[light]",
+  "via": "UI"
  },
- "RED-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_redireccion_y_cabeceras",
+ "E2E-10": {
+  "detalle": "AssertionError: Recepción registrada\nassert None",
+  "estado": "FALLA",
+  "prueba": "test_protesis_de_principio_a_fin",
   "via": "API"
  },
- "RED-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_redireccion_y_cabeceras",
+ "E2E-11": {
+  "detalle": "RuntimeError: ('exec', '-T', 'db', 'sh', '-c', 'psql -U \"$POSTGRES_USER\" -d qa_rest_fd5ff1 -Atc \"select archivo_url from radiografias where id = \\'053d2489-3ad2-495f-b57c-ddad10e8b4df\\'\"'): ERROR:  relation \"radiografias\" does not exist\nLINE 1: select archivo_url from radiografias where id = '053d2489-3a...\n                                ^",
+  "estado": "FALLA",
+  "prueba": "test_jornada_copia_y_restauracion",
   "via": "API"
- },
- "REP-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_reportes_en_pantalla",
-  "via": "UI"
- },
- "REP-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_reportes_en_pantalla",
-  "via": "UI"
- },
- "REP-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_limites_de_fecha_en_reportes",
-  "via": "UI"
  },
- "REP-05": {
+ "EVO-02": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_reportes_en_pantalla",
+  "prueba": "test_evolucion_con_diagnostico_del_odontograma",
   "via": "UI"
  },
- "REP-06": {
+ "EVO-23": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_reportes_en_pantalla",
+  "prueba": "test_receta_e_indicaciones",
   "via": "UI"
- },
- "REP-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_reportes_de_citas",
-  "via": "API"
- },
- "REP-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_reportes_de_citas",
-  "via": "API"
- },
- "REP-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_reportes_de_citas",
-  "via": "API"
- },
- "REP-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_reportes_de_citas",
-  "via": "API"
- },
- "REP-11": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_resumen_financiero",
-  "via": "API"
- },
- "REP-12": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_resumen_financiero",
-  "via": "API"
  },
- "REP-13": {
+ "NOM-30": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_resumen_financiero",
+  "prueba": "test_empleado_desactivado_desaparece",
   "via": "API"
  },
- "REP-14": {
+ "ODO-08": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_limites_de_fecha_en_reportes",
+  "prueba": "test_caras_mesiales_hacia_la_linea_media",
   "via": "UI"
  },
- "REP-16": {
+ "ODO-12": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_reportes_en_pantalla",
+  "prueba": "test_tabla_de_ingreso",
   "via": "UI"
  },
- "REP-17": {
+ "ODO-26": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_reportes_solo_con_permiso",
+  "prueba": "test_tabla_de_ingreso",
   "via": "UI"
  },
- "REP-18": {
+ "ODO-34": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_reportes_en_pantalla",
+  "prueba": "test_colores_del_odontograma[light]",
   "via": "UI"
- },
- "SEG-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_inyeccion_en_busquedas",
-  "via": "API"
  },
- "SEG-03": {
+ "OPE-01": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_acceso_a_datos_de_otro",
+  "prueba": "test_instalar_desde_cero_con_la_guia",
   "via": "API"
  },
- "SEG-04": {
+ "OPE-06": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_campos_no_previstos",
+  "prueba": "test_los_servicios_vuelven_solos",
   "via": "API"
  },
- "SEG-05": {
+ "OPE-07": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_detalles_internos",
+  "prueba": "test_caida_de_la_base_durante_cobros",
   "via": "API"
  },
- "SEG-06": {
+ "OPE-08": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_codigo_publicado_sin_secretos",
+  "prueba": "test_copia_al_encender_y_conservacion",
   "via": "API"
  },
- "SEG-07": {
+ "OPE-09": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_imagen_del_backend",
+  "prueba": "test_copia_al_encender_y_conservacion",
   "via": "API"
  },
- "SEG-08": {
+ "OPE-12": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_repositorio_sin_secretos",
+  "prueba": "test_copia_sin_disco_deja_error_y_el_sistema_sigue",
   "via": "API"
  },
- "SEG-11": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_dependencias_sin_vulnerabilidades",
+ "OPE-13": {
+  "detalle": "AssertionError: python: can't open file 'C:\\\\Users\\\\alepi\\\\AppData\\\\Local\\\\Temp\\\\pytest-of-alepi\\\\pytest-7\\\\instalacion1\\\\proyecto\\\\scripts\\\\preparar_docker.py': [Errno 2] No such file or directory\n  \nassert 2 == 0\n +  where 2 = CompletedProcess(args=['python', 'scripts/preparar_docker.py', '--zona', 'America/La_Paz'], returncode=2, stdout='', s...lepi\\\\\\\\pytest-7\\\\\\\\instalacion1\\\\\\\\proyecto\\\\\\\\sc",
+  "estado": "FALLA",
+  "prueba": "test_actualizar_con_datos",
   "via": "API"
  },
- "SEG-12": {
+ "OPE-15": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_no_se_falsifica_la_ip_para_saltar_el_limite",
+  "prueba": "test_copia_sin_disco_deja_error_y_el_sistema_sigue",
   "via": "API"
  },
- "SIL-01": {
+ "PAC-09": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_sillones",
+  "prueba": "test_caracteres_especiales",
   "via": "UI"
  },
- "SIL-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_sillones",
+ "PAC-21": {
+  "detalle": "AssertionError: Hoy no se puede marcar inactivo\nassert 'INACTIVO' == 'ACTIVO'\n  \n  - ACTIVO\n  + INACTIVO\n  ? ++",
+  "estado": "FALLA",
+  "prueba": "test_paciente_sin_opcion_de_inactivo",
   "via": "API"
  },
- "SIL-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_sillones",
+ "PAC-23": {
+  "detalle": "playwright._impl._errors.TimeoutError: Locator.wait_for: Timeout 3000ms exceeded.\nCall log:\n  - waiting for locator(\"form\").last.get_by_title(\"Cambiar o deseleccionar paciente\") to be visible",
+  "estado": "FALLA",
+  "prueba": "test_listado_con_muchos_pacientes",
   "via": "UI"
- },
- "SIL-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_sillones",
-  "via": "API"
- },
- "SIL-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_sillones",
-  "via": "API"
- },
- "SIL-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_ultimo_sillon",
-  "via": "API"
- },
- "SIL-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_sillones",
-  "via": "API"
- },
- "SIL-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_sillones",
-  "via": "API"
  },
- "SIL-10": {
+ "PAN-03": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_sillones",
+  "prueba": "test_citas_de_hoy_en_el_panel",
   "via": "UI"
  },
- "SIL-11": {
+ "PAN-05": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_sillon_desactivado_con_citas",
+  "prueba": "test_finanzas_del_panel_coinciden_con_reportes",
   "via": "UI"
  },
- "TRA-01": {
+ "PAN-06": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_catalogo_validaciones",
+  "prueba": "test_citas_de_hoy_en_el_panel",
   "via": "UI"
- },
- "TRA-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_catalogo_validaciones",
-  "via": "API"
- },
- "TRA-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_catalogo_validaciones",
-  "via": "API"
- },
- "TRA-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_catalogo_validaciones",
-  "via": "API"
- },
- "TRA-05": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_catalogo_validaciones",
-  "via": "API"
- },
- "TRA-06": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cambiar_precio",
-  "via": "API"
- },
- "TRA-07": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cambiar_precio",
-  "via": "API"
- },
- "TRA-08": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_eliminar_tratamiento",
-  "via": "API"
- },
- "TRA-09": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_eliminar_tratamiento",
-  "via": "API"
- },
- "TRA-10": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_eliminar_tratamiento",
-  "via": "API"
  },
- "TRA-12": {
+ "PRO-04": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_catalogo_validaciones",
+  "prueba": "test_fecha_de_envio_local_por_la_noche",
   "via": "UI"
  },
- "TRA-13": {
+ "PRO-16": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_doctor_consulta_catalogo",
+  "prueba": "test_pago_a_laboratorio",
   "via": "API"
  },
- "TRA-14": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_plan_desde_el_odontograma",
+ "RAD-05": {
+  "detalle": "AssertionError: {\"detail\":[{\"type\":\"value_error\",\"loc\":[\"body\",\"archivo_url\"],\"msg\":\"Value error, La dirección de la imagen debe empezar con http:// o https://\",\"input\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\",\"ctx\":{\"error\":{}}}]}\nassert 422 == 201\n +  where 422 = <apoyo.Respuesta object at 0x000001902A890EF0>.status",
+  "estado": "FALLA",
+  "prueba": "test_visor_e_imagen_rota",
   "via": "UI"
- },
- "TRA-15": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_plan_y_doctor",
-  "via": "API"
- },
- "TRA-16": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_total_del_plan",
-  "via": "API"
- },
- "TRA-17": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_total_del_plan",
-  "via": "API"
- },
- "TRA-18": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_montos_negativos_de_plan",
-  "via": "API"
- },
- "TRA-19": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_total_y_cancelacion_con_pagos",
-  "via": "API"
- },
- "TRA-20": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_total_y_cancelacion_con_pagos",
-  "via": "API"
- },
- "TRA-21": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_proxima_sesion",
-  "via": "API"
  },
- "USU-01": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_crear_cada_rol",
+ "RAD-08": {
+  "detalle": "AssertionError: {\"detail\":[{\"type\":\"value_error\",\"loc\":[\"body\",\"archivo_url\"],\"msg\":\"Value error, La dirección de la imagen debe empezar con http:// o https://\",\"input\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\",\"ctx\":{\"error\":{}}}]}\nassert 422 == 201\n +  where 422 = <apoyo.Respuesta object at 0x000001902A890EF0>.status",
+  "estado": "FALLA",
+  "prueba": "test_visor_e_imagen_rota",
   "via": "UI"
- },
- "USU-02": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_crear_cada_rol",
-  "via": "API"
- },
- "USU-03": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_crear_cada_rol",
-  "via": "API"
  },
- "USU-04": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_validaciones_de_usuario",
+ "RAD-15": {
+  "detalle": "RuntimeError: ('exec', '-T', 'db', 'sh', '-c', 'psql -U \"$POSTGRES_USER\" -d qa_rest_fd5ff1 -Atc \"select archivo_url from radiografias where id = \\'053d2489-3ad2-495f-b57c-ddad10e8b4df\\'\"'): ERROR:  relation \"radiografias\" does not exist\nLINE 1: select archivo_url from radiografias where id = '053d2489-3a...\n                                ^",
+  "estado": "FALLA",
+  "prueba": "test_jornada_copia_y_restauracion",
   "via": "API"
  },
- "USU-05": {
+ "RED-06": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_validaciones_de_usuario",
+  "prueba": "test_puerto_directo_solo_en_el_servidor",
   "via": "API"
  },
- "USU-06": {
+ "RED-08": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_validaciones_de_usuario",
-  "via": "API"
+  "prueba": "test_perder_la_red_mientras_se_usa",
+  "via": "UI"
  },
- "USU-07": {
+ "RED-09": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_validaciones_de_usuario",
-  "via": "API"
+  "prueba": "test_sin_internet",
+  "via": "UI"
  },
- "USU-08": {
+ "RED-10": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_editar_usuario",
+  "prueba": "test_cinco_equipos_a_la_vez",
   "via": "API"
  },
- "USU-09": {
+ "RED-12": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_usuarios_en_pantalla",
+  "prueba": "test_tableta_y_celular[768-1024]",
   "via": "UI"
  },
- "USU-10": {
+ "REN-01": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_usuario_desactivado",
-  "via": "API"
+  "prueba": "test_cada_pantalla_carga_rapido",
+  "via": "UI"
  },
- "USU-11": {
+ "REN-02": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_administrador_no_se_bloquea",
+  "prueba": "test_busqueda_de_pacientes_rapida",
   "via": "API"
  },
- "USU-12": {
+ "REN-03": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_administrador_no_se_bloquea",
+  "prueba": "test_reportes_con_todo_el_historial",
   "via": "API"
  },
- "USU-13": {
+ "REN-04": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_siempre_queda_un_administrador",
+  "prueba": "test_agenda_de_un_mes_con_mas_de_5000_citas",
   "via": "API"
  },
- "USU-14": {
+ "REN-05": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_siempre_queda_un_administrador",
+  "prueba": "test_tiempo_y_tamano_de_la_copia",
   "via": "API"
  },
- "USU-15": {
+ "REN-06": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_rol_personalizado",
+  "prueba": "test_cinco_equipos_a_la_vez",
   "via": "API"
  },
- "USU-16": {
+ "REN-07": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_rol_personalizado",
+  "prueba": "test_nomina_y_productividad_con_muchos_usuarios",
   "via": "API"
  },
- "USU-17": {
+ "REP-03": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_rol_personalizado",
-  "via": "API"
+  "prueba": "test_semanas_en_reportes",
+  "via": "UI"
  },
- "USU-18": {
+ "REP-15": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_sin_escalada_de_privilegios",
-  "via": "API"
+  "prueba": "test_cambio_rapido_de_periodo",
+  "via": "UI"
  },
- "USU-19": {
+ "REP-19": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_sin_escalada_de_privilegios",
-  "via": "API"
+  "prueba": "test_reporte_con_diez_doctores",
+  "via": "UI"
  },
- "USU-20": {
+ "SEG-02": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_sin_escalada_de_privilegios",
+  "prueba": "test_codigo_en_los_campos_se_muestra_como_texto",
   "via": "API"
  },
- "USU-21": {
+ "SIL-03": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_menu_por_rol[DOCTOR]",
+  "prueba": "test_editar_sillon",
   "via": "UI"
  },
- "USU-22": {
+ "TRA-11": {
   "detalle": "",
   "estado": "OK",
-  "prueba": "test_menu_por_rol[DOCTOR]",
+  "prueba": "test_filtros_del_catalogo",
   "via": "UI"
- },
- "USU-23": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_cada_rol_recibe_403[DOCTOR]",
-  "via": "API"
- },
- "USU-24": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_token_invalido_o_ausente",
-  "via": "API"
  },
- "USU-25": {
-  "detalle": "",
-  "estado": "OK",
-  "prueba": "test_respuestas_sin_contrasena",
-  "via": "API"
+ "USU-26": {
+  "detalle": "AssertionError: assert 'e987e86b-a937-46d8-b9dc-b591ce52de49' not in {'2ced4249-38b4-4277-8685-29945116e2da', '81b6b1ed-8e2a-4116-a426-31f5b9ad3e1b', 'e987e86b-a937-46d8-b9dc-b591ce52de49'}\n +  where 'e987e86b-a937-46d8-b9dc-b591ce52de49' = <apoyo.Usuario object at 0x000001902AC14CD0>.doctor_id",
+  "estado": "FALLA",
+  "prueba": "test_doctor_desactivado_con_citas",
+  "via": "UI"
  }
 }

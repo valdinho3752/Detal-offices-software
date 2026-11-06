@@ -29,6 +29,7 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 import { useMoneda } from '../context/MonedaContext';
+import PacienteSearchInput from '../components/PacienteSearchInput';
 
 // Cuadrantes FDI Dentición Adulta (Permanente)
 // Pantalla Izquierda: LADO DERECHO DEL PACIENTE
@@ -1003,7 +1004,7 @@ export default function OdontogramaView() {
         <span
           className={`text-[11px] font-mono font-bold px-1.5 py-0.5 rounded-md mb-1 ${
             isSelected
-              ? 'bg-dental-600 dark:bg-primary-500 text-white shadow'
+              ? 'bg-dental-600 dark:bg-primary-600 text-white shadow'
               : 'text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800'
           }`}
         >
@@ -1362,20 +1363,13 @@ export default function OdontogramaView() {
         {/* Selectores de Paciente y Doctor */}
         <div className="flex items-center gap-3 flex-wrap">
           {/* Selector de Paciente */}
-          <div className="flex items-center gap-2 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl shadow-sm min-w-0 max-w-full">
-            <User className="w-4 h-4 text-dental-600 dark:text-primary-400" />
-            <select
-              value={selectedPacienteId}
-              onChange={(e) => setSelectedPacienteId(e.target.value)}
-              className="min-w-0 max-w-full bg-transparent text-slate-800 dark:text-white text-xs font-semibold focus:outline-none cursor-pointer"
-            >
-              {pacientes.map((p) => (
-                <option key={p.id} value={p.id} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
-                  {p.nombres} {p.apellidos} ({p.numero_documento})
-                </option>
-              ))}
-            </select>
-          </div>
+          <PacienteSearchInput
+            pacientes={pacientes}
+            selectedPacienteId={selectedPacienteId}
+            onSelectPaciente={(id) => setSelectedPacienteId(id)}
+            placeholder="Buscar paciente por nombre o CI..."
+            className="w-80 max-w-full"
+          />
 
           {/* Selector de Doctor Asignado */}
           <div className="flex items-center gap-2 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl shadow-sm min-w-0 max-w-full">

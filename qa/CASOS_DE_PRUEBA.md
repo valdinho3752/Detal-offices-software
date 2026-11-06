@@ -13,7 +13,7 @@ Plan de pruebas manuales para la instalación **local de una sola sede**. Cada c
 | **Caso y pasos** | Lo que se prueba y cómo |
 | **Resultado esperado** | Lo que debe ocurrir para aprobarlo |
 | **Prio** | `P1` bloquea la salida a producción, `P2` importante, `P3` menor |
-| **Estado** | Anota `OK`, `FALLA` o `N/A`, y el número de defecto si falla |
+| **Estado** | `OK`, `FALLA`, `MANUAL` (requiere otro equipo, hardware o personas), `PARCIAL` (simulado; falta confirmarlo en el equipo real) o `DECIDIR` (funcionamiento comprobado; falta una decisión de la clínica) |
 
 Los casos marcados con **[API]** se prueban contra la API, porque la pantalla no permite esa acción. Usan `curl` o una herramienta similar, con el token de la sesión.
 
@@ -34,7 +34,7 @@ qa\.venv\Scripts\pip install -r qa\automatizacion\requirements.txt
 qa\.venv\Scripts\python qa\automatizacion\ejecutar.py
 ```
 
-Levanta una instalación aparte, sin tocar tus datos, y deja el resumen en `qa/resultados/RESUMEN.md`. Los casos sin estado se prueban a mano: corte de luz, red física, certificados en cada equipo, volumen de datos y decisiones pendientes.
+Levanta una instalación aparte, sin tocar tus datos, y deja el resumen en `qa/resultados/RESUMEN.md`. Tarda cerca de 40 minutos, porque incluye instalaciones completas, carga y una espera real de 15 minutos. Los motivos de cada caso `MANUAL`, `PARCIAL` y `DECIDIR` están en `qa/automatizacion/casos_no_automatizables.py` y en el resumen. Para el criterio de salida, solo cuenta `OK`.
 
 ### Registro de defectos
 
@@ -114,17 +114,17 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | ACC-07 | S | Esperar 15 minutos tras el bloqueo y entrar | Entra con normalidad | P2 | |
 | ACC-08 | F | Hacer 4 fallos, un acierto, salir y hacer 4 fallos más | El acierto reinició el conteo: no se bloquea | P2 | OK |
 | ACC-09 | S | Bloquear el usuario A y entrar con el usuario B desde el mismo equipo | B entra con normalidad | P2 | OK |
-| ACC-10 | S | Bloquear un usuario desde un equipo e intentar entrar desde otro | Desde el otro equipo sí puede entrar | P2 | |
-| ACC-11 | S | Probar 50 usuarios falsos distintos desde un equipo | El equipo queda frenado durante la ventana de 15 minutos, también para usuarios válidos | P3 | |
-| ACC-12 | F | Reiniciar el backend durante un bloqueo | El bloqueo desaparece, porque se guarda en memoria | P3 | |
+| ACC-10 | S | Bloquear un usuario desde un equipo e intentar entrar desde otro | Desde el otro equipo sí puede entrar | P2 | OK |
+| ACC-11 | S | Probar 50 usuarios falsos distintos desde un equipo | El equipo queda frenado durante la ventana de 15 minutos, también para usuarios válidos | P3 | OK |
+| ACC-12 | F | Reiniciar el backend durante un bloqueo | El bloqueo desaparece, porque se guarda en memoria | P3 | OK |
 | ACC-13 | N | Entrar con un usuario desactivado y contraseña correcta | «Este usuario se encuentra inactivo» | P1 | OK |
 | ACC-14 | S | Revisar la pantalla de acceso y el código de la página | No hay usuarios ni contraseñas de ejemplo | P1 | OK |
 | ACC-15 | F | Abrir una ruta interna sin sesión, como `/caja` | Redirige al acceso | P1 | OK |
 | ACC-16 | F | Cerrar sesión y usar el botón Atrás | No muestra datos protegidos; vuelve al acceso | P1 | OK |
 | ACC-17 | S | Alterar el token guardado en el navegador y recargar | Cierra la sesión y lleva al acceso | P1 | OK |
-| ACC-18 | S | Esperar 8 horas con la sesión abierta y operar | La sesión vence y lleva al acceso | P2 | |
+| ACC-18 | S | Esperar 8 horas con la sesión abierta y operar | La sesión vence y lleva al acceso | P2 | OK |
 | ACC-19 | S | Desactivar a un usuario con la sesión abierta | Su siguiente acción se rechaza | P1 | OK |
-| ACC-20 | F | Abrir la misma cuenta en dos equipos | Ambas sesiones funcionan hasta que se cambie la contraseña | P3 | |
+| ACC-20 | F | Abrir la misma cuenta en dos equipos | Ambas sesiones funcionan hasta que se cambie la contraseña | P3 | OK |
 | ACC-21 | F | Recargar la página con sesión activa | Sigue dentro, en la misma pantalla | P2 | OK |
 | ACC-22 | F | Entrar usando el correo, en mayúsculas o minúsculas | Entra igual que con el usuario | P2 | OK |
 | ACC-23 | S | Enviar `' OR 1=1 --` como usuario | Se rechaza como credenciales incorrectas | P1 | OK |
@@ -182,7 +182,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | USU-23 | S | [API] Llamar con el token de cada rol a una ruta que no le corresponde | Responde 403 | P1 | OK |
 | USU-24 | S | [API] Llamar a cualquier ruta protegida sin token | Responde 401 | P1 | OK |
 | USU-25 | S | Revisar la respuesta de usuarios | Nunca incluye la contraseña ni su hash | P1 | OK |
-| USU-26 | F | Desactivar a un doctor con citas futuras | Decidir el comportamiento: sus citas siguen visibles y deben poder reasignarse | P2 | |
+| USU-26 | F | Desactivar a un doctor con citas futuras | Decidir el comportamiento: sus citas siguen visibles y deben poder reasignarse | P2 | FALLA |
 
 ## 6. Pacientes
 
@@ -196,7 +196,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | PAC-06 | N | Correo inválido | Se rechaza | P2 | OK |
 | PAC-07 | N | Campos obligatorios vacíos | No permite guardar | P2 | OK |
 | PAC-08 | N | Nombre de 5.000 caracteres | Mensaje claro, sin error interno | P2 | OK |
-| PAC-09 | N | Pegar caracteres especiales o emojis en el nombre | Se guarda y se muestra bien, o se rechaza con mensaje | P3 | |
+| PAC-09 | N | Pegar caracteres especiales o emojis en el nombre | Se guarda y se muestra bien, o se rechaza con mensaje | P3 | OK |
 | PAC-10 | S | Escribir `<script>alert(1)</script>` en nombre y dirección | Se muestra como texto; no se ejecuta nada | P1 | OK |
 | PAC-11 | F | Editar los datos de un paciente | Los cambios se guardan y quedan en auditoría | P2 | OK |
 | PAC-12 | F | Registrar alergias y enfermedades sistémicas | Se muestran de forma visible en la ficha | P1 | OK |
@@ -208,9 +208,9 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | PAC-18 | I | Comparar el saldo de la ficha con Cobranzas | Es exactamente el mismo | P1 | OK |
 | PAC-19 | S | Abrir una ficha y revisar la auditoría | Queda un registro `VIEW` del acceso | P2 | OK |
 | PAC-20 | S | Asistente intenta crear o editar | No ve esos botones; [API] responde 403 | P1 | OK |
-| PAC-21 | F | Marcar un paciente como inactivo | Decidir el comportamiento: su historia se conserva y su estado se ve claramente | P2 | |
+| PAC-21 | F | Marcar un paciente como inactivo | Decidir el comportamiento: su historia se conserva y su estado se ve claramente | P2 | FALLA |
 | PAC-22 | S | [API] Intentar eliminar un paciente | No existe esa acción: responde 405 | P1 | OK |
-| PAC-23 | F | Listado con más de 100 pacientes | Se puede encontrar a cualquiera; la pantalla responde bien | P2 | |
+| PAC-23 | F | Listado con más de 100 pacientes | Se puede encontrar a cualquiera; la pantalla responde bien | P2 | FALLA |
 | PAC-24 | V | Revisar buscador y formulario del paciente | Hablan de «documento», sin referencias a otro país; CI es la opción predeterminada | P3 | OK |
 | PAC-25 | F | Registrar en pantalla, sin correo, con sexo, dirección y alergias | Se guarda, y la ficha muestra sexo, dirección y alergias | P0 | OK |
 | PAC-26 | F | Editar en pantalla un paciente: cambiar alergias y dejar el correo vacío | Se guarda y la ficha se actualiza sin recargar | P1 | OK |
@@ -226,11 +226,11 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | ODO-05 | F | Marcar una cara con el estado de alta clínica | Se pinta de azul | P1 | OK |
 | ODO-06 | F | Marcar una pieza como inexistente | Aparece tachada, con la etiqueta Ausente | P1 | OK |
 | ODO-07 | F | Probar cada cara: vestibular, palatina o lingual, mesial, distal, oclusal o incisal, raíz y general | Se pinta justo la cara elegida | P1 | OK |
-| ODO-08 | F | Comprobar las caras mesiales de los cuatro cuadrantes | Quedan orientadas hacia la línea media | P2 | |
+| ODO-08 | F | Comprobar las caras mesiales de los cuatro cuadrantes | Quedan orientadas hacia la línea media | P2 | OK |
 | ODO-09 | F | Limpiar una cara | Solo esa cara vuelve a su estado inicial | P1 | OK |
 | ODO-10 | F | Limpiar el diente completo | Se quitan los hallazgos de todas sus caras | P1 | OK |
 | ODO-11 | F | Guardar el diagnóstico inicial y recargar | Los hallazgos siguen allí | P1 | OK |
-| ODO-12 | F | Eliminar un registro de la tabla de ingreso | Desaparece de la tabla y del gráfico | P2 | |
+| ODO-12 | F | Eliminar un registro de la tabla de ingreso | Desaparece de la tabla y del gráfico | P2 | OK |
 | ODO-13 | F | Asignar un tratamiento del catálogo a una cara | Se añade al plan con pieza, cara y precio | P1 | OK |
 | ODO-14 | F | Buscar tratamiento por nombre y por código | Encuentra coincidencias | P2 | OK |
 | ODO-15 | F | Un tratamiento desactivado en el catálogo | Ya no se ofrece; los planes anteriores lo conservan | P2 | OK |
@@ -244,7 +244,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | ODO-23 | F | Realizar una extracción | La pieza queda como extraída y sin patologías pendientes | P1 | OK |
 | ODO-24 | F | Realizar una endodoncia, una corona y un implante | La pieza refleja cada resultado | P2 | OK |
 | ODO-25 | F | Comparar el odontograma inicial tras realizar tratamientos | El inicial no cambia; los cambios van al de evolución | P1 | OK |
-| ODO-26 | F | Pulsar «Ver Ambos Espacios» | Muestra el estado de ingreso y los tratamientos a realizar | P3 | |
+| ODO-26 | F | Pulsar «Ver Ambos Espacios» | Muestra el estado de ingreso y los tratamientos a realizar | P3 | OK |
 | ODO-27 | F | Cambiar de paciente | Se carga el odontograma correcto, sin mezclar datos | P1 | OK |
 | ODO-28 | S | Doctor intenta registrar a nombre de otro doctor | Se rechaza | P2 | OK |
 | ODO-29 | S | Asistente abre el odontograma | Solo lectura: [API] las modificaciones responden 403 | P1 | OK |
@@ -252,7 +252,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | ODO-31 | V | Medir con pantallas de 1280, 1366, 1536, 1920 y 2560 px | Los 32 dientes caben y ocupan casi todo el ancho | P2 | OK |
 | ODO-32 | V | Seleccionar un diente en cada ancho | No provoca desbordes | P3 | OK |
 | ODO-33 | V | Abrir en celular | Se desplaza dentro de su recuadro, no la página | P3 | OK |
-| ODO-34 | V | Revisar los colores en modo claro y oscuro | Los estados se distinguen en ambos | P2 | |
+| ODO-34 | V | Revisar los colores en modo claro y oscuro | Los estados se distinguen en ambos | P2 | OK |
 | ODO-35 | N | [API] Registrar `pieza_fdi` inexistente, como 99 | Se rechaza: solo valen las piezas de la numeración FDI | P2 | OK |
 | ODO-36 | V | Revisar los botones de estado | Dicen «Diagnóstico y evaluación inicial» y «Alta clínica / Control posterior», con tildes | P3 | OK |
 
@@ -270,7 +270,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | TRA-08 | F | Eliminar un tratamiento sin uso | Se elimina | P2 | OK |
 | TRA-09 | F | Eliminar uno usado en planes o citas | Se desactiva, y la historia conserva nombre y precio | P1 | OK |
 | TRA-10 | F | Reactivar un tratamiento desactivado | Se puede volver a asignar | P2 | OK |
-| TRA-11 | F | Filtrar por categoría y buscar | Muestra lo correcto | P3 | |
+| TRA-11 | F | Filtrar por categoría y buscar | Muestra lo correcto | P3 | OK |
 | TRA-12 | S | Otro rol, incluso con todos los permisos, intenta administrar el catálogo | No lo ve; [API] responde 403 | P1 | OK |
 | TRA-13 | S | Doctor consulta tratamientos para asignarlos | Sí puede verlos | P2 | OK |
 | TRA-14 | F | Crear un plan desde el odontograma como doctor | Queda a nombre de ese doctor | P1 | OK |
@@ -311,34 +311,34 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | AGE-23 | N | La misma cita, finalizada dos veces ([API]) | La segunda se rechaza; no duplica evolución ni cuenta | P1 | OK |
 | AGE-24 | F | Calcular la duración en sillón | Se registran los minutos reales y aparecen en Reportes | P2 | OK |
 | AGE-25 | F | Navegar: día anterior, día siguiente y Hoy | Muestra el día correcto | P2 | OK |
-| AGE-26 | F | Filtrar por especialidad y por doctor | Muestra solo lo correspondiente | P2 | |
+| AGE-26 | F | Filtrar por especialidad y por doctor | Muestra solo lo correspondiente | P2 | OK |
 | AGE-27 | S | Doctor edita o finaliza una cita de otro doctor | «Solo puedes modificar tus propias citas» | P1 | OK |
 | AGE-28 | S | Doctor agenda para otro doctor | Se rechaza | P1 | OK |
 | AGE-29 | F | Asistente y recepción modifican citas de cualquier doctor | Se permite | P1 | OK |
 | AGE-30 | S | Asistente intenta crear una cita | No tiene ese permiso; [API] responde 403 | P2 | OK |
 | AGE-31 | I | Agregar un cuarto sillón | La matriz muestra una columna más y el texto indica la cantidad real | P2 | OK |
 | AGE-32 | V | Medir con los cinco anchos de pantalla | Llena el ancho, con columnas iguales y sin desbordes | P2 | OK |
-| AGE-33 | V | Con 6 sillones o más | Se desplaza dentro de la tabla, sin romper la página | P3 | |
+| AGE-33 | V | Con 6 sillones o más | Se desplaza dentro de la tabla, sin romper la página | P3 | OK |
 | AGE-34 | N | [API] Cambiar de cualquier modo una cita FINALIZADA | «Esta cita ya fue atendida y no se puede modificar» | P1 | OK |
 | AGE-35 | N | [API] Reactivar una cita cancelada sobre un horario ya ocupado | Se rechaza por solape | P1 | OK |
 | AGE-36 | F | [API] Finalizar directamente una cita PROGRAMADA | Se permite. Crea evolución y cuenta, y no afecta el promedio de minutos | P2 | OK |
-| AGE-37 | F | Cita que cruza la medianoche | Cuenta el día en que empieza, en la agenda y en Reportes | P3 | |
-| AGE-38 | F | Crear una cita en una fecha pasada | Decidir si se permite registrar citas históricas | P3 | |
+| AGE-37 | F | Cita que cruza la medianoche | Cuenta el día en que empieza, en la agenda y en Reportes | P3 | OK |
+| AGE-38 | F | Crear una cita en una fecha pasada | Decidir si se permite registrar citas históricas | P3 | DECIDIR |
 
 ## 10. Agenda: vista mensual
 
 | ID | Tipo | Caso y pasos | Resultado esperado | Prio | Estado |
 |---|---|---|---|---|---|
 | CAL-01 | F | Abrir la vista mensual | Muestra el mes correcto, con la semana empezando el lunes | P1 | OK |
-| CAL-02 | F | Comprobar meses de 28, 30 y 31 días | Todos los días están en su lugar | P2 | |
+| CAL-02 | F | Comprobar meses de 28, 30 y 31 días | Todos los días están en su lugar | P2 | OK |
 | CAL-03 | F | Cambiar de mes y de año; volver con Hoy | Muestra el período correcto | P2 | OK |
-| CAL-04 | F | El día actual | Está resaltado | P3 | |
+| CAL-04 | F | El día actual | Está resaltado | P3 | OK |
 | CAL-05 | F | Doble clic en un día | Abre una cita nueva con esa fecha | P2 | OK |
 | CAL-06 | F | Clic en una cita | Abre su edición | P2 | OK |
-| CAL-07 | F | Día con más de 3 citas | Muestra 3 y un indicador con la cantidad restante | P3 | |
+| CAL-07 | F | Día con más de 3 citas | Muestra 3 y un indicador con la cantidad restante | P3 | OK |
 | CAL-08 | F | Cita cancelada | Se ve tachada, con su color | P2 | OK |
 | CAL-09 | F | Crear en la matriz y mirar la vista mensual | Coincide | P1 | OK |
-| CAL-10 | F | Cita a las 23:30 | Aparece en el día local correcto | P1 | |
+| CAL-10 | F | Cita a las 23:30 | Aparece en el día local correcto | P1 | OK |
 | CAL-11 | V | Medir con los cinco anchos de pantalla | Llena el ancho, sin desbordes | P2 | OK |
 | CAL-12 | V | Abrir en celular | Se puede usar y la página no se desborda | P3 | OK |
 
@@ -347,7 +347,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | ID | Tipo | Caso y pasos | Resultado esperado | Prio | Estado |
 |---|---|---|---|---|---|
 | EVO-01 | I | Finalizar una cita | Se crea una evolución con la fecha de la cita, no con la fecha actual | P1 | OK |
-| EVO-02 | F | Revisar una evolución automática con diagnóstico | Dice «Diagnóstico (tomado del odontograma)» y muestra la patología | P1 | |
+| EVO-02 | F | Revisar una evolución automática con diagnóstico | Dice «Diagnóstico (tomado del odontograma)» y muestra la patología | P1 | OK |
 | EVO-03 | F | Evolución automática sin hallazgos | «Sin diagnóstico registrado en el odontograma» | P2 | OK |
 | EVO-04 | F | Revisar el procedimiento | Lista los tratamientos y piezas de la cita | P1 | OK |
 | EVO-05 | F | Evolución manual | Pide motivo, diagnóstico y procedimiento, y se muestra «Registrada manualmente» | P1 | OK |
@@ -368,7 +368,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | EVO-20 | I | Marcar «próxima sesión» | El ítem queda como próxima sesión | P2 | OK |
 | EVO-21 | F | Fecha y hora predeterminadas a las 22:30 | Usa la fecha y hora locales, no UTC | P1 | OK |
 | EVO-22 | F | Guardar con la hora indicada y volver a abrirla | Conserva la misma hora, sin desfase | P1 | OK |
-| EVO-23 | F | Registrar receta e indicaciones | Se muestran y se pueden imprimir | P2 | |
+| EVO-23 | F | Registrar receta e indicaciones | Se muestran y se pueden imprimir | P2 | OK |
 | EVO-24 | F | Ver el historial con varias evoluciones | Ordenado de la más reciente a la más antigua | P2 | OK |
 | EVO-25 | S | Texto con `<script>` en notas y observaciones | Se muestra como texto | P1 | OK |
 
@@ -380,17 +380,17 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | RAD-02 | F | Registrar cada tipo de estudio | Todos se guardan con su tipo | P2 | OK |
 | RAD-03 | N | Sin URL o sin tipo | No permite guardar | P2 | OK |
 | RAD-04 | S | URL que empieza con `javascript:` | No se ejecuta; idealmente se rechaza | P1 | OK |
-| RAD-05 | N | URL inválida o imagen eliminada | Se muestra un error de imagen, sin romper la pantalla | P2 | |
+| RAD-05 | N | URL inválida o imagen eliminada | Se muestra un error de imagen, sin romper la pantalla | P2 | FALLA |
 | RAD-06 | F | Asociar a una pieza FDI y filtrar por ella | Muestra solo esa pieza | P2 | OK |
 | RAD-07 | F | Vacío en el filtro | Muestra todas | P3 | OK |
-| RAD-08 | F | Abrir el visor | Muestra la imagen, la fecha y el informe | P2 | |
+| RAD-08 | F | Abrir el visor | Muestra la imagen, la fecha y el informe | P2 | FALLA |
 | RAD-09 | F | Fecha predeterminada a las 22:30 | Usa la fecha local, no UTC | P2 | OK |
 | RAD-10 | F | Eliminar como administrador | Desaparece y queda en auditoría | P1 | OK |
 | RAD-11 | S | Doctor o asistente intenta eliminar | No tiene ese permiso; [API] responde 403 | P1 | OK |
 | RAD-12 | S | Recepción intenta abrir | No aparece en el menú; [API] responde 403 | P1 | OK |
 | RAD-13 | S | Abrir un estudio y revisar la auditoría | Queda un registro `VIEW` | P2 | OK |
 | RAD-14 | F | Cambiar de paciente | No muestra imágenes del anterior | P1 | OK |
-| RAD-15 | O | Restaurar una copia y abrir una radiografía | El registro vuelve, pero la imagen depende de que su enlace siga disponible. Confirmar dónde se guardan las imágenes | P1 | |
+| RAD-15 | O | Restaurar una copia y abrir una radiografía | El registro vuelve, pero la imagen depende de que su enlace siga disponible. Confirmar dónde se guardan las imágenes | P1 | FALLA |
 | RAD-16 | V | Revisar la tarjeta de una radiografía | Muestra el título escrito al registrarla | P3 | OK |
 
 ## 13. Prótesis y laboratorio
@@ -400,7 +400,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | PRO-01 | F | Crear una orden con todos los datos | Aparece en la lista con paciente, doctor y laboratorio | P1 | OK |
 | PRO-02 | N | Sin paciente, doctor, laboratorio o tipo | No permite guardar | P2 | OK |
 | PRO-03 | F | Sin fecha de entrega | Se propone en 7 días | P3 | OK |
-| PRO-04 | F | Fecha de envío predeterminada a las 22:30 | Usa la fecha local, no UTC | P2 | |
+| PRO-04 | F | Fecha de envío predeterminada a las 22:30 | Usa la fecha local, no UTC | P2 | OK |
 | PRO-05 | F | Recorrer los estados de la orden | Cada cambio se guarda | P1 | OK |
 | PRO-06 | F | Marcar como recibida | Registra la fecha real de recepción | P2 | OK |
 | PRO-07 | F | Filtrar por estado | Muestra solo ese estado | P3 | OK |
@@ -412,7 +412,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | PRO-13 | N | [API] Costo negativo | Se rechaza | P2 | OK |
 | PRO-14 | N | Fecha de entrega anterior a la de envío | Se rechaza | P3 | OK |
 | PRO-15 | F | Moneda en costo y etiquetas | Usa el símbolo configurado | P2 | OK |
-| PRO-16 | I | Pagar al laboratorio como egreso | La caja se descuenta. Decidir si debe quedar vinculado a la orden | P3 | |
+| PRO-16 | I | Pagar al laboratorio como egreso | La caja se descuenta. Decidir si debe quedar vinculado a la orden | P3 | DECIDIR |
 | PRO-17 | V | Revisar la lista de órdenes | Muestra el color y las piezas de cada orden | P2 | OK |
 
 ## 14. Caja operativa
@@ -441,7 +441,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | CAJ-20 | N | Abrir una nueva caja sin cerrar la del día anterior | Se rechaza con la fecha pendiente | P1 | OK |
 | CAJ-21 | F | Abrir, cerrar y volver a abrir el mismo día | Funciona, con movimientos separados | P2 | OK |
 | CAJ-22 | N | Cobro en efectivo con la caja cerrada | Se rechaza | P1 | OK |
-| CAJ-23 | F | Cobro con transferencia con la caja cerrada | Decidir si la barrera debe impedirlo; por API se permite | P3 | |
+| CAJ-23 | F | Cobro con transferencia con la caja cerrada | Decidir si la barrera debe impedirlo; por API se permite | P3 | DECIDIR |
 | CAJ-24 | S | Sin `CAJA_READ` | [API] La consulta del estado no incluye montos | P1 | OK |
 | CAJ-25 | S | Doctor o asistente intenta abrir, cerrar o registrar egresos | [API] Responde 403 | P1 | OK |
 | CAJ-26 | F | Cambio de día a medianoche con la caja abierta | Pasa a «Caja anterior sin cerrar» | P1 | OK |
@@ -514,7 +514,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | CCI-15 | N | Cerrar sin pago sin motivo | «Indica el motivo» | P1 | OK |
 | CCI-16 | N | Editar o confirmar una cuenta ya cerrada | «Ya fue cerrado» | P1 | OK |
 | CCI-17 | S | Dos personas confirman la misma cuenta a la vez | Solo se paga una vez | P1 | OK |
-| CCI-18 | F | Revisar la auditoría | Registra creación, edición y cierre | P2 | |
+| CCI-18 | F | Revisar la auditoría | Registra creación, edición y cierre | P2 | FALLA |
 
 ## 16. Nómina y comisiones
 
@@ -549,7 +549,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | NOM-27 | S | [API] Otro rol intenta crear o editar un contrato | Responde 403 | P1 | OK |
 | NOM-28 | V | Valores en cero | No muestra `-$0,00` | P3 | OK |
 | NOM-29 | N | [API] `metodo_pago` con un texto inventado | Se rechaza | P2 | OK |
-| NOM-30 | F | Empleado desactivado con saldo | Decidir: hoy desaparece de la lista aunque tenga saldo por pagar | P2 | |
+| NOM-30 | F | Empleado desactivado con saldo | Decidir: hoy desaparece de la lista aunque tenga saldo por pagar | P2 | DECIDIR |
 
 ## 17. Control de asistencia
 
@@ -573,7 +573,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | ASI-16 | F | Fecha predeterminada a las 22:30 | El día local, no el de UTC | P1 | OK |
 | ASI-17 | S | Empleado sin permiso de supervisión | Solo ve sus marcajes | P1 | OK |
 | ASI-18 | F | Marcar con observación | Se muestra en la bitácora | P3 | OK |
-| ASI-19 | F | IP desde otro equipo de la red | Muestra la IP real de ese equipo, sobre todo con HTTPS | P2 | |
+| ASI-19 | F | IP desde otro equipo de la red | Muestra la IP real de ese equipo, sobre todo con HTTPS | P2 | OK |
 
 ### Correcciones del administrador
 
@@ -604,10 +604,10 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 |---|---|---|---|---|---|
 | PAN-01 | F | Saludo | Nombre y rol correctos | P3 | OK |
 | PAN-02 | F | Caja en gaveta | Coincide con Caja | P1 | OK |
-| PAN-03 | F | Citas para hoy | Número correcto y cuántas están en sillón | P1 | |
+| PAN-03 | F | Citas para hoy | Número correcto y cuántas están en sillón | P1 | OK |
 | PAN-04 | F | Hora del equipo a las 22:30 | Sigue mostrando las citas del día local | P1 | OK |
-| PAN-05 | I | Ingresos, egresos y margen del mes | Solo del mes actual; coinciden con Reportes en «Mes actual» | P1 | |
-| PAN-06 | F | Avanzar una cita desde el Panel | Cambia de estado | P2 | |
+| PAN-05 | I | Ingresos, egresos y margen del mes | Solo del mes actual; coinciden con Reportes en «Mes actual» | P1 | OK |
+| PAN-06 | F | Avanzar una cita desde el Panel | Cambia de estado | P2 | OK |
 | PAN-07 | S | Doctor en una cita ajena | No ve el botón para avanzarla | P1 | OK |
 | PAN-08 | S | Roles sin caja ni reportes | No ven esos montos | P1 | OK |
 | PAN-09 | F | Enlaces de módulos | Abren la pantalla correcta, y solo aparecen los permitidos | P2 | OK |
@@ -619,7 +619,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 |---|---|---|---|---|---|
 | REP-01 | F | Abrir la pantalla | Inicia en Mes actual y muestra el rango | P1 | OK |
 | REP-02 | F | Probar cada período: Hoy, Esta semana, Semana pasada, Mes actual, Mes pasado, Últimos 30 días, Este año y Todo | Indicadores, gráficos y tablas cambian juntos | P1 | OK |
-| REP-03 | F | Semana | Va de lunes a hoy; la pasada, de lunes a domingo | P2 | |
+| REP-03 | F | Semana | Va de lunes a hoy; la pasada, de lunes a domingo | P2 | OK |
 | REP-04 | F | Rango personalizado | Respeta ambos días, incluidos | P1 | OK |
 | REP-05 | N | Fecha inicial posterior a la final | Avisa y mantiene el último rango válido | P2 | OK |
 | REP-06 | F | Período sin datos | Muestra ceros y un mensaje, sin tablas | P2 | OK |
@@ -631,11 +631,11 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | REP-12 | I | Egresos | Incluye nómina y gastos; excluye devoluciones por anulación | P1 | OK |
 | REP-13 | F | Margen | Ingresos − egresos | P1 | OK |
 | REP-14 | F | Pago a las 23:30 del último día del mes | Cuenta en ese mes | P1 | OK |
-| REP-15 | F | Cambiar el período rápidamente | Se queda con el último elegido | P2 | |
+| REP-15 | F | Cambiar el período rápidamente | Se queda con el último elegido | P2 | OK |
 | REP-16 | F | Cambiar claro y oscuro | Los gráficos se ven bien en ambos | P2 | OK |
 | REP-17 | S | Otros roles | No aparece; [API] responde 403, también en los gráficos | P1 | OK |
 | REP-18 | F | Moneda | Usa el símbolo configurado | P2 | OK |
-| REP-19 | V | Con 10 doctores y nombres largos | No se cortan los textos ni los valores | P3 | |
+| REP-19 | V | Con 10 doctores y nombres largos | No se cortan los textos ni los valores | P3 | OK |
 
 ## 20. Auditoría
 
@@ -650,7 +650,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | AUD-07 | S | Otros roles | No aparece; [API] responde 403 | P1 | OK |
 | AUD-08 | S | Buscar contraseñas o hashes en los registros | No aparecen | P1 | OK |
 | AUD-09 | F | Revisar y usar el filtro de tablas | Incluye todas las tablas auditadas, y cada opción devuelve sus registros | P2 | OK |
-| AUD-10 | F | Con muchos registros | La pantalla sigue respondiendo | P2 | |
+| AUD-10 | F | Con muchos registros | La pantalla sigue respondiendo | P2 | OK |
 
 ## 21. Sillones
 
@@ -658,7 +658,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 |---|---|---|---|---|---|
 | SIL-01 | F | Agregar un sillón con nombre | Aparece en la agenda | P1 | OK |
 | SIL-02 | F | Agregar sin nombre | Se llama «Box» y su número | P3 | OK |
-| SIL-03 | F | Editar nombre y especialidad | Se refleja en la agenda | P2 | |
+| SIL-03 | F | Editar nombre y especialidad | Se refleja en la agenda | P2 | OK |
 | SIL-04 | N | Quitar un sillón con citas por atender | Explica cuántas tiene y qué hacer | P1 | OK |
 | SIL-05 | F | Quitar un sillón con citas ya pasadas | Se desactiva y las citas conservan su sillón | P1 | OK |
 | SIL-06 | F | Quitar un sillón sin citas | Se elimina | P2 | OK |
@@ -675,14 +675,14 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | CFG-01 | F | Cambiar el nombre de la clínica | Cambia al instante en menú y pestaña | P1 | OK |
 | CFG-02 | F | Abrir el acceso sin sesión | Muestra el nombre y el logo nuevos | P1 | OK |
 | CFG-03 | N | Nombre vacío o de más de 120 caracteres | No permite guardar | P2 | OK |
-| CFG-04 | F | Nombre muy largo, cerca del límite | Se corta con elegancia en el menú | P3 | |
+| CFG-04 | F | Nombre muy largo, cerca del límite | Se corta con elegancia en el menú | P3 | OK |
 | CFG-05 | F | Subir un logo PNG, JPG y WEBP | Aparece en menú, acceso y pestaña | P1 | OK |
 | CFG-06 | N | Archivo que no es imagen, con extensión `.png` | «PNG, JPG o WEBP» | P1 | OK |
 | CFG-07 | S | Subir un SVG | Se rechaza | P1 | OK |
 | CFG-08 | N | Logo de más de 1 MB | «No puede superar 1 MB» | P1 | OK |
-| CFG-09 | F | Logo no cuadrado | Se ve sin deformarse | P3 | |
+| CFG-09 | F | Logo no cuadrado | Se ve sin deformarse | P3 | OK |
 | CFG-10 | F | Quitar el logo | Vuelve el diente | P2 | OK |
-| CFG-11 | O | Restaurar una copia | El logo y la configuración vuelven | P2 | |
+| CFG-11 | O | Restaurar una copia | El logo y la configuración vuelven | P2 | FALLA |
 | CFG-12 | F | Elegir tema por defecto Claro | Un equipo nuevo abre en Claro, también en el acceso | P1 | OK |
 | CFG-13 | F | Elegir el tema con el botón de la barra | Se recuerda en ese equipo | P1 | OK |
 | CFG-14 | F | Cambiar el valor por defecto con un tema ya elegido | La elección de esa persona se mantiene y la pantalla lo explica | P2 | OK |
@@ -693,30 +693,30 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | CFG-19 | F | Cambiar la moneda con pagos existentes | Solo cambia el símbolo: los montos siguen iguales | P1 | OK |
 | CFG-20 | S | Sin sesión | [API] La configuración pública no incluye la moneda | P2 | OK |
 | CFG-21 | S | Otros roles | No aparece; [API] responde 403 al modificar | P1 | OK |
-| CFG-22 | V | Recorrer todas las pantallas en modo claro | Todo se lee correctamente | P1 | |
-| CFG-23 | V | Recorrer todas las pantallas en modo oscuro | Todo se lee correctamente | P1 | |
+| CFG-22 | V | Recorrer todas las pantallas en modo claro | Todo se lee correctamente | P1 | OK |
+| CFG-23 | V | Recorrer todas las pantallas en modo oscuro | Todo se lee correctamente | P1 | OK |
 
 ## 23. Instalación local y operación
 
 | ID | Tipo | Caso y pasos | Resultado esperado | Prio | Estado |
 |---|---|---|---|---|---|
-| OPE-01 | O | Instalar desde cero con `docs/DOCKER.md` en un equipo limpio | Se completa sin pasos adicionales | P1 | |
+| OPE-01 | O | Instalar desde cero con `docs/DOCKER.md` en un equipo limpio | Se completa sin pasos adicionales | P1 | PARCIAL |
 | OPE-02 | O | Revisar el estado | Base, backend, web y respaldos en marcha; migraciones terminadas con éxito | P1 | OK |
 | OPE-03 | S | Comprobar puertos publicados | La base y el backend no se publican fuera de Docker | P1 | OK |
 | OPE-04 | S | `/docs` en producción | No está disponible | P1 | OK |
 | OPE-05 | S | Arrancar con `SECRET_KEY` corta, `DEBUG=True` o sin zona horaria | El backend se niega a arrancar y explica el motivo | P1 | OK |
-| OPE-06 | O | Apagar y encender el equipo | El sistema vuelve solo. Si Docker Desktop no abre al iniciar Windows, configurarlo y documentarlo | P1 | |
-| OPE-07 | O | Cortar la luz durante una operación | Al volver, sin datos corruptos ni pagos a medias | P1 | |
-| OPE-08 | O | Comprobar la copia automática | Se crea cada día; un día sin copia se recupera al encender | P1 | |
-| OPE-09 | O | Guardar copias en un disco externo con `CLINICA_RESPALDOS` | Aparecen allí, y se conservan las últimas 30 | P1 | |
+| OPE-06 | O | Apagar y encender el equipo | El sistema vuelve solo. Si Docker Desktop no abre al iniciar Windows, configurarlo y documentarlo | P1 | PARCIAL |
+| OPE-07 | O | Cortar la luz durante una operación | Al volver, sin datos corruptos ni pagos a medias | P1 | PARCIAL |
+| OPE-08 | O | Comprobar la copia automática | Se crea cada día; un día sin copia se recupera al encender | P1 | PARCIAL |
+| OPE-09 | O | Guardar copias en un disco externo con `CLINICA_RESPALDOS` | Aparecen allí, y se conservan las últimas 30 | P1 | PARCIAL |
 | OPE-10 | O | Restaurar una copia en una base aparte, con la guía | Se restaura sin errores | P1 | OK |
 | OPE-11 | O | Comparar los datos restaurados con los originales | Coinciden pacientes, pagos, citas y evoluciones | P1 | OK |
-| OPE-12 | O | Desconectar el disco de copias | El sistema sigue y el error aparece en el registro. Definir quién lo revisa | P2 | |
-| OPE-13 | O | Actualizar a una versión nueva, con datos | Se aplican migraciones y no se pierde nada | P1 | |
+| OPE-12 | O | Desconectar el disco de copias | El sistema sigue y el error aparece en el registro. Definir quién lo revisa | P2 | DECIDIR |
+| OPE-13 | O | Actualizar a una versión nueva, con datos | Se aplican migraciones y no se pierde nada | P1 | FALLA |
 | OPE-14 | O | Reiniciar el backend en plena jornada | Vuelve en segundos y las sesiones siguen válidas | P2 | OK |
-| OPE-15 | O | Dejar el disco casi lleno | Definir un aviso; las copias fallan con un error visible en el registro | P2 | |
+| OPE-15 | O | Dejar el disco casi lleno | Definir un aviso; las copias fallan con un error visible en el registro | P2 | DECIDIR |
 | OPE-16 | O | Fechas y horas | Zona horaria de la clínica configurada, igual a la de los equipos | P1 | OK |
-| OPE-17 | O | Cambio de zona u hora en un equipo cliente | Decidir el comportamiento; todos los equipos deben tener la hora correcta | P2 | |
+| OPE-17 | O | Cambio de zona u hora en un equipo cliente | Decidir el comportamiento; todos los equipos deben tener la hora correcta | P2 | DECIDIR |
 | OPE-18 | O | Recuperar el acceso del administrador en Docker | La guía funciona | P1 | OK |
 
 ### Red interna de la sede
@@ -724,32 +724,32 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | ID | Tipo | Caso y pasos | Resultado esperado | Prio | Estado |
 |---|---|---|---|---|---|
 | RED-01 | O | Activar HTTPS con `tls internal` y un nombre interno | El sistema abre por `https://` desde el servidor | P1 | OK |
-| RED-02 | O | Abrir desde otro equipo de la clínica | Funciona por nombre, en todos los equipos | P1 | |
-| RED-03 | O | Instalar el certificado raíz en un equipo | El navegador deja de mostrar advertencias | P1 | |
+| RED-02 | O | Abrir desde otro equipo de la clínica | Funciona por nombre, en todos los equipos | P1 | MANUAL |
+| RED-03 | O | Instalar el certificado raíz en un equipo | El navegador deja de mostrar advertencias | P1 | MANUAL |
 | RED-04 | S | Entrar por HTTP | Redirige a HTTPS | P1 | OK |
 | RED-05 | S | Revisar las cabeceras | HSTS, `nosniff` y bloqueo de marcos presentes | P2 | OK |
-| RED-06 | S | Probar la conexión directa al puerto 8080 desde otro equipo | No responde: solo escucha en el servidor | P1 | |
-| RED-07 | O | Fijar la IP del servidor y reiniciar el router | Los equipos siguen encontrándolo | P1 | |
-| RED-08 | O | Desconectar la red de un equipo mientras se usa | Muestra un error; al volver, continúa sin perder datos ya guardados | P2 | |
-| RED-09 | O | Sin internet, pero con la red interna activa | El sistema funciona. Comprobar el tipo de letra y otros recursos externos | P1 | |
-| RED-10 | O | Cinco equipos trabajando a la vez durante una hora | Sin errores ni lentitud notable | P1 | |
-| RED-11 | S | Conectar un equipo ajeno a la red Wi-Fi de pacientes | No debe alcanzar el servidor: separar las redes | P1 | |
-| RED-12 | F | Tableta o celular en la red | Se puede usar | P3 | |
+| RED-06 | S | Probar la conexión directa al puerto 8080 desde otro equipo | No responde: solo escucha en el servidor | P1 | PARCIAL |
+| RED-07 | O | Fijar la IP del servidor y reiniciar el router | Los equipos siguen encontrándolo | P1 | MANUAL |
+| RED-08 | O | Desconectar la red de un equipo mientras se usa | Muestra un error; al volver, continúa sin perder datos ya guardados | P2 | OK |
+| RED-09 | O | Sin internet, pero con la red interna activa | El sistema funciona. Comprobar el tipo de letra y otros recursos externos | P1 | OK |
+| RED-10 | O | Cinco equipos trabajando a la vez durante una hora | Sin errores ni lentitud notable | P1 | PARCIAL |
+| RED-11 | S | Conectar un equipo ajeno a la red Wi-Fi de pacientes | No debe alcanzar el servidor: separar las redes | P1 | MANUAL |
+| RED-12 | F | Tableta o celular en la red | Se puede usar | P3 | PARCIAL |
 
 ## 24. Seguridad general
 
 | ID | Tipo | Caso y pasos | Resultado esperado | Prio | Estado |
 |---|---|---|---|---|---|
 | SEG-01 | S | Inyección SQL en buscadores y filtros | Sin efecto ni error interno | P1 | OK |
-| SEG-02 | S | Código HTML o JavaScript en todos los campos de texto | Se muestra como texto | P1 | |
+| SEG-02 | S | Código HTML o JavaScript en todos los campos de texto | Se muestra como texto | P1 | OK |
 | SEG-03 | S | [API] Cambiar el ID de otro registro en la URL con un rol sin acceso | Responde 403 o 404, nunca los datos | P1 | OK |
 | SEG-04 | S | [API] Enviar campos no previstos en pagos y nómina | Se rechazan | P2 | OK |
 | SEG-05 | S | Provocar un error de datos | La respuesta no revela SQL ni detalles internos | P1 | OK |
 | SEG-06 | S | Ver el código publicado | Sin claves ni contraseñas | P1 | OK |
 | SEG-07 | S | Revisar la imagen del backend | Sin `.env`, copias ni pruebas; corre sin ser root | P1 | OK |
 | SEG-08 | S | Revisar el repositorio | `.env`, `.env.docker`, `.env.docker.admin` y `backups` no están versionados | P1 | OK |
-| SEG-09 | S | Dejar un equipo sin usar durante horas | Decidir si debe cerrarse la sesión por inactividad: hoy solo vence a las 8 horas | P2 | |
-| SEG-10 | S | Permisos de la carpeta de copias | Solo personal autorizado: contienen datos clínicos sin cifrar | P1 | |
+| SEG-09 | S | Dejar un equipo sin usar durante horas | Decidir si debe cerrarse la sesión por inactividad: hoy solo vence a las 8 horas | P2 | DECIDIR |
+| SEG-10 | S | Permisos de la carpeta de copias | Solo personal autorizado: contienen datos clínicos sin cifrar | P1 | MANUAL |
 | SEG-11 | S | Ejecutar `npm audit` y `pip-audit` | Sin vulnerabilidades conocidas | P1 | OK |
 | SEG-12 | S | Por HTTPS, intentar saltarse el límite de login falsificando `X-Forwarded-For` | El bloqueo se aplica igual | P1 | OK |
 
@@ -759,13 +759,13 @@ Carga antes una base de prueba con 5.000 pacientes, 50.000 citas y 100.000 pagos
 
 | ID | Tipo | Caso y pasos | Resultado esperado | Prio | Estado |
 |---|---|---|---|---|---|
-| REN-01 | O | Abrir cada pantalla | Carga en menos de 3 segundos | P2 | |
-| REN-02 | O | Buscar pacientes | Responde en menos de 1 segundo | P2 | |
-| REN-03 | O | Reportes con «Todo» | Responde en menos de 5 segundos | P2 | |
-| REN-04 | O | Agenda de un mes con más de 5.000 citas | Muestra las primeras y avisa que hay más | P2 | |
-| REN-05 | O | Tiempo de la copia y tamaño del archivo | Termina dentro de un margen aceptable | P2 | |
-| REN-06 | O | Memoria del servidor tras una jornada | Sin crecimiento continuo | P2 | |
-| REN-07 | O | Nómina y productividad con muchos usuarios | Responden en menos de 3 segundos | P3 | |
+| REN-01 | O | Abrir cada pantalla | Carga en menos de 3 segundos | P2 | OK |
+| REN-02 | O | Buscar pacientes | Responde en menos de 1 segundo | P2 | OK |
+| REN-03 | O | Reportes con «Todo» | Responde en menos de 5 segundos | P2 | OK |
+| REN-04 | O | Agenda de un mes con más de 5.000 citas | Muestra las primeras y avisa que hay más | P2 | OK |
+| REN-05 | O | Tiempo de la copia y tamaño del archivo | Termina dentro de un margen aceptable | P2 | OK |
+| REN-06 | O | Memoria del servidor tras una jornada | Sin crecimiento continuo | P2 | PARCIAL |
+| REN-07 | O | Nómina y productividad con muchos usuarios | Responden en menos de 3 segundos | P3 | OK |
 
 ## 26. Flujos completos de una jornada
 
@@ -780,6 +780,6 @@ Carga antes una base de prueba con 5.000 pacientes, 50.000 citas y 100.000 pagos
 | E2E-07 | I | **Día completo de caja:** abrir, cobrar con todos los medios, gastos, adelanto y arqueo | El arqueo cuadra y el reporte del día coincide | P1 | OK |
 | E2E-08 | I | **Fin de mes:** comisiones, adelantos y sueldos | Los saldos finales cuadran contra los pagos | P1 | OK |
 | E2E-09 | I | **Turno:** entrada, descanso, salida, olvido y corrección | La bitácora refleja lo ocurrido | P1 | OK |
-| E2E-10 | I | **Prótesis:** presupuesto, orden, recepción, instalación y pago al laboratorio | Cada etapa queda registrada | P2 | |
-| E2E-11 | I | **Recuperación:** jornada completa, copia, restauración en otra base y comparación | Todo coincide | P1 | |
-| E2E-12 | I | **Paralelo con el método actual:** una semana comparando cada día caja y agenda | Sin diferencias, o con cada diferencia explicada | P1 | |
+| E2E-10 | I | **Prótesis:** presupuesto, orden, recepción, instalación y pago al laboratorio | Cada etapa queda registrada | P2 | FALLA |
+| E2E-11 | I | **Recuperación:** jornada completa, copia, restauración en otra base y comparación | Todo coincide | P1 | FALLA |
+| E2E-12 | I | **Paralelo con el método actual:** una semana comparando cada día caja y agenda | Sin diferencias, o con cada diferencia explicada | P1 | MANUAL |

@@ -30,6 +30,7 @@ export default function CobranzasView() {
   const [pacientes, setPacientes] = useState([]);
   const [doctores, setDoctores] = useState([]);
   const [selectedPacienteId, setSelectedPacienteId] = useState(pacienteIdParam || '');
+  const [pacienteElegido, setPacienteElegido] = useState(null);
   const [saldoInfo, setSaldoInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -51,6 +52,12 @@ export default function CobranzasView() {
     observaciones: '',
     tipo_cobro: 'PLAN',
   });
+
+  // La lista inicial es parcial: quien no está en ella se carga aparte para mostrar sus datos
+  useEffect(() => {
+    if (!selectedPacienteId || pacientes.some((p) => p.id === selectedPacienteId) || pacienteElegido?.id === selectedPacienteId) return;
+    api.getPaciente(selectedPacienteId).then(setPacienteElegido).catch(() => {});
+  }, [selectedPacienteId, pacientes, pacienteElegido]);
 
   useEffect(() => {
     const loadPacientes = async () => {
@@ -144,7 +151,8 @@ export default function CobranzasView() {
     }
   };
 
-  const selectedPaciente = pacientes.find((p) => p.id === selectedPacienteId);
+  const selectedPaciente = pacientes.find((p) => p.id === selectedPacienteId)
+    || (pacienteElegido?.id === selectedPacienteId ? pacienteElegido : null);
   const deuda = Number(saldoInfo?.saldo_pendiente || 0);
   const esDirecto = formPago.tipo_cobro === 'DIRECTO';
   const cobrosDirectos = (saldoInfo?.pagos || [])
@@ -186,7 +194,7 @@ export default function CobranzasView() {
             <PacienteSearchInput
               pacientes={pacientes}
               selectedPacienteId={selectedPacienteId}
-              onSelectPaciente={(id) => setSelectedPacienteId(id)}
+              onSelectPaciente={(id, paciente) => { setPacienteElegido(paciente); setSelectedPacienteId(id); }}
               placeholder="Buscar paciente por nombre o CI..."
             />
           </div>

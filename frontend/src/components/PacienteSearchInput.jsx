@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, User, X, Check, ChevronDown } from 'lucide-react';
+import { Search, X, Check, ChevronDown } from 'lucide-react';
+import { api } from '../services/api';
+
+const ESPERA_BUSQUEDA_MS = 250;
 
 export default function PacienteSearchInput({
   pacientes = [],
@@ -17,7 +20,43 @@ export default function PacienteSearchInput({
   const containerRef = useRef(null);
   const inputRef = useRef(null);
 
-  const selectedPaciente = pacientes.find((p) => p.id === selectedPacienteId);
+  // La lista recibida es parcial: quien no está en ella se busca y se carga desde el servidor
+  const [encontrados, setEncontrados] = useState(null);
+  const [seleccionado, setSeleccionado] = useState(null);
+  const [buscando, setBuscando] = useState(false);
+
+  const selectedPaciente = pacientes.find((p) => p.id === selectedPacienteId)
+    || (seleccionado?.id === selectedPacienteId ? seleccionado : null);
+
+  useEffect(() => {
+    if (!selectedPacienteId || selectedPaciente) return undefined;
+    let vigente = true;
+    api.getPaciente(selectedPacienteId)
+      .then((paciente) => { if (vigente) setSeleccionado(paciente); })
+      .catch(() => {});
+    return () => { vigente = false; };
+  }, [selectedPacienteId, selectedPaciente]);
+
+  useEffect(() => {
+    const termino = searchTerm.trim();
+    if (!termino) {
+      setEncontrados(null);
+      setBuscando(false);
+      return undefined;
+    }
+    let vigente = true;
+    setBuscando(true);
+    const espera = setTimeout(() => {
+      api.getPacientes(termino)
+        .then((lista) => { if (vigente) setEncontrados(Array.isArray(lista) ? lista : []); })
+        .catch(() => { if (vigente) setEncontrados(null); })
+        .finally(() => { if (vigente) setBuscando(false); });
+    }, ESPERA_BUSQUEDA_MS);
+    return () => {
+      vigente = false;
+      clearTimeout(espera);
+    };
+  }, [searchTerm]);
 
   // Cerrar dropdown al hacer click afuera
   useEffect(() => {
@@ -31,7 +70,7 @@ export default function PacienteSearchInput({
   }, []);
 
   // Filtrado de pacientes en tiempo real
-  const filteredPacientes = pacientes.filter((p) => {
+  const filteredPacientes = encontrados || pacientes.filter((p) => {
     if (!searchTerm.trim()) return true;
     const term = searchTerm.toLowerCase().trim();
     const nombreCompleto = `${p.nombres || ''} ${p.apellidos || ''}`.toLowerCase();
@@ -41,6 +80,7 @@ export default function PacienteSearchInput({
   });
 
   const handleSelect = (paciente) => {
+    setSeleccionado(paciente);
     onSelectPaciente(paciente.id, paciente);
     setSearchTerm('');
     setIsOpen(false);
@@ -135,7 +175,7 @@ export default function PacienteSearchInput({
         >
           {filteredPacientes.length === 0 ? (
             <div className="p-4 text-center text-xs text-slate-500 dark:text-slate-400">
-              No se encontraron pacientes para "{searchTerm}"
+              {buscando ? 'Buscando...' : `No se encontraron pacientes para "${searchTerm}"`}
             </div>
           ) : (
             filteredPacientes.slice(0, 15).map((p) => {

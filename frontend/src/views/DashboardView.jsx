@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
-import { aFechaLocal, periodoMesActual } from '../utils/fechas';
+import { aFechaLocal, periodoDelDia, periodoMesActual } from '../utils/fechas';
 import { useAuth } from '../context/AuthContext';
 import { puedeAcceder, puedeModificarCita } from '../config/accesos';
 import {
@@ -46,7 +46,7 @@ export default function DashboardView() {
     try {
       const [cajaRes, citasRes, finanzasRes, pacientesRes] = await Promise.allSettled([
         api.getEstadoCaja(),
-        verCitas ? api.getCitas(`?fecha_inicio=${hoyStr}&fecha_fin=${hoyStr}`) : [],
+        verCitas ? api.getCitas(`?${new URLSearchParams(periodoDelDia(hoyStr))}`) : [],
         verFinanzas ? api.getReporteFinanciero(periodoMesActual()) : null,
         tienePermiso('PACIENTES_READ') ? api.getPacientes('', 0, 1) : [],
       ]);
@@ -220,7 +220,7 @@ export default function DashboardView() {
             <div className="space-y-3">
               {citasHoy.slice(0, 5).map((cita) => {
                 const pacienteNombre = cita.paciente ? `${cita.paciente.nombres} ${cita.paciente.apellidos}` : 'Paciente';
-                const hora = cita.hora_inicio ? cita.hora_inicio.slice(0, 5) : '--:--';
+                const hora = new Date(cita.fecha_inicio_programada).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', hour12: false });
                 return (
                   <div
                     key={cita.id}
@@ -242,11 +242,11 @@ export default function DashboardView() {
                       <span
                         className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border ${
                           cita.estado === 'EN_SILLON'
-                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 animate-pulse'
+                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400 animate-pulse'
                             : cita.estado === 'FINALIZADA'
-                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
                             : cita.estado === 'EN_ESPERA'
-                            ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                            ? 'bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-400'
                             : cita.estado === 'CANCELADA'
                             ? 'bg-stone-500/10 border-dashed border-stone-500/50 text-stone-400 line-through'
                             : 'bg-slate-800 border-slate-700 text-slate-400'
@@ -259,7 +259,7 @@ export default function DashboardView() {
                       {puedeAvanzar(cita) && (cita.estado === 'PROGRAMADA' || cita.estado === 'CONFIRMADA') && (
                         <button
                           onClick={() => handleUpdateSillon(cita.id, 'EN_ESPERA')}
-                          className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 text-xs rounded-lg transition"
+                          className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-700 dark:text-blue-300 border border-blue-500/30 text-xs rounded-lg transition"
                           title="Marcar llegada a sala de espera"
                         >
                           En Espera
@@ -268,7 +268,7 @@ export default function DashboardView() {
                       {puedeAvanzar(cita) && cita.estado === 'EN_ESPERA' && (
                         <button
                           onClick={() => handleUpdateSillon(cita.id, 'EN_SILLON')}
-                          className="px-2.5 py-1 bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/30 text-xs rounded-lg transition flex items-center gap-1"
+                          className="px-2.5 py-1 bg-amber-600/20 hover:bg-amber-600/40 text-amber-800 dark:text-amber-300 border border-amber-500/30 text-xs rounded-lg transition flex items-center gap-1"
                           title="Hacer pasar al sillón dental"
                         >
                           <Play className="w-3 h-3" /> A Sillón
@@ -277,7 +277,7 @@ export default function DashboardView() {
                       {puedeAvanzar(cita) && cita.estado === 'EN_SILLON' && (
                         <button
                           onClick={() => handleUpdateSillon(cita.id, 'FINALIZADA')}
-                          className="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 text-xs rounded-lg transition flex items-center gap-1"
+                          className="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 text-xs rounded-lg transition flex items-center gap-1"
                           title="Finalizar atención clínica"
                         >
                           <CheckCircle2 className="w-3 h-3" /> Finalizar

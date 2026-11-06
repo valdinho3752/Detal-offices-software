@@ -128,7 +128,7 @@ export default function SillonesView() {
           {sillones.map((s) => (
             <li
               key={s.id}
-              className={`p-4 bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-sm flex items-center justify-between gap-3 ${s.activo ? '' : 'opacity-60'}`}
+              className={`p-4 bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-sm flex items-center justify-between gap-3 ${s.activo ? '' : 'opacity-80'}`}
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="p-2.5 bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 rounded-xl flex-shrink-0">

@@ -138,8 +138,25 @@ class CitaSillonControl(BaseModel):
     hora_llegada_recepcion: Optional[datetime] = None
     estado: Optional[EstadoCitaEnum] = None
 
+class PacienteDeCita(BaseModel):
+    id: UUID
+    nombres: str
+    apellidos: str
+
+    class Config:
+        from_attributes = True
+
+class DoctorDeCita(BaseModel):
+    id: UUID
+    nombre_completo: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
 class CitaResponse(CitaBase):
     id: UUID
+    paciente: Optional[PacienteDeCita] = None
+    doctor: Optional[DoctorDeCita] = None
     hora_llegada_recepcion: Optional[datetime] = None
     hora_inicio_sillon: Optional[datetime] = None
     hora_fin_sillon: Optional[datetime] = None

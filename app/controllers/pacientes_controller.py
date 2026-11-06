@@ -2,7 +2,7 @@ from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from app.database import get_db
 from app.models import (
     Paciente, AntecedenteMedico, AuditoriaLog, AuditoriaAccionEnum,
@@ -30,9 +30,9 @@ def listar_pacientes(
         search = f"%{q}%"
         query = query.filter(
             or_(
-                Paciente.nombres.ilike(search),
-                Paciente.apellidos.ilike(search),
-                Paciente.numero_documento.ilike(search)
+                func.concat(Paciente.nombres, ' ', Paciente.apellidos).ilike(search),
+                Paciente.numero_documento.ilike(search),
+                Paciente.telefono.ilike(search),
             )
         )
     return query.order_by(Paciente.apellidos).offset(skip).limit(limit).all()

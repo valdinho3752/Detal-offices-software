@@ -4,7 +4,7 @@ from uuid import UUID
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.models import Cita, Paciente, Sillon, EstadoCitaEnum, Usuario, Doctor, RolCodigoEnum, AuditoriaLog, AuditoriaAccionEnum
 from app.core.dependencies import require_permission
@@ -58,7 +58,7 @@ def listar_citas(
 ):
     desde = fecha_desde or fecha_inicio
     hasta = fecha_hasta or fecha_fin
-    query = db.query(Cita)
+    query = db.query(Cita).options(joinedload(Cita.paciente), joinedload(Cita.doctor).joinedload(Doctor.usuario))
     if doctor_id:
         query = query.filter(Cita.doctor_id == doctor_id)
     if paciente_id:
@@ -73,7 +73,7 @@ def listar_citas(
     if hasta:
         if hasta.hour == 0 and hasta.minute == 0 and hasta.second == 0:
             hasta = hasta.replace(hour=23, minute=59, second=59, microsecond=999999)
-        query = query.filter(Cita.fecha_fin_programada <= hasta)
+        query = query.filter(Cita.fecha_inicio_programada <= hasta)
     if estado:
         query = query.filter(Cita.estado == estado)
 

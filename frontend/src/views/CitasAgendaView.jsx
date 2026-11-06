@@ -4,6 +4,7 @@ import { puedeModificarCita } from '../config/accesos';
 import { EnlaceCobroCita } from '../components/CobrosCitaPanel';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
+import { aPeriodoApi } from '../utils/fechas';
 import { useAuth } from '../context/AuthContext';
 import {
   Calendar as CalendarIcon,
@@ -307,10 +308,7 @@ export default function CitasAgendaView() {
       const month = currentDate.getMonth();
       const totalDays = new Date(year, month + 1, 0).getDate();
 
-      const inicioStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-      const finStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(totalDays).padStart(2, '0')}`;
-
-      let query = `?fecha_desde=${inicioStr}T00:00:00Z&fecha_hasta=${finStr}T23:59:59Z&fecha_inicio=${inicioStr}&fecha_fin=${finStr}`;
+      let query = `?${new URLSearchParams(aPeriodoApi(new Date(year, month, 1), new Date(year, month, totalDays)))}`;
       if (selectedDoctorId) query += `&doctor_id=${selectedDoctorId}`;
       if (selectedCategoria) query += `&categoria=${selectedCategoria}`;
 

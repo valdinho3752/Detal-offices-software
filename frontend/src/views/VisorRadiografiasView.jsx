@@ -21,6 +21,23 @@ import PacienteSearchInput from '../components/PacienteSearchInput';
 
 
 // Valores aceptados por la API (TipoEstudioImagenEnum) y su nombre en pantalla
+// El archivo vive fuera del sistema: su enlace puede dejar de estar disponible
+function ImagenRadiografia({ src, alt, className }) {
+  const [fallo, setFallo] = useState(false);
+
+  useEffect(() => { setFallo(false); }, [src]);
+
+  if (fallo) {
+    return (
+      <div role="img" aria-label={alt} className="w-full h-full min-h-[120px] flex flex-col items-center justify-center gap-2 p-4 text-center text-xs text-slate-300">
+        <AlertCircle className="w-6 h-6 text-amber-400" />
+        No se pudo cargar la imagen. Revisa que el enlace siga disponible.
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} className={className} onError={() => setFallo(true)} />;
+}
+
 const TIPOS_ESTUDIO = {
   PERIAPICAL: 'Periapical',
   PANORAMICA: 'Panorámica (Ortopanto)',
@@ -231,12 +248,13 @@ export default function VisorRadiografiasView() {
                 >
                   {/* Vista Previa Imagen */}
                   <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden cursor-pointer"
+                    data-testid="vista-radiografia"
                     onClick={() => {
                       setSelectedRx(rx);
                       setInvertColors(false);
                     }}
                   >
-                    <img
+                    <ImagenRadiografia
                       src={rx.archivo_url}
                       alt={rx.titulo}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
@@ -337,7 +355,8 @@ export default function VisorRadiografiasView() {
 
             {/* Imagen Ampliada */}
             <div className="flex-1 min-h-[350px] bg-black rounded-xl overflow-hidden flex items-center justify-center my-4 relative">
-              <img
+              <ImagenRadiografia
+                key={selectedRx.id}
                 src={selectedRx.archivo_url}
                 alt="Radiografía Dental"
                 className={`max-h-[500px] w-auto object-contain transition duration-200 ${

@@ -159,7 +159,7 @@ export default function AuditoriaForenseView() {
                       <td className="py-3 px-4 font-semibold text-white">
                         {log.usuario_nombre || 'Sistema'}
                       </td>
-                      <td className="py-3 px-4 font-mono text-primary-300">{log.tabla_afectada}</td>
+                      <td className="py-3 px-4 font-mono text-primary-700 dark:text-primary-300">{log.tabla_afectada}</td>
                       <td className="py-3 px-4 text-center">
                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badgeClass}`}>
                           {log.accion}

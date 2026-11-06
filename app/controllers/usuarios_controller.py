@@ -253,7 +253,7 @@ def listar_doctores(
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    return db.query(Doctor).all()
+    return db.query(Doctor).join(Doctor.usuario).filter(Usuario.activo.is_(True)).all()
 
 @router.post("/doctores/perfil", response_model=DoctorResponse, status_code=status.HTTP_201_CREATED)
 def crear_perfil_doctor(

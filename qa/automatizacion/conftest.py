@@ -11,6 +11,7 @@ from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, str(Path(__file__).parent))
 from apoyo import BASE, CLAVE_ADMIN, RAIZ, ZONA, Api, Fabrica  # noqa: E402
+from casos_no_automatizables import CASOS  # noqa: E402
 
 DOCUMENTO = RAIZ / "qa" / "CASOS_DE_PRUEBA.md"
 RESULTADOS = RAIZ / "qa" / "resultados"
@@ -151,10 +152,16 @@ def pytest_sessionfinish(session, exitstatus):
     lineas = []
     for linea in texto.split("\n"):
         coincide = re.match(r"\| ([A-Z0-9]{3}-\d+) \|", linea)
-        if coincide and coincide.group(1) in resumen:
-            partes = linea.split("|")
-            partes[6] = f" {resumen[coincide.group(1)]['estado']} "
-            linea = "|".join(partes)
+        if coincide:
+            identificador = coincide.group(1)
+            estado = resumen.get(identificador, {}).get("estado")
+            # Una falla siempre se muestra; un OK no aprueba lo que todavía requiere otra comprobación
+            if identificador in CASOS and estado != "FALLA":
+                estado = CASOS[identificador][0]
+            if estado:
+                partes = linea.split("|")
+                partes[6] = f" {estado} "
+                linea = "|".join(partes)
         lineas.append(linea)
     DOCUMENTO.write_text("\n".join(lineas), encoding="utf-8")
 
@@ -177,4 +184,9 @@ def pytest_sessionfinish(session, exitstatus):
         for caso, datos in sorted(fallos.items()):
             detalle = re.sub(r"\s+", " ", datos["detalle"]).replace("|", "/")[:220]
             salida.append(f"| {caso} | `{datos['prueba']}` | {detalle} |")
+    if CASOS:
+        salida += ["", "## Falta comprobar o decidir", "", "| Caso | Estado | Prio | Motivo |", "|---|---|---|---|"]
+        prioridades = {f.split("|")[1].strip(): f.split("|")[5].strip() for f in filas}
+        for identificador, (estado, motivo) in sorted(CASOS.items(), key=lambda c: (c[1][0], prioridades.get(c[0], ""), c[0])):
+            salida.append(f"| {identificador} | {estado} | {prioridades.get(identificador, '')} | {motivo} |")
     (RESULTADOS / "RESUMEN.md").write_text("\n".join(salida) + "\n", encoding="utf-8")
