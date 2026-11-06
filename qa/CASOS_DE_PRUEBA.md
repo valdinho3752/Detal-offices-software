@@ -111,7 +111,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | ACC-04 | N | Enviar el formulario con campos vacíos | El navegador exige completarlos y no envía nada | P2 | OK |
 | ACC-05 | S | Hacer 5 intentos fallidos y un sexto | Del sexto en adelante: «Demasiados intentos fallidos» con los minutos de espera | P1 | OK |
 | ACC-06 | S | Durante el bloqueo, usar la contraseña correcta | También se rechaza hasta que venza el bloqueo | P1 | OK |
-| ACC-07 | S | Esperar 15 minutos tras el bloqueo y entrar | Entra con normalidad | P2 | |
+| ACC-07 | S | Esperar 15 minutos tras el bloqueo y entrar | Entra con normalidad | P2 | OK |
 | ACC-08 | F | Hacer 4 fallos, un acierto, salir y hacer 4 fallos más | El acierto reinició el conteo: no se bloquea | P2 | OK |
 | ACC-09 | S | Bloquear el usuario A y entrar con el usuario B desde el mismo equipo | B entra con normalidad | P2 | OK |
 | ACC-10 | S | Bloquear un usuario desde un equipo e intentar entrar desde otro | Desde el otro equipo sí puede entrar | P2 | OK |
@@ -182,7 +182,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | USU-23 | S | [API] Llamar con el token de cada rol a una ruta que no le corresponde | Responde 403 | P1 | OK |
 | USU-24 | S | [API] Llamar a cualquier ruta protegida sin token | Responde 401 | P1 | OK |
 | USU-25 | S | Revisar la respuesta de usuarios | Nunca incluye la contraseña ni su hash | P1 | OK |
-| USU-26 | F | Desactivar a un doctor con citas futuras | Decidir el comportamiento: sus citas siguen visibles y deben poder reasignarse | P2 | FALLA |
+| USU-26 | F | Desactivar a un doctor con citas futuras | Decidir el comportamiento: sus citas siguen visibles y deben poder reasignarse | P2 | OK |
 
 ## 6. Pacientes
 
@@ -208,9 +208,9 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | PAC-18 | I | Comparar el saldo de la ficha con Cobranzas | Es exactamente el mismo | P1 | OK |
 | PAC-19 | S | Abrir una ficha y revisar la auditoría | Queda un registro `VIEW` del acceso | P2 | OK |
 | PAC-20 | S | Asistente intenta crear o editar | No ve esos botones; [API] responde 403 | P1 | OK |
-| PAC-21 | F | Marcar un paciente como inactivo | Decidir el comportamiento: su historia se conserva y su estado se ve claramente | P2 | FALLA |
+| PAC-21 | F | Marcar un paciente como inactivo | Decidir el comportamiento: su historia se conserva y su estado se ve claramente | P2 | DECIDIR |
 | PAC-22 | S | [API] Intentar eliminar un paciente | No existe esa acción: responde 405 | P1 | OK |
-| PAC-23 | F | Listado con más de 100 pacientes | Se puede encontrar a cualquiera; la pantalla responde bien | P2 | FALLA |
+| PAC-23 | F | Listado con más de 100 pacientes | Se puede encontrar a cualquiera; la pantalla responde bien | P2 | OK |
 | PAC-24 | V | Revisar buscador y formulario del paciente | Hablan de «documento», sin referencias a otro país; CI es la opción predeterminada | P3 | OK |
 | PAC-25 | F | Registrar en pantalla, sin correo, con sexo, dirección y alergias | Se guarda, y la ficha muestra sexo, dirección y alergias | P0 | OK |
 | PAC-26 | F | Editar en pantalla un paciente: cambiar alergias y dejar el correo vacío | Se guarda y la ficha se actualiza sin recargar | P1 | OK |
@@ -380,17 +380,17 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | RAD-02 | F | Registrar cada tipo de estudio | Todos se guardan con su tipo | P2 | OK |
 | RAD-03 | N | Sin URL o sin tipo | No permite guardar | P2 | OK |
 | RAD-04 | S | URL que empieza con `javascript:` | No se ejecuta; idealmente se rechaza | P1 | OK |
-| RAD-05 | N | URL inválida o imagen eliminada | Se muestra un error de imagen, sin romper la pantalla | P2 | FALLA |
+| RAD-05 | N | URL inválida o imagen eliminada | Se muestra un error de imagen, sin romper la pantalla | P2 | OK |
 | RAD-06 | F | Asociar a una pieza FDI y filtrar por ella | Muestra solo esa pieza | P2 | OK |
 | RAD-07 | F | Vacío en el filtro | Muestra todas | P3 | OK |
-| RAD-08 | F | Abrir el visor | Muestra la imagen, la fecha y el informe | P2 | FALLA |
+| RAD-08 | F | Abrir el visor | Muestra la imagen, la fecha y el informe | P2 | OK |
 | RAD-09 | F | Fecha predeterminada a las 22:30 | Usa la fecha local, no UTC | P2 | OK |
 | RAD-10 | F | Eliminar como administrador | Desaparece y queda en auditoría | P1 | OK |
 | RAD-11 | S | Doctor o asistente intenta eliminar | No tiene ese permiso; [API] responde 403 | P1 | OK |
 | RAD-12 | S | Recepción intenta abrir | No aparece en el menú; [API] responde 403 | P1 | OK |
 | RAD-13 | S | Abrir un estudio y revisar la auditoría | Queda un registro `VIEW` | P2 | OK |
 | RAD-14 | F | Cambiar de paciente | No muestra imágenes del anterior | P1 | OK |
-| RAD-15 | O | Restaurar una copia y abrir una radiografía | El registro vuelve, pero la imagen depende de que su enlace siga disponible. Confirmar dónde se guardan las imágenes | P1 | FALLA |
+| RAD-15 | O | Restaurar una copia y abrir una radiografía | El registro vuelve, pero la imagen depende de que su enlace siga disponible. Confirmar dónde se guardan las imágenes | P1 | OK |
 | RAD-16 | V | Revisar la tarjeta de una radiografía | Muestra el título escrito al registrarla | P3 | OK |
 
 ## 13. Prótesis y laboratorio
@@ -514,7 +514,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | CCI-15 | N | Cerrar sin pago sin motivo | «Indica el motivo» | P1 | OK |
 | CCI-16 | N | Editar o confirmar una cuenta ya cerrada | «Ya fue cerrado» | P1 | OK |
 | CCI-17 | S | Dos personas confirman la misma cuenta a la vez | Solo se paga una vez | P1 | OK |
-| CCI-18 | F | Revisar la auditoría | Registra creación, edición y cierre | P2 | FALLA |
+| CCI-18 | F | Revisar la auditoría | Registra creación, edición y cierre | P2 | OK |
 
 ## 16. Nómina y comisiones
 
@@ -536,7 +536,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | NOM-14 | N | Descontar más que los adelantos pendientes | Se rechaza | P1 | OK |
 | NOM-15 | N | [API] Neto distinto de sueldo menos descuento | Se rechaza | P1 | OK |
 | NOM-16 | F | Sueldo cubierto por completo con adelantos | Se registra sin mover la gaveta | P1 | OK |
-| NOM-17 | F | Pagar quincena | Propone la mitad del sueldo | P2 | |
+| NOM-17 | F | Pagar quincena | Propone la mitad del sueldo | P2 | OK |
 | NOM-18 | F | Contrato mixto: adelanto descontado del sueldo | Deja de restar de las comisiones | P1 | OK |
 | NOM-19 | F | Bono | No afecta comisión ni adelantos | P2 | OK |
 | NOM-20 | N | Pago en efectivo mayor que la gaveta | «No hay efectivo suficiente» | P1 | OK |
@@ -682,7 +682,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | CFG-08 | N | Logo de más de 1 MB | «No puede superar 1 MB» | P1 | OK |
 | CFG-09 | F | Logo no cuadrado | Se ve sin deformarse | P3 | OK |
 | CFG-10 | F | Quitar el logo | Vuelve el diente | P2 | OK |
-| CFG-11 | O | Restaurar una copia | El logo y la configuración vuelven | P2 | FALLA |
+| CFG-11 | O | Restaurar una copia | El logo y la configuración vuelven | P2 | OK |
 | CFG-12 | F | Elegir tema por defecto Claro | Un equipo nuevo abre en Claro, también en el acceso | P1 | OK |
 | CFG-13 | F | Elegir el tema con el botón de la barra | Se recuerda en ese equipo | P1 | OK |
 | CFG-14 | F | Cambiar el valor por defecto con un tema ya elegido | La elección de esa persona se mantiene y la pantalla lo explica | P2 | OK |
@@ -712,7 +712,7 @@ Créalos desde Usuarios & Roles. En su primer ingreso, cada uno cambiará su con
 | OPE-10 | O | Restaurar una copia en una base aparte, con la guía | Se restaura sin errores | P1 | OK |
 | OPE-11 | O | Comparar los datos restaurados con los originales | Coinciden pacientes, pagos, citas y evoluciones | P1 | OK |
 | OPE-12 | O | Desconectar el disco de copias | El sistema sigue y el error aparece en el registro. Definir quién lo revisa | P2 | DECIDIR |
-| OPE-13 | O | Actualizar a una versión nueva, con datos | Se aplican migraciones y no se pierde nada | P1 | FALLA |
+| OPE-13 | O | Actualizar a una versión nueva, con datos | Se aplican migraciones y no se pierde nada | P1 | OK |
 | OPE-14 | O | Reiniciar el backend en plena jornada | Vuelve en segundos y las sesiones siguen válidas | P2 | OK |
 | OPE-15 | O | Dejar el disco casi lleno | Definir un aviso; las copias fallan con un error visible en el registro | P2 | DECIDIR |
 | OPE-16 | O | Fechas y horas | Zona horaria de la clínica configurada, igual a la de los equipos | P1 | OK |
@@ -780,6 +780,6 @@ Carga antes una base de prueba con 5.000 pacientes, 50.000 citas y 100.000 pagos
 | E2E-07 | I | **Día completo de caja:** abrir, cobrar con todos los medios, gastos, adelanto y arqueo | El arqueo cuadra y el reporte del día coincide | P1 | OK |
 | E2E-08 | I | **Fin de mes:** comisiones, adelantos y sueldos | Los saldos finales cuadran contra los pagos | P1 | OK |
 | E2E-09 | I | **Turno:** entrada, descanso, salida, olvido y corrección | La bitácora refleja lo ocurrido | P1 | OK |
-| E2E-10 | I | **Prótesis:** presupuesto, orden, recepción, instalación y pago al laboratorio | Cada etapa queda registrada | P2 | FALLA |
-| E2E-11 | I | **Recuperación:** jornada completa, copia, restauración en otra base y comparación | Todo coincide | P1 | FALLA |
+| E2E-10 | I | **Prótesis:** presupuesto, orden, recepción, instalación y pago al laboratorio | Cada etapa queda registrada | P2 | OK |
+| E2E-11 | I | **Recuperación:** jornada completa, copia, restauración en otra base y comparación | Todo coincide | P1 | OK |
 | E2E-12 | I | **Paralelo con el método actual:** una semana comparando cada día caja y agenda | Sin diferencias, o con cada diferencia explicada | P1 | MANUAL |
