@@ -169,7 +169,10 @@ def test_montos_negativos_de_plan(fab, api):
 def test_total_y_cancelacion_con_pagos(fab, api):
     p = fab.paciente()
     plan = fab.plan(p["id"], 200)
-    pago = api.post("/caja/pagos", {"paciente_id": p["id"], "plan_id": plan, "monto": 150, "metodo_pago": "TRANSFERENCIA"}).json()
+    fab.caja()
+    respuesta = api.post("/caja/pagos", {"paciente_id": p["id"], "plan_id": plan, "monto": 150, "metodo_pago": "TRANSFERENCIA"})
+    assert respuesta.status == 201, respuesta.text
+    pago = respuesta.json()
     assert api.put(f"/tratamientos/planes/{plan}", {"costo_total": 149}).status == 409
     assert api.put(f"/tratamientos/planes/{plan}", {"estado": "CANCELADO"}).status == 409
     assert api.post(f"/caja/pagos/{pago['id']}/anular", {"motivo": "Error"}).ok
