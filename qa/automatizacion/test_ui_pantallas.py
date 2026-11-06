@@ -856,7 +856,8 @@ def test_panel(fab, api, abrir):
         texto = p.inner_text("main")
         assert "$1.234,00" in texto and "Citas para Hoy" in texto
         assert "Ingresos del Mes" in texto and "7.777,00" not in texto
-        assert any(f"fecha_inicio={hoy}" in u for u in peticiones), "Pide las citas del día local"
+        inicio_local = noche.replace(hour=0, minute=0).astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H")
+        assert hoy and any(f"fecha_desde={inicio_local}" in u and "/citas" in u for u in peticiones), "Pide las citas del día local"
         d = fab.usuario("ASISTENTE")
         q = abrir(d.alias, d.clave)
         texto = q.inner_text("main")

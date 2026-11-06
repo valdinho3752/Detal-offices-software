@@ -244,17 +244,19 @@ def test_caida_de_la_base_durante_cobros(fab, api, solicitudes):
             if estado == 201:
                 aceptados.append(1)
 
-    hilos = [threading.Thread(target=cobrar) for _ in range(4)]
+    hilos = [threading.Thread(target=cobrar, daemon=True) for _ in range(4)]
     for hilo in hilos:
         hilo.start()
-    time.sleep(4)
-    assert aceptados, "Los cobros estaban entrando"
-    caidas = _reinicios("db")
-    dc("exec", "-T", "db", "sh", "-c", 'su-exec postgres pg_ctl -D "$PGDATA" stop -m immediate', comprobar=False)
-    _esperar(lambda: _reinicios("db") > caidas, 30, "La base no llegó a caer: la prueba no comprobaría nada")
-    detener.set()
-    for hilo in hilos:
-        hilo.join(70)
+    try:
+        time.sleep(4)
+        assert aceptados, "Los cobros estaban entrando"
+        caidas = _reinicios("db")
+        dc("exec", "-T", "db", "sh", "-c", 'gosu postgres pg_ctl -D "$PGDATA" stop -m immediate', comprobar=False)
+        _esperar(lambda: _reinicios("db") > caidas, 30, "La base no llegó a caer: la prueba no comprobaría nada")
+    finally:
+        detener.set()
+        for hilo in hilos:
+            hilo.join(70)
 
     def responde():
         try:
@@ -447,13 +449,17 @@ class InstalacionAparte:
         subprocess.run(["git", "clone", "-q", str(RAIZ), str(carpeta)], check=True, capture_output=True)
         self.git("checkout", "-q", version)
         (carpeta / "copias").mkdir()
+        # Las primeras versiones tienen el puerto fijo, y ese puerto lo usa la instalación real
+        (carpeta / "docker-compose.override.yml").write_text(f'services:\n  web:\n    ports: !override\n      - "127.0.0.1:{puerto}:8080"\n', encoding="utf-8")
 
     def git(self, *args):
         subprocess.run(["git", *args], cwd=self.carpeta, check=True, capture_output=True)
 
     def docker(self, *args):
         r = subprocess.run(["docker", "compose", "-p", self.proyecto, *args], cwd=self.carpeta, env=self.entorno, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=560)
-        assert r.returncode == 0, r.stderr[-800:]
+        if r.returncode != 0:
+            registros = subprocess.run(["docker", "compose", "-p", self.proyecto, "logs", "--tail", "25"], cwd=self.carpeta, env=self.entorno, capture_output=True, text=True, encoding="utf-8", errors="replace").stdout
+            raise AssertionError(f"{args}: {r.stderr[-300:]}\n{registros[-1800:]}")
         return r.stdout + r.stderr
 
     def preparar(self):
@@ -644,7 +650,7 @@ def test_cinco_equipos_a_la_vez(fab, api, volumen):
             indice += 1
             time.sleep(0.5)
 
-    hilos = [threading.Thread(target=trabajar, args=(i,)) for i in range(5)]
+    hilos = [threading.Thread(target=trabajar, args=(i,), daemon=True) for i in range(5)]
     for hilo in hilos:
         hilo.start()
     while time.time() < fin:

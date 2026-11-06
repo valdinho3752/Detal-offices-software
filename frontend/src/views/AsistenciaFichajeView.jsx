@@ -384,10 +384,10 @@ export default function AsistenciaFichajeView() {
                       ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
                       : a.tipo_evento === 'SALIDA'
                       ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400'
-                      : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400';
+                      : 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400';
 
                   return (
-                    <tr key={a.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/20 transition ${a.anulado ? 'opacity-60' : ''}`}>
+                    <tr key={a.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/20 transition ${a.anulado ? 'opacity-90' : ''}`}>
                       <td className={`py-3 px-4 font-mono font-bold text-primary-600 dark:text-primary-400 ${a.anulado ? 'line-through' : ''}`}>{horaStr}</td>
                       <td className="py-3 px-4 font-medium text-slate-900 dark:text-white">{empNombre}</td>
                       <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{a.empleado_rol || '-'}</td>

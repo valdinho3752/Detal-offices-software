@@ -29,7 +29,7 @@ function ImagenRadiografia({ src, alt, className }) {
 
   if (fallo) {
     return (
-      <div role="img" aria-label={alt} className="w-full h-full min-h-[120px] flex flex-col items-center justify-center gap-2 p-4 text-center text-xs text-slate-300">
+      <div role="img" aria-label={alt} className="w-full h-full min-h-[120px] flex flex-col items-center justify-center gap-2 p-4 text-center text-xs" style={{ color: '#e2e8f0' }}>
         <AlertCircle className="w-6 h-6 text-amber-400" />
         No se pudo cargar la imagen. Revisa que el enlace siga disponible.
       </div>

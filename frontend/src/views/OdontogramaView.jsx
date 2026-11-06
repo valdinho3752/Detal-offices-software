@@ -2127,7 +2127,7 @@ export default function OdontogramaView() {
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                       activePlan?.estado === 'APROBADO' || activePlan?.estado === 'EN_CURSO'
                         ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                        : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                        : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30'
                     }`}>
                       {activePlan?.estado || 'PROPUESTO'}
                     </span>

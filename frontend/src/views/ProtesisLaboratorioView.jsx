@@ -247,13 +247,13 @@ export default function ProtesisLaboratorioView() {
                         {p.laboratorio_nombre || 'Laboratorio Dental'}
                       </td>
                       <td className="py-3 px-4">
-                        <span className="font-semibold text-primary-300">{p.tipo_trabajo}</span>
+                        <span className="font-semibold text-primary-700 dark:text-primary-300">{p.tipo_trabajo}</span>
                         {p.piezas_dentales && (
                           <div className="text-[10px] font-mono text-slate-400">{p.piezas_dentales}</div>
                         )}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded font-mono font-bold text-[11px]">
+                        <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 rounded font-mono font-bold text-[11px]">
                           {p.color_guia_vita || 'N/A'}
                         </span>
                       </td>
@@ -272,7 +272,7 @@ export default function ProtesisLaboratorioView() {
                               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                               : p.estado === 'AJUSTE_REPETICION' || p.estado === 'CANCELADO'
                               ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
-                              : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                              : 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400'
                           }`}
                         >
                           {ETIQUETAS_ESTADO[p.estado] || p.estado}
@@ -282,7 +282,7 @@ export default function ProtesisLaboratorioView() {
                         {tienePermiso('PROTESIS_UPDATE') && p.estado === 'ENVIADO' && (
                           <button
                             onClick={() => handleUpdateEstado(p.id, 'EN_LABORATORIO')}
-                            className="px-2 py-1 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 rounded text-[11px] transition"
+                            className="px-2 py-1 bg-amber-600/20 hover:bg-amber-600/30 text-amber-800 dark:text-amber-300 border border-amber-500/30 rounded text-[11px] transition"
                           >
                             En Proceso
                           </button>
@@ -290,7 +290,7 @@ export default function ProtesisLaboratorioView() {
                         {tienePermiso('PROTESIS_UPDATE') && ['ENVIADO', 'EN_LABORATORIO', 'AJUSTE_REPETICION'].includes(p.estado) && (
                           <button
                             onClick={() => handleUpdateEstado(p.id, 'RECIBIDO_EN_CLINICA')}
-                            className="px-2 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded text-[11px] transition"
+                            className="px-2 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-700 dark:text-blue-300 border border-blue-500/30 rounded text-[11px] transition"
                           >
                             Recibir en Clínica
                           </button>
@@ -298,7 +298,7 @@ export default function ProtesisLaboratorioView() {
                         {tienePermiso('PROTESIS_UPDATE') && p.estado === 'RECIBIDO_EN_CLINICA' && (
                           <button
                             onClick={() => handleUpdateEstado(p.id, 'PRUEBA_EN_BOCA')}
-                            className="px-2 py-1 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 rounded text-[11px] transition"
+                            className="px-2 py-1 bg-amber-600/20 hover:bg-amber-600/30 text-amber-800 dark:text-amber-300 border border-amber-500/30 rounded text-[11px] transition"
                           >
                             Prueba en Boca
                           </button>
@@ -306,7 +306,7 @@ export default function ProtesisLaboratorioView() {
                         {tienePermiso('PROTESIS_UPDATE') && p.estado === 'PRUEBA_EN_BOCA' && (
                           <button
                             onClick={() => handleUpdateEstado(p.id, 'AJUSTE_REPETICION')}
-                            className="px-2 py-1 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 rounded text-[11px] transition"
+                            className="px-2 py-1 bg-amber-600/20 hover:bg-amber-600/30 text-amber-800 dark:text-amber-300 border border-amber-500/30 rounded text-[11px] transition"
                           >
                             Requiere Ajuste
                           </button>

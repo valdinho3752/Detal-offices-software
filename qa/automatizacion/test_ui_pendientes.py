@@ -489,7 +489,7 @@ def test_visor_e_imagen_rota(fab, api, como_admin):
     p.reload()
     p.wait_for_load_state("networkidle")
     p.get_by_text("Imagen correcta").first.wait_for()
-    p.locator('img[alt="Imagen correcta"]').click()
+    p.get_by_test_id("vista-radiografia").filter(has=p.locator('img[alt="Imagen correcta"]')).click()
     p.wait_for_timeout(400)
     imagen = p.locator('img[alt="Radiografía Dental"]')
     assert imagen.evaluate("e => e.naturalWidth > 0"), "Muestra la imagen"
