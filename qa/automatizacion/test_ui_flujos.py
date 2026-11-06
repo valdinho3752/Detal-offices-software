@@ -221,7 +221,8 @@ def test_nueva_cita_de_varios_bloques(fab, api, como_admin):
 
     # Una cita de hoy se ve igual en la matriz y en el mes, y al hacer clic se edita
     hoy = ahora_clinica().strftime("%Y-%m-%d")
-    assert fab.cita(paciente["id"], hoy, "20:30", "21:00", box=4).status == 201
+    sillon = api.post("/sillones/", {"nombre": f"Bloques{uuid4().hex[:4]}"}).json()
+    assert fab.cita(paciente["id"], hoy, "20:30", "21:00", box=sillon["numero"]).status == 201
     p.reload()
     p.wait_for_load_state("networkidle")
     p.wait_for_selector("table")

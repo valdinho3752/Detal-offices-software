@@ -39,8 +39,8 @@ export function AuthProvider({ children }) {
           setUser(formatted);
           localStorage.setItem('user', JSON.stringify(formatted));
         } catch (e) {
+          // Una sesión vencida ya la cierra la API. Una recarga o un corte de red no deben cerrarla.
           console.error('Error cargando perfil:', e);
-          logout();
         }
       }
       setLoading(false);

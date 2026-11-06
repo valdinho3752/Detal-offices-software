@@ -166,6 +166,21 @@ def test_cambio_de_contrasena_con_peticion_en_curso(fab, abrir):
     assert "/login" not in p.url
 
 
+# Sin caso propio: comprobación adicional
+def test_error_de_red_no_cierra_la_sesion(fab, abrir):
+    """Una recarga o un corte breve interrumpen la consulta del perfil: eso no es una sesión vencida."""
+    u = fab.usuario("RECEPCION")
+    p = abrir(u.alias, u.clave)
+    p.route("**/api/v1/auth/me", lambda ruta: ruta.abort())
+    p.reload()
+    p.wait_for_timeout(1000)
+    assert "/login" not in p.url and p.evaluate("localStorage.getItem('token')"), "La sesión sigue"
+    p.unroute("**/api/v1/auth/me")
+    p.reload()
+    p.wait_for_load_state("networkidle")
+    assert "/login" not in p.url and "Panel Principal" in p.inner_text("main")
+
+
 # ---------------- Menú por rol ----------------
 
 @caso("USU-21", "USU-22", "AUD-07", "REP-17", "SIL-10", "CFG-21", "TRA-12", "NOM-26", "COB-17", "EVO-15", "RAD-12", "ODO-30")
